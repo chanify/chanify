@@ -33,7 +33,7 @@ OS/Arch:    {{.Client.OS}}/{{.Client.Arch}}
 func init() {
 	versionCmd := &cobra.Command{
 		Use:   "version",
-		Short: "Print the version of chanify command line tools",
+		Short: "Print the version of chanify cli",
 		Long:  "Show the chanify command line tools version information",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tmpl, err := cmd.Flags().GetString("format")

@@ -2,6 +2,8 @@ name: ci
 on:
   push:
     branches: [ main, dev ]
+  pull_request:
+  release:
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -11,27 +13,24 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: '^1.16.0'
-    - name: lint
+    - name: Code lint
       uses: golangci/golangci-lint-action@v2
-      with:
-        version: v1.35
-    - name: test
+    - name: Test
       run: |
         go get github.com/wadey/gocovmerge
         make test
-    - name: codecov
+    - name: Code coverage
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: coverage.out
   build:
+    if: github.event_name == 'push' || github.event_name == 'release'
     runs-on: ubuntu-latest
     needs: test
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Docker tags
-        run: echo "DOCKER_TAGS=$(make tags)" >> $GITHUB_ENV
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
       - name: Set up Docker Buildx
@@ -41,6 +40,15 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build dev image
+        if: github.ref == 'refs/heads/dev'
+        run: echo "DOCKER_TAGS=wizjin/chanify:dev" >> $GITHUB_ENV
+      - name: Build main image
+        if: github.ref == 'refs/heads/main'
+        run: echo "DOCKER_TAGS=wizjin/chanify:latest" >> $GITHUB_ENV
+      - name: Build release image
+        if: github.event_name == 'release'
+        run: echo "DOCKER_TAGS=wizjin/chanify:${GITHUB_REF#v}" >> $GITHUB_ENV
       - name: Build and push
         uses: docker/build-push-action@v2
         with:

@@ -47,7 +47,4 @@ build:
 	@echo Build ${PACKAGE}
 	@go build ${LDFLAGS} ${PACKAGE}
 
-tags:
-	@echo $(addprefix "wizjin/chanify:", $(TAGS)) | sed -e 's/ /,/g'
-
-.PHONY: lint test cover build tags
+.PHONY: lint test cover build
