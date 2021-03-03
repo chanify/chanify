@@ -1,0 +1,50 @@
+syntax = "proto3";
+package net.chanify.model;
+option go_package = ".;pb";
+option objc_class_prefix="CHTP";
+option optimize_for = LITE_RUNTIME;
+
+enum ChanType {
+    None                    = 0;
+    Sys                     = 1;
+    User                    = 2;
+}
+
+enum ChanCode {
+    Uncategorized           = 0;
+    Device                  = 1;
+}
+
+message Channel {
+    ChanType    type        = 1;
+    ChanCode    code        = 2;
+    string      name        = 3;
+    string      icon        = 4;
+}
+
+message Token {
+    uint64      expires     = 1;
+    string      user_id     = 2;
+    bytes       device_id   = 3;
+    bytes       channel     = 4;
+    string      node_id     = 5;
+}
+
+enum MsgType {
+    System                  = 0;
+    Text                    = 1;
+    Image                   = 2;
+}
+
+message MsgContent {
+    MsgType     type        = 1;
+    string      text        = 2;
+    string      link        = 3;
+}
+
+message Message {
+    bytes       from        = 1;
+    bytes       channel     = 2; // Channel
+    bytes       content     = 3; // MsgContent
+    bytes       ciphertext  = 4; // Encrypt MsgContent
+}

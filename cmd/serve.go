@@ -34,8 +34,19 @@ func init() {
 				c := core.New()
 				if c == nil {
 					log.Fatalln("Create service failed!")
+					return
 				}
 				defer c.Close()
+				secret := viper.GetString("server.secret")
+				if len(secret) <= 0 {
+					log.Fatalln("Secret not found!")
+					return
+				}
+				c.SetSecret(secret)
+				c.SetVersion(Version)
+				c.SetEndpoint(GetEndpoint())
+				c.SetName(viper.GetString("name"))
+				c.InitFeatures()
 				srv.Handler = c.APIHandler()
 				log.Println("Launch service", srv.Addr)
 				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -57,6 +68,33 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 	serveCmd.Flags().String("host", "127.0.0.1", "Http restful service hostname")
 	serveCmd.Flags().Int("port", 8080, "Http restful service port")
-	viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host")) // nolint: errcheck
-	viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port")) // nolint: errcheck
+	serveCmd.Flags().String("endpoint", "", "Http restful service endpoint")
+	serveCmd.Flags().String("name", "", "Http service name")
+	serveCmd.Flags().String("secret", "", "Secret for service key")
+	viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))         // nolint: errcheck
+	viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port"))         // nolint: errcheck
+	viper.BindPFlag("server.endpoint", serveCmd.Flags().Lookup("endpoint")) // nolint: errcheck
+	viper.BindPFlag("server.name", serveCmd.Flags().Lookup("name"))         // nolint: errcheck
+	viper.BindPFlag("server.secret", serveCmd.Flags().Lookup("secret"))     // nolint: errcheck
+}
+
+func GetEndpoint() string {
+	endpoint := viper.GetString("endpoint")
+	if len(endpoint) <= 0 {
+		hostname := viper.GetString("hostname")
+		if len(hostname) <= 0 {
+			hostname = viper.GetString("server.host")
+		}
+		if len(hostname) > 0 {
+			port := viper.GetInt("server.port")
+			if port == 80 {
+				endpoint = "http://" + hostname
+			} else if port == 443 {
+				endpoint = "https://" + hostname
+			} else {
+				endpoint = fmt.Sprintf("http://%s:%d", hostname, port)
+			}
+		}
+	}
+	return endpoint
 }
