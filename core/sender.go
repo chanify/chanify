@@ -2,14 +2,16 @@ package core
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/chanify/chanify/pb"
 	"github.com/gin-gonic/gin"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 )
 
 func (c *Core) handleSender(ctx *gin.Context) {
@@ -43,14 +45,15 @@ func (c *Core) handleSender(ctx *gin.Context) {
 	default:
 		msg = ctx.PostForm("text")
 	}
-	sendMsg(ctx, token, msg)
-}
-
-func sendMsg(ctx *gin.Context, token string, msg string) {
-	if len(token) <= 0 || len(msg) <= 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "bad request"})
+	tk, err := c.ParseToken(token)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid token"})
 		return
 	}
+	c.sendMsg(ctx, tk, msg)
+}
+
+func (c *Core) sendMsg(ctx *gin.Context, token *Token, msg string) {
 	uuid := uuid.New().String()
 	content, err := proto.Marshal(&pb.MsgContent{
 		Type: pb.MsgType_Text,
@@ -60,21 +63,37 @@ func sendMsg(ctx *gin.Context, token string, msg string) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "format message content failed"})
 		return
 	}
-	m, err := proto.Marshal(&pb.Message{
-		Content: content,
-		//Ciphertext: content,
-	})
+	key, err := c.GetUserKey(token.UserId)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
+		return
+	}
+	block, err := aes.NewCipher(key[:32])
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "unknown error"})
+		return
+	}
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "unknown error"})
+		return
+
+	}
+	nonce := make([]byte, 12)
+	rand.Read(nonce) // nolint: errcheck
+	data := aesgcm.Seal(nil, nonce, content, key[32:32+32])
+	data = append(nonce, data...)
+	m, err := proto.Marshal(&pb.Message{Ciphertext: data})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "format message failed"})
 		return
 	}
-	resp, err := http.Post("https://api.chanify.net/rest/v1/push?token="+token, "application/x-protobuf", bytes.NewReader(m))
+	resp, err := http.Post("https://api.chanify.net/rest/v1/push?token="+token.String(), "application/x-protobuf", bytes.NewReader(m))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send message failed"})
 		return
 	}
 	if resp.StatusCode != http.StatusOK {
-		log.Println("4444444", resp.StatusCode)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send push message failed"})
 		return
 	}

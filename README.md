@@ -39,7 +39,7 @@ $ chanify send --token=<token> --text=<message>
 #### Start chanify node server
 
 ```bash
-$ chanify serve --host=0.0.0.0 --port=8080
+$ chanify serve --host=0.0.0.0 --port=8080 --serect=<serect key> --name=<node name>
 ```
 
 ## Contributing

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"crypto/sha256"
 	"encoding/base32"
 	"encoding/base64"
 	"net/http"
@@ -37,15 +36,12 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid public key"})
 		return
 	}
-	uidData, err := base32Encode.DecodeString(params.User.Uid)
+	k, err := c.GetUserKey(params.User.Uid)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user id"})
 		return
 	}
-	h := sha256.New()
-	h.Write(c.info.secret) // nolint: errcheck
-	h.Write(uidData)       // nolint: errcheck
-	kdata, _ := pubKey.Encrypt(h.Sum(nil))
+	kdata, _ := pubKey.Encrypt(k)
 	key := base64Encode.EncodeToString(kdata)
 	ctx.JSON(http.StatusOK, gin.H{"key": key})
 }
