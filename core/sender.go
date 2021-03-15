@@ -45,7 +45,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 	default:
 		msg = ctx.PostForm("text")
 	}
-	tk, err := c.ParseToken(token)
+	tk, err := NewToken(token)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid token"})
 		return

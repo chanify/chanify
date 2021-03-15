@@ -6,11 +6,13 @@
 [![iTunes App Store](https://img.shields.io/itunes/v/1531546573?logo=apple&style=flat-square)](https://itunes.apple.com/app/id1531546573)
 [![GitHub](https://img.shields.io/github/license/chanify/chanify?style=flat-square)](LICENSE)
 
-Chanify is a message sender.
+<a href="https://www.producthunt.com/posts/chanify?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-chanify" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=287376&theme=light" alt="Chanify - Safe and simple notification tools | Product Hunt" style="width: 185px; height: 40px;" width="185" height="40" /></a>
+
+Chanify is a safe and simple notification tools. For developers, system administrators, and everyone can push notifications with API.
 
 ## Getting Started
 
-1. Install iOS App.
+1. Install [iOS App](https://itunes.apple.com/us/app/id1531546573).
 2. Get send token.
 3. Send message.
 

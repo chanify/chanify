@@ -1,11 +1,16 @@
 package core
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+)
+
+var (
+	ErrInvalidToken = errors.New("Invalid token")
 )
 
 type Core struct {

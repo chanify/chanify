@@ -1,7 +1,6 @@
 package core
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/chanify/chanify/pb"
@@ -10,22 +9,26 @@ import (
 
 type Token struct {
 	pb.Token
-	val string
+	sign []byte
+	val  string
 }
 
-func (c *Core) ParseToken(token string) (*Token, error) {
+func NewToken(token string) (*Token, error) {
 	tk := &Token{
 		val: token,
 	}
 	tks := strings.Split(token, ".")
 	if len(tks) < 2 {
-		return nil, errors.New("Invalid token")
+		return nil, ErrInvalidToken
 	}
 	d, err := base64Encode.DecodeString(tks[0])
 	if err != nil {
 		return nil, err
 	}
 	if err := proto.Unmarshal(d, &tk.Token); err != nil {
+		return nil, err
+	}
+	if tk.sign, err = base64Encode.DecodeString(tks[1]); err != nil {
 		return nil, err
 	}
 	return tk, nil

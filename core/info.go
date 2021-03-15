@@ -2,11 +2,14 @@ package core
 
 import (
 	"crypto/sha256"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 
 	cc "github.com/chanify/chanify/crypto"
 	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/go-homedir"
 	qrcode "github.com/skip2/go-qrcode"
 )
 
@@ -25,6 +28,13 @@ type ServerInfo struct {
 	key    *cc.SecretKey `json:"-"`
 	qrCode []byte        `json:"-"`
 	secret []byte        `json:"-"`
+}
+
+func (c *Core) SetDataDir(datadir string) {
+	datadir, _ = homedir.Expand(datadir)
+	if _, err := os.Stat(datadir); os.IsNotExist(err) {
+		log.Println("data dir:", err)
+	}
 }
 
 func (c *Core) SetSecret(secret string) {

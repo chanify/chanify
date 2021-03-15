@@ -2,8 +2,9 @@ name: ci
 on:
   push:
     branches: [ main, dev ]
+    tags:
+      - v*
   pull_request:
-  release:
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -47,7 +48,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: echo "DOCKER_TAGS=wizjin/chanify:latest" >> $GITHUB_ENV
       - name: Build release image
-        if: github.event_name == 'release'
+        if: startsWith(github.ref, 'refs/tags/v')
         run: echo "DOCKER_TAGS=wizjin/chanify:${GITHUB_REF#v}" >> $GITHUB_ENV
       - name: Build and push
         uses: docker/build-push-action@v2

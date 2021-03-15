@@ -37,12 +37,8 @@ func init() {
 					return
 				}
 				defer c.Close()
-				secret := viper.GetString("server.secret")
-				if len(secret) <= 0 {
-					log.Fatalln("Secret not found!")
-					return
-				}
-				c.SetSecret(secret)
+				c.SetDataDir(viper.GetString("server.datadir"))
+				c.SetSecret(viper.GetString("server.secret"))
 				c.SetVersion(Version)
 				c.SetEndpoint(GetEndpoint())
 				c.SetName(viper.GetString("name"))
@@ -71,11 +67,13 @@ func init() {
 	serveCmd.Flags().String("endpoint", "", "Http restful service endpoint")
 	serveCmd.Flags().String("name", "", "Http service name")
 	serveCmd.Flags().String("secret", "", "Secret for service key")
+	serveCmd.Flags().String("datadir", "~/.chanify", "Directory path for data")
 	viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))         // nolint: errcheck
 	viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port"))         // nolint: errcheck
 	viper.BindPFlag("server.endpoint", serveCmd.Flags().Lookup("endpoint")) // nolint: errcheck
 	viper.BindPFlag("server.name", serveCmd.Flags().Lookup("name"))         // nolint: errcheck
 	viper.BindPFlag("server.secret", serveCmd.Flags().Lookup("secret"))     // nolint: errcheck
+	viper.BindPFlag("server.datadir", serveCmd.Flags().Lookup("datadir"))   // nolint: errcheck
 }
 
 func GetEndpoint() string {
