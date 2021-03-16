@@ -45,7 +45,7 @@ func init() {
 				c.SetSecret(secret)
 				c.SetVersion(Version)
 				c.SetEndpoint(GetEndpoint())
-				c.SetName(viper.GetString("name"))
+				c.SetName(viper.GetString("server.name"))
 				c.InitFeatures()
 				srv.Handler = c.APIHandler()
 				log.Println("Launch service", srv.Addr)
@@ -79,9 +79,9 @@ func init() {
 }
 
 func GetEndpoint() string {
-	endpoint := viper.GetString("endpoint")
+	endpoint := viper.GetString("server.endpoint")
 	if len(endpoint) <= 0 {
-		hostname := viper.GetString("hostname")
+		hostname := viper.GetString("server.hostname")
 		if len(hostname) <= 0 {
 			hostname = viper.GetString("server.host")
 		}
