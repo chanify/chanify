@@ -7,7 +7,7 @@ import (
 )
 
 func TestUserKey(t *testing.T) {
-	c := New()
+	c := New("", "", "")
 	c.SetSecret("123")
 	if _, err := c.GetUserKey("!"); err == nil {
 		t.Error("Check user key failed")

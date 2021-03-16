@@ -1,7 +1,6 @@
 package core
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -9,18 +8,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	ErrInvalidToken = errors.New("Invalid token")
-)
-
 type Core struct {
 	info   ServerInfo
 	engine *gin.Engine
 }
 
-func New() *Core {
+func New(name string, version string, endpoint string) *Core {
 	gin.SetMode(gin.ReleaseMode)
-	return &Core{}
+	c := &Core{}
+	c.info.Name = name
+	c.info.Version = version
+	c.setEndpoint(endpoint)
+	return c
+}
+
+func (c *Core) Init(data string) error {
+	// data, _ = homedir.Expand(data)
+	// if _, err := os.Stat(data); os.IsNotExist(err) {
+	// 	return errors.New("invalid data directory")
+	// }
+	return c.initFeatures()
 }
 
 func (c *Core) Close() {

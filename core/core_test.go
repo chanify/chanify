@@ -7,7 +7,7 @@ import (
 )
 
 func TestHealth(t *testing.T) {
-	c := New()
+	c := New("", "", "")
 	if c == nil {
 		t.Error("Create core failed!")
 	}
@@ -23,7 +23,7 @@ func TestHealth(t *testing.T) {
 }
 
 func TestHome(t *testing.T) {
-	c := New()
+	c := New("", "", "")
 	defer c.Close()
 	handler := c.APIHandler()
 	req := httptest.NewRequest("GET", "/", nil)
@@ -36,7 +36,7 @@ func TestHome(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	c := New()
+	c := New("", "", "")
 	defer c.Close()
 	handler := c.APIHandler()
 	req := httptest.NewRequest("GET", "/not-found", nil)

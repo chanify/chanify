@@ -2,14 +2,11 @@ package core
 
 import (
 	"crypto/sha256"
-	"log"
 	"net/http"
 	"net/url"
-	"os"
 
 	cc "github.com/chanify/chanify/crypto"
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/go-homedir"
 	qrcode "github.com/skip2/go-qrcode"
 )
 
@@ -30,13 +27,6 @@ type ServerInfo struct {
 	secret []byte        `json:"-"`
 }
 
-func (c *Core) SetDataDir(datadir string) {
-	datadir, _ = homedir.Expand(datadir)
-	if _, err := os.Stat(datadir); os.IsNotExist(err) {
-		log.Println("data dir:", err)
-	}
-}
-
 func (c *Core) SetSecret(secret string) {
 	c.info.secret = sha256.New().Sum([]byte(secret))
 	c.info.key, _ = cc.GenerateSecretKey([]byte(secret))
@@ -44,21 +34,14 @@ func (c *Core) SetSecret(secret string) {
 	c.info.NodeId = c.info.key.ToID(0x01)
 }
 
-func (c *Core) SetVersion(ver string) {
-	c.info.Version = ver
-}
-
-func (c *Core) SetEndpoint(endpoint string) {
+func (c *Core) setEndpoint(endpoint string) {
 	c.info.Endpoint = endpoint
 	c.info.qrCode, _ = qrcode.Encode("chanify://node?endpoint="+url.QueryEscape(endpoint), qrcode.Medium, 256)
 }
 
-func (c *Core) SetName(name string) {
-	c.info.Name = name
-}
-
-func (c *Core) InitFeatures() {
+func (c *Core) initFeatures() error {
 	c.info.Features = []string{"msg.text"}
+	return nil
 }
 
 func (c *Core) handleInfo(ctx *gin.Context) {

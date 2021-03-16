@@ -3,6 +3,7 @@ package core
 import (
 	"strings"
 
+	"github.com/chanify/chanify/logic"
 	"github.com/chanify/chanify/pb"
 	"google.golang.org/protobuf/proto"
 )
@@ -19,7 +20,7 @@ func NewToken(token string) (*Token, error) {
 	}
 	tks := strings.Split(token, ".")
 	if len(tks) < 2 {
-		return nil, ErrInvalidToken
+		return nil, logic.ErrInvalidToken
 	}
 	d, err := base64Encode.DecodeString(tks[0])
 	if err != nil {

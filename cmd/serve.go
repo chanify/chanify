@@ -31,18 +31,22 @@ func init() {
 			}
 			log.Println("Launching service...")
 			go func() {
-				c := core.New()
+				c := core.New(viper.GetString("server.name"), Version, GetEndpoint())
 				if c == nil {
 					log.Fatalln("Create service failed!")
 					return
 				}
 				defer c.Close()
-				c.SetDataDir(viper.GetString("server.datadir"))
-				c.SetSecret(viper.GetString("server.secret"))
-				c.SetVersion(Version)
-				c.SetEndpoint(GetEndpoint())
-				c.SetName(viper.GetString("name"))
-				c.InitFeatures()
+				secret := viper.GetString("server.secret")
+				if len(secret) <= 0 {
+					log.Fatalln("Secret not found!")
+					return
+				}
+				c.SetSecret(secret)
+				if err := c.Init(viper.GetString("server.data")); err != nil {
+					log.Fatalln("Init service failed:", err)
+					return
+				}
 				srv.Handler = c.APIHandler()
 				log.Println("Launch service", srv.Addr)
 				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -62,24 +66,24 @@ func init() {
 		},
 	}
 	rootCmd.AddCommand(serveCmd)
-	serveCmd.Flags().String("host", "127.0.0.1", "Http restful service hostname")
-	serveCmd.Flags().Int("port", 8080, "Http restful service port")
+	serveCmd.Flags().String("host", "0.0.0.0", "Http restful service hostname")
+	serveCmd.Flags().Int("port", 80, "Http restful service port")
 	serveCmd.Flags().String("endpoint", "", "Http restful service endpoint")
 	serveCmd.Flags().String("name", "", "Http service name")
 	serveCmd.Flags().String("secret", "", "Secret for service key")
-	serveCmd.Flags().String("datadir", "~/.chanify", "Directory path for data")
+	serveCmd.Flags().String("data", "~/.chanify", "Directory path for data")
 	viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))         // nolint: errcheck
 	viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port"))         // nolint: errcheck
 	viper.BindPFlag("server.endpoint", serveCmd.Flags().Lookup("endpoint")) // nolint: errcheck
 	viper.BindPFlag("server.name", serveCmd.Flags().Lookup("name"))         // nolint: errcheck
 	viper.BindPFlag("server.secret", serveCmd.Flags().Lookup("secret"))     // nolint: errcheck
-	viper.BindPFlag("server.datadir", serveCmd.Flags().Lookup("datadir"))   // nolint: errcheck
+	viper.BindPFlag("server.data", serveCmd.Flags().Lookup("data"))         // nolint: errcheck
 }
 
 func GetEndpoint() string {
-	endpoint := viper.GetString("endpoint")
+	endpoint := viper.GetString("server.endpoint")
 	if len(endpoint) <= 0 {
-		hostname := viper.GetString("hostname")
+		hostname := viper.GetString("server.hostname")
 		if len(hostname) <= 0 {
 			hostname = viper.GetString("server.host")
 		}

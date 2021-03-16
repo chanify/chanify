@@ -9,25 +9,22 @@ import (
 )
 
 func TestSetInfo(t *testing.T) {
-	c := New()
+	c := New("name-test", "0.1.2", "http://127.0.0.1")
 	defer c.Close()
 	c.SetSecret("secret")
 	if len(c.info.NodeId) <= 0 {
 		t.Error("Init NodeId failed")
 	}
-	c.SetVersion("0.1.2")
 	if c.info.Version != "0.1.2" {
 		t.Error("Set version failed")
 	}
-	c.SetEndpoint("http://127.0.0.1")
 	if c.info.Endpoint != "http://127.0.0.1" || len(c.info.qrCode) <= 0 {
 		t.Error("Set endpoint failed")
 	}
-	c.SetName("name-test")
 	if c.info.Name != "name-test" {
 		t.Error("Set name failed")
 	}
-	c.InitFeatures()
+	c.initFeatures()
 	if len(c.info.Features) <= 0 {
 		t.Error("Set features failed")
 	}
@@ -50,7 +47,7 @@ func TestSetInfo(t *testing.T) {
 }
 
 func TestInfo(t *testing.T) {
-	c := New()
+	c := New("", "", "")
 	defer c.Close()
 	handler := c.APIHandler()
 	req := httptest.NewRequest("GET", "/rest/v1/info", nil)

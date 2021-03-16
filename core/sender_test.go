@@ -9,7 +9,7 @@ import (
 )
 
 func TestSender(t *testing.T) {
-	c := New()
+	c := New("", "", "")
 	defer c.Close()
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/rest/v1/sender", nil)
@@ -22,7 +22,7 @@ func TestSender(t *testing.T) {
 }
 
 func TestSenderPost(t *testing.T) {
-	c := New()
+	c := New("", "", "")
 	defer c.Close()
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/rest/v1/sender", bytes.NewReader([]byte("Hello")))
@@ -36,7 +36,7 @@ func TestSenderPost(t *testing.T) {
 }
 
 func TestSenderPostForm(t *testing.T) {
-	c := New()
+	c := New("", "", "")
 	defer c.Close()
 	handler := c.APIHandler()
 	body := &bytes.Buffer{}
