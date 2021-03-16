@@ -41,10 +41,10 @@ func TestSenderPostForm(t *testing.T) {
 	handler := c.APIHandler()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	partText, _ := writer.CreateFormField("text")
-	partText.Write([]byte("hello"))
-	partToken, _ := writer.CreateFormField("token")
-	partToken.Write([]byte("token"))
+	partText, _ := writer.CreateFormField("text")   // nolint: errcheck
+	partText.Write([]byte("hello"))                 // nolint: errcheck
+	partToken, _ := writer.CreateFormField("token") // nolint: errcheck
+	partToken.Write([]byte("token"))                // nolint: errcheck
 	writer.Close()
 
 	req := httptest.NewRequest("POST", "/rest/v1/sender", body)

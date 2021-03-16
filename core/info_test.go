@@ -24,7 +24,9 @@ func TestSetInfo(t *testing.T) {
 	if c.info.Name != "name-test" {
 		t.Error("Set name failed")
 	}
-	c.initFeatures()
+	if err := c.initFeatures(); err != nil {
+		t.Error("Init feature failed")
+	}
 	if len(c.info.Features) <= 0 {
 		t.Error("Set features failed")
 	}
