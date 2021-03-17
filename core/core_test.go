@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/chanify/chanify/logic"
 )
 
 func TestHealth(t *testing.T) {
@@ -23,16 +25,19 @@ func TestHealth(t *testing.T) {
 }
 
 func TestHome(t *testing.T) {
-	// c := New()
-	// defer c.Close()
-	// handler := c.APIHandler()
-	// req := httptest.NewRequest("GET", "/", nil)
-	// w := httptest.NewRecorder()
-	// handler.ServeHTTP(w, req)
-	// resp := w.Result()
-	// if resp.StatusCode != http.StatusOK {
-	// 	t.Error("Check health failed")
-	// }
+	c := New()
+	defer c.Close()
+	if err := c.Init(&logic.Options{Secret: "123"}); err != nil {
+		t.Fatal("init core failed")
+	}
+	handler := c.APIHandler()
+	req := httptest.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Error("Check health failed:", resp.StatusCode)
+	}
 }
 
 func TestNotFound(t *testing.T) {

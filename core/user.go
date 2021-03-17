@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/base32"
 	"encoding/base64"
 	"net/http"
 
@@ -10,7 +9,6 @@ import (
 )
 
 var (
-	base32Encode = base32.StdEncoding.WithPadding(base32.NoPadding)
 	base64Encode = base64.RawURLEncoding
 )
 
