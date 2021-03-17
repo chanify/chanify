@@ -5,60 +5,64 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/chanify/chanify/logic"
 	"github.com/gin-gonic/gin"
 )
 
 type Core struct {
-	info   ServerInfo
-	engine *gin.Engine
+	logic *logic.Logic
 }
 
-func New(name string, version string, endpoint string) *Core {
+func New() *Core {
 	gin.SetMode(gin.ReleaseMode)
-	c := &Core{}
-	c.info.Name = name
-	c.info.Version = version
-	c.setEndpoint(endpoint)
-	return c
+	return &Core{}
 }
 
-func (c *Core) Init(data string) error {
-	// data, _ = homedir.Expand(data)
-	// if _, err := os.Stat(data); os.IsNotExist(err) {
-	// 	return errors.New("invalid data directory")
-	// }
-	return c.initFeatures()
+func (c *Core) Init(opts *logic.Options) error {
+	var err error
+	c.logic, err = logic.NewLogic(opts)
+	return err
 }
 
 func (c *Core) Close() {
+	if c.logic != nil {
+		c.logic.Close()
+		c.logic = nil
+	}
 }
 
 func (c *Core) APIHandler() http.Handler {
-	if c.engine == nil {
-		r := gin.New()
-		c.engine = r
-		r.Use(loggerMiddleware)
-		r.Use(gin.Recovery())
-		r.GET("/", c.handleHome)
-		r.GET("/health", func(ctx *gin.Context) {
-			ctx.JSON(http.StatusOK, gin.H{"health": true})
-		})
-		r.NoRoute(func(ctx *gin.Context) {
-			ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "not found"})
-		})
+	r := gin.New()
+	r.Use(loggerMiddleware)
+	r.Use(gin.Recovery())
+	r.GET("/", c.handleHome)
+	r.GET("/health", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"health": true})
+	})
+	r.NoRoute(func(ctx *gin.Context) {
+		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "not found"})
+	})
 
-		api := r.Group("/rest/v1")
-		api.GET("/info", c.handleInfo)
-		api.GET("/qrcode", c.handleQrCode)
-		api.POST("/bind-user", c.handleBindUser)
-		api.POST("/sender", c.handleSender)
-	}
-	return c.engine
+	s := r.Group("/v1")
+	s.POST("/sender", c.handleSender)
+
+	api := r.Group("/rest/v1")
+	api.GET("/info", c.handleInfo)
+	api.GET("/qrcode", c.handleQRCode)
+	api.POST("/bind-user", c.handleBindUser)
+	return r
 }
 
 func (c *Core) handleHome(ctx *gin.Context) {
-	ctx.Request.URL.Path = "/rest/v1/qrcode"
-	c.engine.HandleContext(ctx)
+	c.handleQRCode(ctx)
+}
+
+func (c *Core) handleInfo(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, c.logic.GetInfo())
+}
+
+func (c *Core) handleQRCode(ctx *gin.Context) {
+	ctx.Data(http.StatusOK, "image/png", c.logic.GetQRCode())
 }
 
 func loggerMiddleware(c *gin.Context) {

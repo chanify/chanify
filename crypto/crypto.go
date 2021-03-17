@@ -8,11 +8,14 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/pem"
 	"errors"
 	"hash"
+	"io"
 
 	"golang.org/x/crypto/hkdf"
 )
@@ -44,12 +47,31 @@ func LoadPublicKey(key []byte) (*PublicKey, error) {
 	return pk, nil
 }
 
-func GenerateSecretKey(secret []byte) (*SecretKey, error) {
-	r := hkdf.Expand(sha1.New, secret, []byte("chanify"))
+func LoadSecretKey(key []byte) (*SecretKey, error) {
+	block, _ := pem.Decode(key)
+	if block == nil {
+		return nil, ErrInvalidKey
+	}
+	sk := &SecretKey{}
+	privateKey, err := x509.ParseECPrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	sk.PrivateKey = *privateKey
+	return sk, nil
+}
+
+func GenerateSecretKey(secret []byte) *SecretKey {
+	var r io.Reader
+	if len(secret) > 0 {
+		r = hkdf.Expand(sha1.New, secret, []byte("chanify"))
+	} else {
+		r = rand.Reader
+	}
 	key, _ := ecdsa.GenerateKey(elliptic.P256(), r)
 	k := &SecretKey{}
 	k.PrivateKey = *key
-	return k, nil
+	return k
 }
 
 func (k *PublicKey) MarshalPublicKey() []byte {
@@ -82,6 +104,11 @@ func (k *SecretKey) GetPublicKey() *PublicKey {
 	key := &PublicKey{}
 	key.PublicKey = k.PublicKey
 	return key
+}
+
+func (k *SecretKey) MarshalSecretKey() []byte {
+	encoded, _ := x509.MarshalECPrivateKey(&k.PrivateKey)
+	return pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: encoded})
 }
 
 func (k *SecretKey) MarshalPublicKey() []byte {

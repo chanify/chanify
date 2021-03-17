@@ -63,7 +63,7 @@ func (c *Core) sendMsg(ctx *gin.Context, token *Token, msg string) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "format message content failed"})
 		return
 	}
-	key, err := c.GetUserKey(token.UserId)
+	key, err := c.logic.GetUserKey(token.UserId)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
 		return

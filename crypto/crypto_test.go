@@ -8,22 +8,41 @@ import (
 )
 
 func TestGenKey(t *testing.T) {
-	k1, err := GenerateSecretKey([]byte("123"))
-	if err != nil {
-		t.Error("Create secret failed")
-	}
+	k1 := GenerateSecretKey([]byte("123"))
 	kid := k1.ToID(0x01)
 	if len(kid) <= 0 {
 		t.Error("To id failed")
 	}
-	k2, _ := GenerateSecretKey([]byte("123"))
+	k2 := GenerateSecretKey([]byte("123"))
 	if kid != k2.ToID(0x01) {
 		t.Error("Fix secret key failed")
 	}
 }
 
+func TestSecretKey(t *testing.T) {
+	k1 := GenerateSecretKey(nil)
+	sec := k1.MarshalSecretKey()
+	k2, err := LoadSecretKey(sec)
+	if err != nil {
+		t.Error("Load secret failed")
+	}
+	if k1.ToID(0x01) != k2.ToID(0x01) {
+		t.Error("Load secret key failed")
+	}
+	if _, err := LoadSecretKey([]byte("123")); err == nil {
+		t.Error("Check load secret key failed")
+	}
+	if _, err := LoadSecretKey([]byte(`-----BEGIN PRIVATE KEY-----
+QHcCAQEEIMaMASuY8PdKdIeZMfSo9UbxqceSm3FD7h+1fWiZGT+XoAoGCCqGSM49
+AwEHoUQDQgAE5cEQxx+q+WRzgI25dXX+ZYHYIi7I2h75YPIEgWgqqXzcb5d+qCmW
+Oit+LiQZ8bMJDICuiSHtbzIsZBi1phvfPQ==
+-----END PRIVATE KEY-----`)); err == nil {
+		t.Error("Check load secret key failed")
+	}
+}
+
 func TestPublicKey(t *testing.T) {
-	k, _ := GenerateSecretKey([]byte("123"))
+	k := GenerateSecretKey([]byte("123"))
 	data := k.EncodePublicKey()
 	if len(data) <= 0 {
 		t.Error("Encode public key failed")
@@ -43,7 +62,7 @@ func TestPublicKey(t *testing.T) {
 
 func TestCrypto(t *testing.T) {
 	data := []byte("hello")
-	k1, _ := GenerateSecretKey([]byte("123"))
+	k1 := GenerateSecretKey([]byte("123"))
 	k2 := k1.GetPublicKey()
 	d, err := k2.Encrypt(data)
 	if err != nil {
@@ -60,7 +79,7 @@ func TestCrypto(t *testing.T) {
 
 func TestSign(t *testing.T) {
 	data := []byte("hello")
-	k1, _ := GenerateSecretKey([]byte("123"))
+	k1 := GenerateSecretKey([]byte("123"))
 	k2 := k1.GetPublicKey()
 	s, err := k1.Sign(data)
 	if err != nil {
@@ -78,7 +97,7 @@ func TestKeyFailed(t *testing.T) {
 	if _, err := LoadPublicKey([]byte("123")); err != ErrInvalidKey {
 		t.Error("Check load invalid public key failed")
 	}
-	k, _ := GenerateSecretKey([]byte("123"))
+	k := GenerateSecretKey([]byte("123"))
 	pk := k.GetPublicKey()
 	pk.X.Set(big.NewInt(0))
 	pk.Y.Set(big.NewInt(0))

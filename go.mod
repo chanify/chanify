@@ -12,4 +12,5 @@ require (
 	github.com/spf13/viper v1.7.1
 	golang.org/x/crypto v0.0.0-20210314154223-e6e6c4f2bb5b
 	google.golang.org/protobuf v1.25.0
+	modernc.org/sqlite v1.10.0
 )

@@ -7,7 +7,7 @@ import (
 )
 
 func TestUser(t *testing.T) {
-	c := New("", "", "")
+	c := New()
 	defer c.Close()
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/rest/v1/bind-user", nil)

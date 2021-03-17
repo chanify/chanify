@@ -36,7 +36,7 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid public key"})
 		return
 	}
-	k, err := c.GetUserKey(params.User.Uid)
+	k, err := c.logic.GetUserKey(params.User.Uid)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user id"})
 		return
