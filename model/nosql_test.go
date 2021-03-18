@@ -13,6 +13,10 @@ func TestNoSQL(t *testing.T) {
 		t.Fatal("Open nosql failed")
 	}
 	db.Close()
+	var secret []byte
+	if err := db.GetOption("secret", &secret); err != nil {
+		t.Fatal("GetOption secret failed:", err)
+	}
 	if err := db.GetOption("name", nil); err != ErrNotImplemented {
 		t.Fatal("GetOption failed:", err)
 	}

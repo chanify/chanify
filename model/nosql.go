@@ -58,3 +58,18 @@ func (s *nosql) GetUser(uid string) (*User, error) {
 func (s *nosql) UpsertUser(u *User) error {
 	return ErrNotImplemented
 }
+
+func (s *nosql) BindDevice(uid string, uuid string, key []byte) error {
+	return ErrNotImplemented
+}
+
+func (s *nosql) UnbindDevice(uid string, uuid string) {
+}
+
+func (s *nosql) UpdatePushToken(uid string, uuid string, token []byte, sandbox bool) error {
+	return ErrNotImplemented
+}
+
+func (s *nosql) GetDevices(uid string) ([]*Device, error) {
+	return nil, ErrNotImplemented
+}

@@ -15,6 +15,6 @@ func TestUser(t *testing.T) {
 	handler.ServeHTTP(w, req)
 	resp := w.Result()
 	if resp.StatusCode != http.StatusBadRequest {
-		t.Error("Check health failed")
+		t.Error("Check bind user failed")
 	}
 }

@@ -1,16 +1,25 @@
 package logic
 
 import (
+	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"log"
 	"net/url"
 
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
+	"github.com/chanify/chanify/pb"
+	"github.com/sideshow/apns2"
+	"github.com/sideshow/apns2/payload"
+	"github.com/sideshow/apns2/token"
 )
 
 var (
-	ErrInvalidToken = errors.New("invalid token")
+	ApiEndpoint = "https://api.chanify.net"
 )
 
 type Options struct {
@@ -30,7 +39,12 @@ type Logic struct {
 	Version  string
 	Endpoint string
 	Features []string
+
+	apnsPClient *apns2.Client
+	apnsDClient *apns2.Client
 }
+
+const authKey = "MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgQ6vCLkUeDj223nfPfKGrjG+Coc53EbKHmO6Oa9YcHiGgCgYIKoZIzj0DAQehRANCAAQNwg3W2eOqNlX0nl9kGbfmMxwSZoO4RmqKoKJnH/vGkU8csJuN5Dg4JiI6ni5PEx+A1rb19DuDm4AzwBVvl8Jt"
 
 func NewLogic(opts *Options) (*Logic, error) {
 	l := &Logic{
@@ -52,13 +66,19 @@ func NewLogic(opts *Options) (*Logic, error) {
 		return nil, err
 	}
 	l.NodeID = l.secKey.ToID(0x01)
-	if l.srvless {
-		log.Println("Running in serverless mode")
-	} else {
+	if !l.srvless {
 		l.Features = append([]string{"store.device"}, l.Features...)
-		log.Println("Running in serverful mode")
+		key, _ := base64.RawStdEncoding.DecodeString(authKey)
+		akey, _ := x509.ParsePKCS8PrivateKey(key)
+		tk := &token.Token{
+			AuthKey: akey.(*ecdsa.PrivateKey),
+			KeyID:   "CPBF9RLA6G",
+			TeamID:  "P4XS4AVCLW",
+		}
+		l.apnsPClient = apns2.NewTokenClient(tk).Production()
+		l.apnsDClient = apns2.NewTokenClient(tk).Development()
 	}
-	log.Printf("Node server name: %s, version: %s, node-id: %s\n", l.Name, l.Version, l.NodeID)
+	log.Printf("Node server name: %s, version: %s, serverless: %v, node-id: %s\n", l.Name, l.Version, l.srvless, l.NodeID)
 	return l, nil
 }
 
@@ -69,12 +89,98 @@ func (l *Logic) Close() {
 	}
 }
 
+func (l *Logic) GetUser(uid string) (*model.User, error) {
+	return l.db.GetUser(uid)
+}
+
 func (l *Logic) GetUserKey(uid string) ([]byte, error) {
 	u, err := l.db.GetUser(uid)
 	if err != nil {
 		return nil, err
 	}
 	return u.SecretKey, nil
+}
+
+func (l *Logic) UpsertUser(uid string, key string, serverless bool) (*crypto.PublicKey, error) {
+	pk, err := model.CalcUserKey(uid, key)
+	if err != nil {
+		return nil, err
+	}
+	u, err := l.db.GetUser(uid)
+	if err == nil {
+		if u.IsServerless() != serverless {
+			u.SetServerless(serverless)
+			if err := l.db.UpsertUser(u); err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		u = &model.User{
+			Uid:       uid,
+			PublicKey: pk.MarshalPublicKey(),
+			SecretKey: make([]byte, 64),
+		}
+		rand.Read(u.SecretKey) // nolint: errcheck
+		u.SetServerless(serverless)
+		if err := l.db.UpsertUser(u); err != nil {
+			return nil, err
+		}
+	}
+	return pk, nil
+}
+
+func (l *Logic) BindDevice(uid string, uuid string, key string) error {
+	pk, err := model.CalcDeviceKey(uuid, key)
+	if err != nil {
+		return err
+	}
+	return l.db.BindDevice(uid, uuid, pk.MarshalPublicKey())
+}
+
+func (l *Logic) UnbindDevice(uid string, uuid string) {
+	l.db.UnbindDevice(uid, uuid)
+}
+
+func (l *Logic) UpdatePushToken(uid string, uuid string, token string, sandbox bool) error {
+	tk, err := model.DecodePushToken(token)
+	if err != nil {
+		return err
+	}
+	return l.db.UpdatePushToken(uid, uuid, tk, sandbox)
+}
+
+func (l *Logic) GetDevices(uid string) ([]*model.Device, error) {
+	return l.db.GetDevices(uid)
+}
+
+func (l *Logic) CreateMessage(tk *model.Token) *pb.Message {
+	return &pb.Message{
+		From:    tk.GetNodeID(),
+		Channel: tk.GetChannel(),
+	}
+}
+
+func (l *Logic) GetAPNS(sandbox bool) *apns2.Client {
+	if sandbox {
+		return l.apnsDClient
+	}
+	return l.apnsPClient
+}
+
+func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device) error {
+	notification := &apns2.Notification{}
+	notification.Topic = "net.chanify.ios"
+	notification.Payload = payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
+		Custom("uid", uid).
+		Custom("src", l.NodeID).
+		Custom("msg", base64.RawURLEncoding.EncodeToString(data))
+	for _, dev := range devices {
+		notification.DeviceToken = hex.EncodeToString(dev.Token)
+		if _, err := l.GetAPNS(dev.Sandbox).Push(notification); err != nil {
+			log.Println("Sent failed:", err)
+		}
+	}
+	return nil
 }
 
 func (l *Logic) loadDB(dburl string) error {

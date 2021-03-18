@@ -31,3 +31,13 @@ func TestLogicFailed(t *testing.T) {
 		t.Fatal("Check logic secret failed")
 	}
 }
+
+func TestUser(t *testing.T) {
+	l, _ := NewLogic(&Options{Secret: "123"})
+	if _, err := l.GetUserKey("GEZDG"); err != nil {
+		t.Fatal("Get user key failed")
+	}
+	if _, err := l.GetUserKey("123"); err == nil {
+		t.Fatal("Check get user key failed")
+	}
+}

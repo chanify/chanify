@@ -60,6 +60,41 @@ func (s *sqlite) UpsertUser(u *User) error {
 	return err
 }
 
+func (s *sqlite) BindDevice(uid string, uuid string, key []byte) error {
+	_, err := s.db.Exec("INSERT INTO `devices`(`uuid`,`uid`,`key`) VALUES(?,?,?) ON CONFLICT(`uuid`) DO UPDATE SET `uid`=excluded.`uid`,`lastupdate`=CURRENT_TIMESTAMP;", uuid, uid, key)
+	return err
+}
+
+func (s *sqlite) UnbindDevice(uid string, uuid string) {
+	if _, err := s.db.Exec("DELETE FROM `devices` WHERE `uuid`=? AND `uid`=?;", uuid, uid); err == nil {
+		log.Println("Unbind device:", uuid, " for user:", uid)
+	}
+}
+
+func (s *sqlite) UpdatePushToken(uid string, uuid string, token []byte, sandbox bool) error {
+	_, err := s.db.Exec("UPDATE `devices` SET `uid`=?,`token`=?,`sandbox`=?,`lastupdate`=CURRENT_TIMESTAMP WHERE `uuid`=?;", uid, token, sandbox, uuid)
+	return err
+}
+
+func (s *sqlite) GetDevices(uid string) ([]*Device, error) {
+	devs := []*Device{}
+	rows, err := s.db.Query("SELECT `token`,`sandbox` FROM `devices` WHERE `uid`=? ORDER BY `lastupdate` DESC LIMIT 4;", uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		d := &Device{}
+		if err := rows.Scan(&d.Token, &d.Sandbox); err != nil {
+			break
+		}
+		if len(d.Token) > 0 {
+			devs = append(devs, d)
+		}
+	}
+	return devs, nil
+}
+
 func (s *sqlite) fixDB() error {
 	sqls := []string{
 		"CREATE TABLE IF NOT EXISTS `options`(`key` TEXT PRIMARY KEY, `value` BLOB);",

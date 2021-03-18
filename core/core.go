@@ -1,12 +1,17 @@
 package core
 
 import (
+	"encoding/base64"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/chanify/chanify/logic"
 	"github.com/gin-gonic/gin"
+)
+
+var (
+	base64Encode = base64.RawURLEncoding
 )
 
 type Core struct {
@@ -44,12 +49,16 @@ func (c *Core) APIHandler() http.Handler {
 	})
 
 	s := r.Group("/v1")
-	s.POST("/sender", c.handleSender)
+	s.GET("/sender/:token/:msg", c.handleSender)
+	s.POST("/sender/*token", c.handlePostSender)
+	s.POST("/sender", c.handlePostSender)
 
 	api := r.Group("/rest/v1")
 	api.GET("/info", c.handleInfo)
 	api.GET("/qrcode", c.handleQRCode)
 	api.POST("/bind-user", c.handleBindUser)
+	api.POST("/unbind-user", c.handleUnbindUser)
+	api.POST("/push-token", c.handleUpdatePushToken)
 	return r
 }
 
@@ -63,6 +72,29 @@ func (c *Core) handleInfo(ctx *gin.Context) {
 
 func (c *Core) handleQRCode(ctx *gin.Context) {
 	ctx.Data(http.StatusOK, "image/png", c.logic.GetQRCode())
+}
+
+func (c *Core) handleUpdatePushToken(ctx *gin.Context) {
+	var params struct {
+		Nonce    uint64 `json:"nonce"`
+		DeviceID string `json:"device"`
+		UserID   string `json:"user"`
+		Token    string `json:"token"`
+		Sandbox  bool   `json:"sandbox,omitempty"`
+	}
+	if err := ctx.BindJSON(&params); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid params"})
+		return
+	}
+	if err := c.logic.UpdatePushToken(params.UserID, params.DeviceID, params.Token, params.Sandbox); err != nil {
+		log.Println("bind failed:", err)
+		ctx.JSON(http.StatusConflict, gin.H{"res": http.StatusConflict, "msg": "update push token failed"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"uuid": params.DeviceID,
+		"uid":  params.UserID,
+	})
 }
 
 func loggerMiddleware(c *gin.Context) {

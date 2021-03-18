@@ -40,6 +40,22 @@ func TestHome(t *testing.T) {
 	}
 }
 
+func TestInfo(t *testing.T) {
+	c := New()
+	defer c.Close()
+	if err := c.Init(&logic.Options{Secret: "123"}); err != nil {
+		t.Fatal("init core failed")
+	}
+	handler := c.APIHandler()
+	req := httptest.NewRequest("GET", "/rest/v1/info", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Error("Check info failed:", resp.StatusCode)
+	}
+}
+
 func TestNotFound(t *testing.T) {
 	c := New()
 	defer c.Close()

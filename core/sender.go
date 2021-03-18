@@ -5,9 +5,14 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/binary"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"time"
 
+	"github.com/chanify/chanify/logic"
+	"github.com/chanify/chanify/model"
 	"github.com/chanify/chanify/pb"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -15,13 +20,14 @@ import (
 )
 
 func (c *Core) handleSender(ctx *gin.Context) {
-	token := ctx.GetHeader("token")
-	if len(token) <= 0 {
-		token = ctx.Query("token")
-		if len(token) <= 0 {
-			token = ctx.Param("token")
-		}
-	}
+	token, _ := getToken(ctx)
+	c.sendMsg(ctx, token, ctx.Param("msg"))
+}
+
+func (c *Core) handlePostSender(ctx *gin.Context) {
+	log.Println("token:", ctx.Param("token"))
+
+	token, _ := getToken(ctx)
 	var msg string
 	switch ctx.ContentType() {
 	case "text/plain":
@@ -35,25 +41,58 @@ func (c *Core) handleSender(ctx *gin.Context) {
 			if len(ts) > 0 {
 				msg = ts[0]
 			}
-			if len(token) <= 0 {
+			if token == nil {
 				tks := form.Value["token"]
 				if len(tks) > 0 {
-					token = tks[0]
+					token, _ = model.ParseToken(tks[0])
 				}
 			}
 		}
 	default:
 		msg = ctx.PostForm("text")
 	}
-	tk, err := NewToken(token)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid token"})
-		return
-	}
-	c.sendMsg(ctx, tk, msg)
+	c.sendMsg(ctx, token, msg)
 }
 
-func (c *Core) sendMsg(ctx *gin.Context, token *Token, msg string) {
+func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, text string) {
+	uid := token.GetUserID()
+	devs, err := c.logic.GetDevices(uid)
+	if err != nil || len(devs) <= 0 {
+		log.Println("err:", err)
+		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices found"})
+		return
+	}
+	key, err := c.logic.GetUserKey(uid)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
+		return
+	}
+	msg := c.logic.CreateMessage(token)
+	msg.Content, _ = proto.Marshal(&pb.MsgContent{
+		Type: pb.MsgType_Text,
+		Text: text,
+	})
+	data, _ := proto.Marshal(msg)
+	block, _ := aes.NewCipher(key[:32])
+	aesgcm, _ := cipher.NewGCM(block)
+	nonce := make([]byte, 12)
+	nonce[0] = 0x01
+	nonce[1] = 0x01
+	nonce[2] = 0x00
+	nonce[3] = 0x08
+	binary.BigEndian.PutUint64(nonce[4:], uint64(time.Now().UTC().UnixNano()))
+
+	tag := key[32 : 32+32]
+	out := aesgcm.Seal(nil, nonce, data, tag)
+	out = append(nonce, out...)
+	if err := c.logic.SendAPNS(uid, out, devs); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send message failed"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid.New().String()})
+}
+
+func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg string) {
 	uuid := uuid.New().String()
 	content, err := proto.Marshal(&pb.MsgContent{
 		Type: pb.MsgType_Text,
@@ -63,7 +102,7 @@ func (c *Core) sendMsg(ctx *gin.Context, token *Token, msg string) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "format message content failed"})
 		return
 	}
-	key, err := c.logic.GetUserKey(token.UserId)
+	key, err := c.logic.GetUserKey(token.GetUserID())
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
 		return
@@ -88,7 +127,7 @@ func (c *Core) sendMsg(ctx *gin.Context, token *Token, msg string) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "format message failed"})
 		return
 	}
-	resp, err := http.Post("https://api.chanify.net/rest/v1/push?token="+token.String(), "application/x-protobuf", bytes.NewReader(m))
+	resp, err := http.Post(logic.ApiEndpoint+"/rest/v1/push?token="+token.RawToken(), "application/x-protobuf", bytes.NewReader(m))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send message failed"})
 		return
@@ -98,4 +137,39 @@ func (c *Core) sendMsg(ctx *gin.Context, token *Token, msg string) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid})
+}
+
+func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg string) {
+	if token == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid token format"})
+		return
+	}
+	if len(msg) <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message"})
+		return
+	}
+	u, err := c.logic.GetUser(token.GetUserID())
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
+		return
+	}
+	if u.IsServerless() {
+		c.SendForward(ctx, token, msg)
+		return
+	}
+	c.SendDirect(ctx, token, msg)
+}
+
+func getToken(ctx *gin.Context) (*model.Token, error) {
+	token := ctx.GetHeader("token")
+	if len(token) <= 0 {
+		token = ctx.Query("token")
+		if len(token) <= 0 {
+			token = ctx.Param("token")
+			if len(token) > 0 && token[0] == '/' {
+				token = token[1:]
+			}
+		}
+	}
+	return model.ParseToken(token)
 }
