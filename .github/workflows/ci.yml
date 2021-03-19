@@ -49,7 +49,7 @@ jobs:
         run: echo "DOCKER_TAGS=wizjin/chanify:latest" >> $GITHUB_ENV
       - name: Build release image
         if: startsWith(github.ref, 'refs/tags/v')
-        run: echo "DOCKER_TAGS=wizjin/chanify:${GITHUB_REF#v}" >> $GITHUB_ENV
+        run: echo "DOCKER_TAGS=wizjin/chanify:${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
