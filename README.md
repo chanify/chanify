@@ -12,7 +12,7 @@ Chanify is a safe and simple notification tools. For developers, system administ
 
 ## Getting Started
 
-1. Install [iOS App](https://itunes.apple.com/us/app/id1531546573)(0.9.9 version and above).
+1. Install [iOS App](https://itunes.apple.com/us/app/id1531546573)(0.9.10 version and above).
 2. Get send token.
 3. Send message.
 
