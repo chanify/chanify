@@ -54,6 +54,32 @@ func TestSqliteOpen(t *testing.T) {
 	if uu.Flags != usr.Flags {
 		t.Fatal("Overwrite user failed:", err)
 	}
+	if err := db.BindDevice("abc", "xyz", []byte("key")); err != nil {
+		t.Fatal("Bind device failed:", err)
+	}
+	if err := db.UpdatePushToken("abc", "xyz", []byte("PushToken"), false); err != nil {
+		t.Fatal("Update push token failed:", err)
+	}
+	devs, err := db.GetDevices("abc")
+	if err != nil {
+		t.Fatal("Get devices failed:", err)
+	}
+	if len(devs) != 1 || string(devs[0].Token) != "PushToken" {
+		t.Fatal("Get push token failed")
+	}
+	if err := db.UnbindDevice("abc", "xyz"); err != nil {
+		t.Fatal("Unbind device failed:", err)
+	}
+}
+
+func TestSqliteGetDeviceFailed(t *testing.T) {
+	u, _ := url.Parse("sqlite://?mode=memory")
+	db, _ := drivers["sqlite"](u)
+	defer db.Close()
+	db.(*sqlite).db.Exec("DROP TABLE `devices`;") // nolint: errcheck
+	if _, err := db.GetDevices("123"); err == nil {
+		t.Error("Check get devices failed")
+	}
 }
 
 func TestSqliteOpenFailed(t *testing.T) {

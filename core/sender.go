@@ -2,8 +2,6 @@ package core
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"encoding/binary"
 	"io/ioutil"
@@ -56,15 +54,15 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 
 func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, text string) {
 	uid := token.GetUserID()
-	devs, err := c.logic.GetDevices(uid)
-	if err != nil || len(devs) <= 0 {
-		log.Println("err:", err)
-		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices found"})
-		return
-	}
 	key, err := c.logic.GetUserKey(uid)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
+		return
+	}
+	devs, err := c.logic.GetDevices(uid)
+	if err != nil || len(devs) <= 0 {
+		log.Println("err:", uid)
+		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices found"})
 		return
 	}
 	msg := c.logic.CreateMessage(token)
@@ -73,8 +71,7 @@ func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, text string) {
 		Text: text,
 	})
 	data, _ := proto.Marshal(msg)
-	block, _ := aes.NewCipher(key[:32])
-	aesgcm, _ := cipher.NewGCM(block)
+	aesgcm, _ := NewAESGCM(key)
 	nonce := make([]byte, 12)
 	nonce[0] = 0x01
 	nonce[1] = 0x01
@@ -85,58 +82,34 @@ func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, text string) {
 	tag := key[32 : 32+32]
 	out := aesgcm.Seal(nil, nonce, data, tag)
 	out = append(nonce, out...)
-	if err := c.logic.SendAPNS(uid, out, devs); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send message failed"})
-		return
-	}
+	c.logic.SendAPNS(uid, out, devs) // nolint: errcheck
 	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid.New().String()})
 }
 
 func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg string) {
-	uuid := uuid.New().String()
-	content, err := proto.Marshal(&pb.MsgContent{
+	content, _ := proto.Marshal(&pb.MsgContent{
 		Type: pb.MsgType_Text,
 		Text: msg,
 	})
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "format message content failed"})
-		return
-	}
 	key, err := c.logic.GetUserKey(token.GetUserID())
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
 		return
 	}
-	block, err := aes.NewCipher(key[:32])
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "unknown error"})
-		return
-	}
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "unknown error"})
-		return
-
-	}
+	aesgcm, _ := NewAESGCM(key) // nolint: errcheck
 	nonce := make([]byte, 12)
 	rand.Read(nonce) // nolint: errcheck
 	data := aesgcm.Seal(nil, nonce, content, key[32:32+32])
 	data = append(nonce, data...)
-	m, err := proto.Marshal(&pb.Message{Ciphertext: data})
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "format message failed"})
-		return
-	}
+	m, _ := proto.Marshal(&pb.Message{Ciphertext: data})
 	resp, err := http.Post(logic.ApiEndpoint+"/rest/v1/push?token="+token.RawToken(), "application/x-protobuf", bytes.NewReader(m))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send message failed"})
 		return
 	}
-	if resp.StatusCode != http.StatusOK {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send push message failed"})
-		return
-	}
-	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid})
+	reader := resp.Body
+	defer reader.Close()
+	ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), reader, map[string]string{})
 }
 
 func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg string) {
@@ -158,18 +131,4 @@ func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg string) {
 		return
 	}
 	c.SendDirect(ctx, token, msg)
-}
-
-func getToken(ctx *gin.Context) (*model.Token, error) {
-	token := ctx.GetHeader("token")
-	if len(token) <= 0 {
-		token = ctx.Query("token")
-		if len(token) <= 0 {
-			token = ctx.Param("token")
-			if len(token) > 0 && token[0] == '/' {
-				token = token[1:]
-			}
-		}
-	}
-	return model.ParseToken(token)
 }

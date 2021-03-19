@@ -24,14 +24,9 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 		return
 	}
 	serverless := (params.Device == nil)
-	key, err := c.logic.UpsertUser(params.User.Uid, params.User.Key, serverless)
+	u, err := c.logic.UpsertUser(params.User.Uid, params.User.Key, serverless)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user id"})
-		return
-	}
-	k, err := c.logic.GetUserKey(params.User.Uid)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "bind user key failed"})
 		return
 	}
 	if serverless {
@@ -43,7 +38,7 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 		}
 		log.Println("Bind user:", params.User.Uid, "device:", params.Device.Uuid)
 	}
-	kdata, _ := key.Encrypt(k)
+	kdata := u.PublicKeyEncrypt(u.SecretKey)
 	ctx.JSON(http.StatusOK, gin.H{"key": base64Encode.EncodeToString(kdata)})
 }
 
@@ -54,10 +49,11 @@ func (c *Core) handleUnbindUser(ctx *gin.Context) {
 		UserID   string `json:"user"`
 	}
 	if err := ctx.BindJSON(&params); err != nil {
+		log.Println("failed:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "unbind user device failed"})
 		return
 	}
-	c.logic.UnbindDevice(params.UserID, params.DeviceID)
+	c.logic.UnbindDevice(params.UserID, params.DeviceID) // nolint: errcheck
 	ctx.JSON(http.StatusOK, gin.H{
 		"uuid": params.DeviceID,
 		"uid":  params.UserID,

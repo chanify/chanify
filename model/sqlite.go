@@ -65,10 +65,9 @@ func (s *sqlite) BindDevice(uid string, uuid string, key []byte) error {
 	return err
 }
 
-func (s *sqlite) UnbindDevice(uid string, uuid string) {
-	if _, err := s.db.Exec("DELETE FROM `devices` WHERE `uuid`=? AND `uid`=?;", uuid, uid); err == nil {
-		log.Println("Unbind device:", uuid, " for user:", uid)
-	}
+func (s *sqlite) UnbindDevice(uid string, uuid string) error {
+	_, err := s.db.Exec("DELETE FROM `devices` WHERE `uuid`=? AND `uid`=?;", uuid, uid)
+	return err
 }
 
 func (s *sqlite) UpdatePushToken(uid string, uuid string, token []byte, sandbox bool) error {
@@ -85,9 +84,7 @@ func (s *sqlite) GetDevices(uid string) ([]*Device, error) {
 	defer rows.Close()
 	for rows.Next() {
 		d := &Device{}
-		if err := rows.Scan(&d.Token, &d.Sandbox); err != nil {
-			break
-		}
+		rows.Scan(&d.Token, &d.Sandbox) // nolint: errcheck
 		if len(d.Token) > 0 {
 			devs = append(devs, d)
 		}

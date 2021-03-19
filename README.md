@@ -8,13 +8,11 @@
 
 <a href="https://www.producthunt.com/posts/chanify?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-chanify" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=287376&theme=light" alt="Chanify - Safe and simple notification tools | Product Hunt" style="width: 185px; height: 40px;" width="185" height="40" /></a>
 
-***WARNING: Node server api is an incomplete work-in-progress.***
-
 Chanify is a safe and simple notification tools. For developers, system administrators, and everyone can push notifications with API.
 
 ## Getting Started
 
-1. Install [iOS App](https://itunes.apple.com/us/app/id1531546573).
+1. Install [iOS App](https://itunes.apple.com/us/app/id1531546573)(0.9.9 version and above).
 2. Get send token.
 3. Send message.
 
@@ -34,16 +32,119 @@ $ docker pull wizjin/chanify:latest
 
 ## Usage
 
-#### Use chanify to send message.
+### As Sneder Client
+
+Use chanify to send message.
 
 ```bash
 $ chanify send --token=<token> --text=<message>
 ```
 
-#### Start chanify node server
+### As Serverless node
+
+Chanify run in stateless mode, no device token will be stored in node.
+
+All device token will be stored in api.chanify.net.
+
+Message will send to apple apns server by api.chanify.net.
+
+Send message workflow:
+
+```
+Start => node server => api.chanify.net => Apple server => iOS client
+```
 
 ```bash
-$ chanify serve --host=0.0.0.0 --port=8080 --secret=<secret key> --name=<node name>
+# Start chanify
+$ chanify serve --host=<ip address> --port=<port> --secret=<secret key> --name=<node name> --endpoint=http://<address>:<port>
+
+# Docker 
+$ docker run -it wizjin/chanify:latest --secret=<secret key> --name=<node name> --endpoint=http://<address>:<port>
+```
+
+### As Serverful node
+
+Chanify run in stateful mode, device token will be stored in node.
+
+Message will send to apple apns server direct.
+
+Send message workflow:
+
+```
+Start => node server => Apple server => iOS client
+```
+
+Start server
+
+```bash
+# Start chanify
+$ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=~/.chanify
+
+# Docker 
+$ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest --name=<node name> --endpoint=http://<address>:<port>
+```
+
+### Add New Node
+
+- Start node server
+- iOS client can scan QRCode(```http://<address>:<port>/```) to add node.
+
+### Send message
+
+#### Command Line
+
+```bash
+# Text message
+$ curl --form-string "text=hello" "http://<address>:<port>/v1/sender/<token>"
+
+# Text file
+$ cat message.txt | curl -H "Content-Type: text/plain" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
+```
+
+#### Python 3
+
+```python
+from urllib import request, parse
+
+data = parse.urlencode({ 'text': 'hello' }).encode()
+req = request.Request("http://<address>:<port>/v1/sender/<token>", data=data)
+request.urlopen(req)
+```
+
+#### Ruby
+
+```ruby
+require 'net/http'
+
+uri = URI('http://<address>:<port>/v1/sender/<token>')
+res = Net::HTTP.post_form(uri, 'text' => 'hello')
+puts res.body
+```
+
+#### NodeJS
+
+```javascript
+const https = require('https')
+const querystring = require('querystring');
+
+const data = querystring.stringify({ text: 'hello' })
+const options = {
+    hostname: '<address>:<port>',
+    port: 80,
+    path: '/v1/sender/<token>',
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': data.length
+        }
+    }
+    var req = https.request(options, (res) => {
+    res.on('data', (d) => {
+        process.stdout.write(d);
+    });
+});  
+req.write(data);
+req.end();
 ```
 
 ## Contributing

@@ -1,7 +1,10 @@
 package logic
 
 import (
+	"io"
 	"testing"
+
+	"github.com/chanify/chanify/crypto"
 )
 
 func TestLogic(t *testing.T) {
@@ -39,5 +42,60 @@ func TestUser(t *testing.T) {
 	}
 	if _, err := l.GetUserKey("123"); err == nil {
 		t.Fatal("Check get user key failed")
+	}
+}
+
+func TestGetAPNS(t *testing.T) {
+	l, _ := NewLogic(&Options{DBUrl: "sqlite://mode=memory"})
+	MockPusher = nil
+	if l.GetAPNS(false) != l.apnsPClient {
+		t.Error("Get product apns failed")
+	}
+	if l.GetAPNS(true) != l.apnsDClient {
+		t.Error("Get sandbox apns failed")
+	}
+}
+
+func TestFixDataPath(t *testing.T) {
+	opts := &Options{DataPath: "/"}
+	opts.fixDataPath()
+	if len(opts.DBUrl) <= 0 {
+		t.Error("Fix data path failed")
+	}
+}
+
+func TestFixSecretKey(t *testing.T) {
+	l, _ := NewLogic(&Options{DBUrl: "nosql://?secret=123456"})
+	if err := l.fixSecretKey(); err != nil {
+		t.Fatal("Fix secret key failed:", err)
+	}
+	l.secKey = nil
+	if err := l.fixSecretKey(); err == nil {
+		t.Fatal("Check fix secret key failed")
+	}
+}
+
+func TestUpsertUserFailed(t *testing.T) {
+	l, _ := NewLogic(&Options{DBUrl: "nosql://?secret=123456"})
+	if _, err := l.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false); err == nil {
+		t.Fatal("Check upsert user serverful failed")
+	}
+	if _, err := l.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", true); err != nil {
+		t.Fatal("Upsert user serverless failed")
+	}
+	if _, err := l.createUser("123", crypto.GenerateSecretKey([]byte{}).GetPublicKey(), true); err == nil {
+		t.Fatal("Check create user key failed")
+	}
+
+	oldReader := randReader
+	defer func() {
+		randReader = oldReader
+	}()
+	randReader = func(b []byte) (n int, err error) {
+		return 0, io.EOF
+	}
+	l, _ = NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
+	if _, err := l.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false); err == nil {
+		t.Fatal("Check upsert user serverless failed")
 	}
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/chanify/chanify/core"
 	"github.com/chanify/chanify/logic"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -42,6 +43,7 @@ func init() {
 					Name:     GetName(),
 					Version:  Version,
 					Endpoint: GetEndpoint(),
+					DataPath: GetDataPath(),
 					DBUrl:    viper.GetString("server.dburl"),
 					Secret:   viper.GetString("server.secret"),
 				}); err != nil {
@@ -71,12 +73,14 @@ func init() {
 	serveCmd.Flags().Int("port", 80, "Http restful service port")
 	serveCmd.Flags().String("endpoint", "", "Http restful service endpoint")
 	serveCmd.Flags().String("name", "", "Http service name")
+	serveCmd.Flags().String("datapath", "~/.chanify", "Data file path")
 	serveCmd.Flags().String("dburl", "", "Databse dsn uri")
 	serveCmd.Flags().String("secret", "", "Secret key for serverless mode")
 	viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))         // nolint: errcheck
 	viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port"))         // nolint: errcheck
 	viper.BindPFlag("server.endpoint", serveCmd.Flags().Lookup("endpoint")) // nolint: errcheck
 	viper.BindPFlag("server.name", serveCmd.Flags().Lookup("name"))         // nolint: errcheck
+	viper.BindPFlag("server.datapath", serveCmd.Flags().Lookup("datapath")) // nolint: errcheck
 	viper.BindPFlag("server.dburl", serveCmd.Flags().Lookup("dburl"))       // nolint: errcheck
 	viper.BindPFlag("server.secret", serveCmd.Flags().Lookup("secret"))     // nolint: errcheck
 }
@@ -90,6 +94,16 @@ func GetName() string {
 		}
 	}
 	return name
+}
+
+func GetDataPath() string {
+	path := viper.GetString("server.datapath")
+	if len(path) > 0 {
+		if p, err := homedir.Expand(path); err == nil {
+			path = p
+		}
+	}
+	return path
 }
 
 func GetEndpoint() string {

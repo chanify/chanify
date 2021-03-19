@@ -17,7 +17,7 @@ type DB interface {
 	GetUser(uid string) (*User, error)
 	UpsertUser(u *User) error
 	BindDevice(uid string, uuid string, key []byte) error
-	UnbindDevice(uid string, uuid string)
+	UnbindDevice(uid string, uuid string) error
 	UpdatePushToken(uid string, uuid string, token []byte, sandbox bool) error
 	GetDevices(uid string) ([]*Device, error)
 	Close()
@@ -31,12 +31,13 @@ var (
 	base32Encode   = base32.StdEncoding.WithPadding(base32.NoPadding)
 	defaultChannel []byte
 
-	ErrDriverNotFound  = errors.New("driver not found")
-	ErrNotImplemented  = errors.New("not implemented")
-	ErrInvalidDeviceID = errors.New("invalid device id")
-	ErrInvalidUserID   = errors.New("invalid user id")
-	ErrInvalidToken    = errors.New("invalid token")
-	ErrInvalidDSN      = errors.New("invalid dsn")
+	ErrDriverNotFound   = errors.New("driver not found")
+	ErrNotImplemented   = errors.New("not implemented")
+	ErrInvalidDeviceID  = errors.New("invalid device id")
+	ErrInvalidUserID    = errors.New("invalid user id")
+	ErrInvalidPublicKey = errors.New("invalid public key")
+	ErrInvalidToken     = errors.New("invalid token")
+	ErrInvalidDSN       = errors.New("invalid dsn")
 )
 
 func init() {

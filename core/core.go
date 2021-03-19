@@ -50,6 +50,7 @@ func (c *Core) APIHandler() http.Handler {
 
 	s := r.Group("/v1")
 	s.GET("/sender/:token/:msg", c.handleSender)
+	s.GET("/sender/:token/", c.handleSender)
 	s.POST("/sender/*token", c.handlePostSender)
 	s.POST("/sender", c.handlePostSender)
 
@@ -87,7 +88,6 @@ func (c *Core) handleUpdatePushToken(ctx *gin.Context) {
 		return
 	}
 	if err := c.logic.UpdatePushToken(params.UserID, params.DeviceID, params.Token, params.Sandbox); err != nil {
-		log.Println("bind failed:", err)
 		ctx.JSON(http.StatusConflict, gin.H{"res": http.StatusConflict, "msg": "update push token failed"})
 		return
 	}
