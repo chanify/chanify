@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
@@ -188,12 +189,14 @@ func (l *Logic) GetAPNS(sandbox bool) APNSPusher {
 }
 
 func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device) error {
-	notification := &apns2.Notification{}
-	notification.Topic = "net.chanify.ios"
-	notification.Payload = payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
-		Custom("uid", uid).
-		Custom("src", l.NodeID).
-		Custom("msg", base64.RawURLEncoding.EncodeToString(data))
+	notification := &apns2.Notification{
+		Topic:      "net.chanify.ios",
+		Expiration: time.Now().Add(24 * time.Hour),
+		Payload: payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
+			Custom("uid", uid).
+			Custom("src", l.NodeID).
+			Custom("msg", base64.RawURLEncoding.EncodeToString(data)),
+	}
 	for _, dev := range devices {
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
 		l.GetAPNS(dev.Sandbox).Push(notification) // nolint: errcheck

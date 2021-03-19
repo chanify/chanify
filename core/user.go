@@ -15,8 +15,10 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 			Key string `json:"key"`
 		} `json:"user"`
 		Device *struct {
-			Uuid string `json:"uuid"`
-			Key  string `json:"key"`
+			Uuid      string `json:"uuid"`
+			Key       string `json:"key"`
+			PushToken string `json:"push-token,omitempty"`
+			Sandbox   bool   `json:"sandbox,omitempty"`
 		} `json:"device,omitempty"`
 	}
 	if err := ctx.BindJSON(&params); err != nil {
@@ -37,6 +39,9 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 			return
 		}
 		log.Println("Bind user:", params.User.Uid, "device:", params.Device.Uuid)
+		if len(params.Device.PushToken) > 0 {
+			c.logic.UpdatePushToken(params.User.Uid, params.Device.Uuid, params.Device.PushToken, params.Device.Sandbox) // nolint:errcheck
+		}
 	}
 	kdata := u.PublicKeyEncrypt(u.SecretKey)
 	ctx.JSON(http.StatusOK, gin.H{"key": base64Encode.EncodeToString(kdata)})
@@ -49,7 +54,6 @@ func (c *Core) handleUnbindUser(ctx *gin.Context) {
 		UserID   string `json:"user"`
 	}
 	if err := ctx.BindJSON(&params); err != nil {
-		log.Println("failed:", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "unbind user device failed"})
 		return
 	}

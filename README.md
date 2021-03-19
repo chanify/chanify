@@ -59,7 +59,7 @@ Start => node server => api.chanify.net => Apple server => iOS client
 $ chanify serve --host=<ip address> --port=<port> --secret=<secret key> --name=<node name> --endpoint=http://<address>:<port>
 
 # Docker 
-$ docker run -it wizjin/chanify:latest --secret=<secret key> --name=<node name> --endpoint=http://<address>:<port>
+$ docker run -it wizjin/chanify:latest serve --secret=<secret key> --name=<node name> --endpoint=http://<address>:<port>
 ```
 
 ### As Serverful node
@@ -81,7 +81,7 @@ Start server
 $ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=~/.chanify
 
 # Docker 
-$ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest --name=<node name> --endpoint=http://<address>:<port>
+$ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
 
 ### Add New Node

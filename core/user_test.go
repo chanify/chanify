@@ -30,7 +30,8 @@ func TestBindUser(t *testing.T) {
 	req = httptest.NewRequest("POST", "/rest/v1/bind-user", strings.NewReader(`{
 		"device": {
 			"uuid": "B3BC1B875EDA13986801B1004B4ABF5760C197F4",
-			"key": "BDuFNLkmxyK0-NN3H3oKzzOtISq1w17-JAibD7X4pljYl6IEaEglWkKD5Iw537h-DYxAooXkHtu6un078sm7IiQ"
+			"key": "BDuFNLkmxyK0-NN3H3oKzzOtISq1w17-JAibD7X4pljYl6IEaEglWkKD5Iw537h-DYxAooXkHtu6un078sm7IiQ",
+			"push-token": "aGVsbG8"
 		},
 		"user": {
 			"uid": "ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY",

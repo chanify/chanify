@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -23,8 +22,6 @@ func (c *Core) handleSender(ctx *gin.Context) {
 }
 
 func (c *Core) handlePostSender(ctx *gin.Context) {
-	log.Println("token:", ctx.Param("token"))
-
 	token, _ := getToken(ctx)
 	var msg string
 	switch ctx.ContentType() {
@@ -61,7 +58,6 @@ func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, text string) {
 	}
 	devs, err := c.logic.GetDevices(uid)
 	if err != nil || len(devs) <= 0 {
-		log.Println("err:", uid)
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices found"})
 		return
 	}
