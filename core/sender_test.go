@@ -16,8 +16,9 @@ import (
 func TestSender(t *testing.T) {
 	c := New()
 	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
 	handler := c.APIHandler()
-	req := httptest.NewRequest("GET", "/v1/sender/EgMxMjMiBGNoYW4qBU1GUkdH.c2lnbg/", nil)
+	req := httptest.NewRequest("GET", "/v1/sender/CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg/", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	resp := w.Result()
@@ -26,11 +27,27 @@ func TestSender(t *testing.T) {
 	}
 }
 
+func TestSenderFailed(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	handler := c.APIHandler()
+	req := httptest.NewRequest("GET", "/v1/sender/123/", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatal("Check sender unauthorized failed")
+	}
+}
+
 func TestSenderNull(t *testing.T) {
 	c := New()
 	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/v1/sender", nil)
+	req.Header.Set("Token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	resp := w.Result()
@@ -40,37 +57,42 @@ func TestSenderNull(t *testing.T) {
 }
 
 func TestSenderPost(t *testing.T) {
+	logic.ApiEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/v1/sender", bytes.NewReader([]byte("Hello")))
 	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	resp := w.Result()
-	if resp.StatusCode != http.StatusBadRequest {
+	if resp.StatusCode != http.StatusInternalServerError {
 		t.Fatal("Check send post failed")
 	}
 }
 
 func TestSenderPostForm(t *testing.T) {
+	logic.ApiEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
 	handler := c.APIHandler()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	partText, _ := writer.CreateFormField("text")   // nolint: errcheck
-	partText.Write([]byte("hello"))                 // nolint: errcheck
-	partToken, _ := writer.CreateFormField("token") // nolint: errcheck
-	partToken.Write([]byte("token"))                // nolint: errcheck
+	partText, _ := writer.CreateFormField("text")                                                                                      // nolint: errcheck
+	partText.Write([]byte("hello"))                                                                                                    // nolint: errcheck
+	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
+	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
 	writer.Close()
 
 	req := httptest.NewRequest("POST", "/v1/sender", body)
-	req.Header.Add("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	resp := w.Result()
-	if resp.StatusCode != http.StatusBadRequest {
+	if resp.StatusCode != http.StatusInternalServerError {
 		t.Fatal("Check send post form failed")
 	}
 }
@@ -86,7 +108,7 @@ func TestSendDirect(t *testing.T) {
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
 	w := httptest.NewRecorder()
-	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw.c2lnbg") // nolint: errcheck
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.SendDirect(ctx, tk, "")
@@ -114,7 +136,7 @@ func TestSendForward(t *testing.T) {
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
 	w := httptest.NewRecorder()
-	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw.c2lnbg") // nolint: errcheck
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.SendForward(ctx, tk, "")
@@ -152,7 +174,7 @@ func TestSendMsg(t *testing.T) {
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
 	w := httptest.NewRecorder()
-	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw.c2lnbg") // nolint: errcheck
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.sendMsg(ctx, tk, "123")
@@ -178,5 +200,12 @@ func TestSendMsg(t *testing.T) {
 	c.sendMsg(ctx, tk, "123")
 	if w.Result().StatusCode != http.StatusNotFound {
 		t.Fatal("Check send serverful failed")
+	}
+
+	w = httptest.NewRecorder()
+	ctx, _ = gin.CreateTestContext(w)
+	c.sendMsg(ctx, nil, "123")
+	if w.Result().StatusCode != http.StatusUnauthorized {
+		t.Fatal("Check send token format failed")
 	}
 }

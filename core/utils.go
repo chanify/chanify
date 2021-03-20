@@ -10,25 +10,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ValidateUser(ctx *gin.Context, key string) bool {
+func VerifyUser(ctx *gin.Context, key string) bool {
 	sign, err := base64Encode.DecodeString(ctx.GetHeader("CHUserSign"))
 	if err != nil {
 		return false
 	}
 	data, _ := ctx.Get(gin.BodyBytesKey)
-	return ValidateSign(key, sign, data.([]byte))
+	return VerifySign(key, sign, data.([]byte))
 }
 
-func ValidateDevice(ctx *gin.Context, key string) bool {
+func VerifyDevice(ctx *gin.Context, key string) bool {
 	sign, err := base64Encode.DecodeString(ctx.GetHeader("CHDevSign"))
 	if err != nil {
 		return false
 	}
 	data, _ := ctx.Get(gin.BodyBytesKey)
-	return ValidateSign(key, sign, data.([]byte))
+	return VerifySign(key, sign, data.([]byte))
 }
 
-func ValidateSign(key string, sign []byte, data []byte) bool {
+func VerifySign(key string, sign []byte, data []byte) bool {
 	kd, err := base64Encode.DecodeString(key)
 	if err != nil {
 		return false
@@ -48,7 +48,7 @@ func NewAESGCM(key []byte) (cipher.AEAD, error) {
 	return cipher.NewGCM(block)
 }
 
-func getToken(ctx *gin.Context) (*model.Token, error) {
+func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {
 	token := ctx.GetHeader("token")
 	if len(token) <= 0 {
 		token = ctx.Query("token")
@@ -59,5 +59,12 @@ func getToken(ctx *gin.Context) (*model.Token, error) {
 			}
 		}
 	}
-	return model.ParseToken(token)
+	tk, err := model.ParseToken(token)
+	if err != nil {
+		return nil, err
+	}
+	if !c.logic.VerifyToken(tk) {
+		return nil, model.ErrInvalidToken
+	}
+	return tk, nil
 }

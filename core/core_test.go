@@ -140,7 +140,7 @@ func TestUpdatePushTokenFailed(t *testing.T) {
 		t.Error("Check update push token invalid device")
 	}
 
-	c.logic.BindDevice("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "BDuFNLkmxyK0-NN3H3oKzzOtISq1w17-JAibD7X4pljYl6IEaEglWkKD5Iw537h-DYxAooXkHtu6un078sm7IiQ")
+	c.logic.BindDevice("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "BDuFNLkmxyK0-NN3H3oKzzOtISq1w17-JAibD7X4pljYl6IEaEglWkKD5Iw537h-DYxAooXkHtu6un078sm7IiQ") // nolint: errcheck
 	s = `{"nonce": 123,"device": "B3BC1B875EDA13986801B1004B4ABF5760C197F4","user": "ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY","token": "tk-string"}`
 	req = httptest.NewRequest("POST", "/rest/v1/push-token", strings.NewReader(s))
 	req.Header.Set("CHUserSign", "MEQCIF9UolxBEzndeJHMTe3N9dmcYoYUI9gv9uqmtfo-fewpAiBo0hszyxlvQo4_jUpFrHu2QoRug-SJNj3JfwWQD3HIrA")

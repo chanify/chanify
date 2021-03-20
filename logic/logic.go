@@ -175,6 +175,17 @@ func (l *Logic) GetDevices(uid string) ([]*model.Device, error) {
 	return l.db.GetDevices(uid)
 }
 
+func (l *Logic) VerifyToken(tk *model.Token) bool {
+	if tk.IsExpires() {
+		return false
+	}
+	key, err := l.GetUserKey(tk.GetUserID())
+	if err != nil {
+		return false
+	}
+	return tk.VerifySign(key)
+}
+
 func (l *Logic) CreateMessage(tk *model.Token) *pb.Message {
 	return &pb.Message{
 		From:    tk.GetNodeID(),

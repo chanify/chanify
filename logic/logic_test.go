@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/chanify/chanify/crypto"
+	"github.com/chanify/chanify/model"
 )
 
 func TestLogic(t *testing.T) {
@@ -97,5 +98,13 @@ func TestUpsertUserFailed(t *testing.T) {
 	l, _ = NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
 	if _, err := l.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false); err == nil {
 		t.Fatal("Check upsert user serverless failed")
+	}
+}
+
+func TestVerifyToken(t *testing.T) {
+	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
+	tk, _ := model.ParseToken("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
+	if l.VerifyToken(tk) {
+		t.Fatal("Check invalid user token failed")
 	}
 }

@@ -26,11 +26,11 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid params"})
 		return
 	}
-	if !ValidateUser(ctx, params.User.Key) {
+	if !VerifyUser(ctx, params.User.Key) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid user sign"})
 		return
 	}
-	if params.Device != nil && !ValidateDevice(ctx, params.Device.Key) {
+	if params.Device != nil && !VerifyDevice(ctx, params.Device.Key) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid device sign"})
 		return
 	}
@@ -67,7 +67,7 @@ func (c *Core) handleUnbindUser(ctx *gin.Context) {
 		return
 	}
 	u, err := c.logic.GetUser(params.UserID)
-	if err == nil && !u.IsServerless() && !ValidateUser(ctx, u.GetPublicKeyString()) {
+	if err == nil && !u.IsServerless() && !VerifyUser(ctx, u.GetPublicKeyString()) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid user sign"})
 		return
 	}

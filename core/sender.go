@@ -17,12 +17,16 @@ import (
 )
 
 func (c *Core) handleSender(ctx *gin.Context) {
-	token, _ := getToken(ctx)
+	token, err := c.getToken(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token"})
+		return
+	}
 	c.sendMsg(ctx, token, ctx.Param("msg"))
 }
 
 func (c *Core) handlePostSender(ctx *gin.Context) {
-	token, _ := getToken(ctx)
+	token, _ := c.getToken(ctx)
 	var msg string
 	switch ctx.ContentType() {
 	case "text/plain":
@@ -110,7 +114,7 @@ func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg string) {
 
 func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg string) {
 	if token == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid token format"})
+		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
 	}
 	if len(msg) <= 0 {

@@ -97,7 +97,7 @@ func (c *Core) handleUpdatePushToken(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user mode"})
 		return
 	}
-	if !ValidateUser(ctx, u.GetPublicKeyString()) {
+	if !VerifyUser(ctx, u.GetPublicKeyString()) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid user sign"})
 		return
 	}
@@ -106,7 +106,7 @@ func (c *Core) handleUpdatePushToken(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid device id"})
 		return
 	}
-	if !ValidateDevice(ctx, base64Encode.EncodeToString(dev)) {
+	if !VerifyDevice(ctx, base64Encode.EncodeToString(dev)) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid device sign"})
 		return
 	}

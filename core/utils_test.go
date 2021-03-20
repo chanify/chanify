@@ -5,35 +5,36 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
 )
 
-func TestValidateUser(t *testing.T) {
+func TestVerifyUser(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
 	ctx.Request.Header.Set("CHUserSign", "*****")
-	if ValidateUser(ctx, "") {
-		t.Error("Check validate user failed")
+	if VerifyUser(ctx, "") {
+		t.Error("Check verify user failed")
 	}
 }
 
-func TestValidateDevice(t *testing.T) {
+func TestVerifyDevice(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
 	ctx.Request.Header.Set("CHDevSign", "*****")
-	if ValidateDevice(ctx, "") {
-		t.Error("Check validate user failed")
+	if VerifyDevice(ctx, "") {
+		t.Error("Check verify user failed")
 	}
 }
 
-func TestValidate(t *testing.T) {
-	if ValidateSign("***", []byte{}, []byte{}) {
-		t.Fatal("Check validate empty sign failed")
+func TestVerify(t *testing.T) {
+	if VerifySign("***", []byte{}, []byte{}) {
+		t.Fatal("Check verify empty sign failed")
 	}
-	if ValidateSign("", []byte{}, []byte{}) {
-		t.Fatal("Check validate invalid key sign failed")
+	if VerifySign("", []byte{}, []byte{}) {
+		t.Fatal("Check verify invalid key sign failed")
 	}
 }
 
@@ -44,11 +45,13 @@ func TestNewAESGCM(t *testing.T) {
 }
 
 func TestGetToken(t *testing.T) {
+	c := New()
+	defer c.Close()
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	ctx.Params = []gin.Param{{Key: "token", Value: "/EgMxMjMiBGNoYW4qBU1GUkdH.c2lnbg"}}
-	if _, err := getToken(ctx); err != nil {
+	ctx.Params = []gin.Param{{Key: "token", Value: "/EgMxMjMiBGNoYW4qBU1GUkdH..c2lnbg"}}
+	if _, err := c.getToken(ctx); err != model.ErrInvalidToken {
 		t.Fatal("Check get token failed")
 	}
 }
