@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 func (c *Core) handleBindUser(ctx *gin.Context) {
@@ -21,8 +22,16 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 			Sandbox   bool   `json:"sandbox,omitempty"`
 		} `json:"device,omitempty"`
 	}
-	if err := ctx.BindJSON(&params); err != nil {
+	if err := ctx.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid params"})
+		return
+	}
+	if !ValidateUser(ctx, params.User.Key) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid user sign"})
+		return
+	}
+	if params.Device != nil && !ValidateDevice(ctx, params.Device.Key) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid device sign"})
 		return
 	}
 	serverless := (params.Device == nil)
@@ -53,8 +62,13 @@ func (c *Core) handleUnbindUser(ctx *gin.Context) {
 		DeviceID string `json:"device"`
 		UserID   string `json:"user"`
 	}
-	if err := ctx.BindJSON(&params); err != nil {
+	if err := ctx.ShouldBindBodyWith(&params, binding.JSON); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "unbind user device failed"})
+		return
+	}
+	u, err := c.logic.GetUser(params.UserID)
+	if err == nil && !u.IsServerless() && !ValidateUser(ctx, u.GetPublicKeyString()) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid user sign"})
 		return
 	}
 	c.logic.UnbindDevice(params.UserID, params.DeviceID) // nolint: errcheck

@@ -167,6 +167,10 @@ func (l *Logic) UpdatePushToken(uid string, uuid string, token string, sandbox b
 	return l.db.UpdatePushToken(uid, uuid, tk, sandbox)
 }
 
+func (l *Logic) GetDeviceKey(uuid string) ([]byte, error) {
+	return l.db.GetDeviceKey(uuid)
+}
+
 func (l *Logic) GetDevices(uid string) ([]*model.Device, error) {
 	return l.db.GetDevices(uid)
 }

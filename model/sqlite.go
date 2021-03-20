@@ -75,6 +75,13 @@ func (s *sqlite) UpdatePushToken(uid string, uuid string, token []byte, sandbox 
 	return err
 }
 
+func (s *sqlite) GetDeviceKey(uuid string) ([]byte, error) {
+	var key []byte
+	row := s.db.QueryRow("SELECT `key` FROM `devices` WHERE `uuid`=? LIMIT 1;", uuid)
+	err := row.Scan(&key)
+	return key, err
+}
+
 func (s *sqlite) GetDevices(uid string) ([]*Device, error) {
 	devs := []*Device{}
 	rows, err := s.db.Query("SELECT `token`,`sandbox` FROM `devices` WHERE `uid`=? ORDER BY `lastupdate` DESC LIMIT 4;", uid)

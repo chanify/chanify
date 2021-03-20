@@ -5,9 +5,40 @@ import (
 	"crypto/cipher"
 	"errors"
 
+	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
 )
+
+func ValidateUser(ctx *gin.Context, key string) bool {
+	sign, err := base64Encode.DecodeString(ctx.GetHeader("CHUserSign"))
+	if err != nil {
+		return false
+	}
+	data, _ := ctx.Get(gin.BodyBytesKey)
+	return ValidateSign(key, sign, data.([]byte))
+}
+
+func ValidateDevice(ctx *gin.Context, key string) bool {
+	sign, err := base64Encode.DecodeString(ctx.GetHeader("CHDevSign"))
+	if err != nil {
+		return false
+	}
+	data, _ := ctx.Get(gin.BodyBytesKey)
+	return ValidateSign(key, sign, data.([]byte))
+}
+
+func ValidateSign(key string, sign []byte, data []byte) bool {
+	kd, err := base64Encode.DecodeString(key)
+	if err != nil {
+		return false
+	}
+	pk, err := crypto.LoadPublicKey(kd)
+	if err != nil {
+		return false
+	}
+	return pk.Verify(data, sign)
+}
 
 func NewAESGCM(key []byte) (cipher.AEAD, error) {
 	if len(key) < 32 {

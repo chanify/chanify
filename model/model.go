@@ -19,6 +19,7 @@ type DB interface {
 	BindDevice(uid string, uuid string, key []byte) error
 	UnbindDevice(uid string, uuid string) error
 	UpdatePushToken(uid string, uuid string, token []byte, sandbox bool) error
+	GetDeviceKey(uuid string) ([]byte, error)
 	GetDevices(uid string) ([]*Device, error)
 	Close()
 }

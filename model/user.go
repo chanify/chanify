@@ -21,6 +21,10 @@ func (u *User) SetServerless(s bool) {
 	}
 }
 
+func (u *User) GetPublicKeyString() string {
+	return base64Encode.EncodeToString(u.PublicKey)
+}
+
 func (u *User) PublicKeyEncrypt(data []byte) []byte {
 	pk, err := crypto.LoadPublicKey(u.PublicKey)
 	if err != nil {

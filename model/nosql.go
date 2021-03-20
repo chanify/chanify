@@ -71,6 +71,10 @@ func (s *nosql) UpdatePushToken(uid string, uuid string, token []byte, sandbox b
 	return ErrNotImplemented
 }
 
+func (s *nosql) GetDeviceKey(uuid string) ([]byte, error) {
+	return nil, ErrNotImplemented
+}
+
 func (s *nosql) GetDevices(uid string) ([]*Device, error) {
 	return nil, ErrNotImplemented
 }

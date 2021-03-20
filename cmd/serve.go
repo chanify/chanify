@@ -39,10 +39,11 @@ func init() {
 					return
 				}
 				defer c.Close()
+				endpoint := GetEndpoint()
 				if err := c.Init(&logic.Options{
 					Name:     GetName(),
 					Version:  Version,
-					Endpoint: GetEndpoint(),
+					Endpoint: endpoint,
 					DataPath: GetDataPath(),
 					DBUrl:    viper.GetString("server.dburl"),
 					Secret:   viper.GetString("server.secret"),
@@ -52,6 +53,7 @@ func init() {
 				}
 				srv.Handler = c.APIHandler()
 				log.Println("Launch service", srv.Addr)
+				log.Println("Node server endpoint:", endpoint)
 				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 					log.Println("Launch service failed:", err)
 				}

@@ -51,7 +51,7 @@ func init() {
 			if len(text) <= 0 {
 				return fmt.Errorf("No message content.")
 			}
-			resp, err := http.Post("https://api.chanify.net/v1/sender/"+token, "text/plain", strings.NewReader(text))
+			resp, err := http.Post(viper.GetString("client.endpoint")+"/v1/sender/"+token, "text/plain", strings.NewReader(text))
 			if err != nil {
 				return err
 			}
@@ -70,7 +70,9 @@ func init() {
 		},
 	}
 	rootCmd.AddCommand(sendCmd)
+	sendCmd.Flags().String("endpoint", "https://api.chanify.net", "Node server endpoint.")
 	sendCmd.Flags().String("token", "", "Send token.")
 	sendCmd.Flags().String("text", "", "Text message content.")
-	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token")) // nolint: errcheck
+	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
+	viper.BindPFlag("client.endpoint", sendCmd.Flags().Lookup("endpoint")) // nolint: errcheck
 }

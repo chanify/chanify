@@ -45,6 +45,9 @@ func TestNoSQL(t *testing.T) {
 	if err := db.UpdatePushToken("", "", nil, false); err != ErrNotImplemented {
 		t.Fatal("Check UpdatePushToken failed:", err)
 	}
+	if _, err := db.GetDeviceKey(""); err != ErrNotImplemented {
+		t.Fatal("Check GetDevices failed:", err)
+	}
 	if _, err := db.GetDevices(""); err != ErrNotImplemented {
 		t.Fatal("Check GetDevices failed:", err)
 	}
