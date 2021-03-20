@@ -1,0 +1,43 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
+builds:
+- env:
+    - CGO_ENABLED=0
+  goos:
+    - linux
+    - darwin
+    - windows
+  goarch:
+    - 386
+    - amd64
+    - arm
+    - arm64
+  mod_timestamp: '{{ .CommitTimestamp }}'
+  flags:
+    - -trimpath
+  ldflags:
+    - -s -w -X github.com/chanify/chanify/cmd.Version={{.Version}} -X github.com/chanify/chanify/cmd.GitCommit={{.ShortCommit}} -X github.com/chanify/chanify/cmd.BuildTime={{.Date}}
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^[^:]*$'
+    - '^docs:'
+    - '^test:'
+archives:
+  - name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    format_overrides:
+    - goos: windows
+      format: zip
+    files:
+      - README.md
+      - LICENSE.md
