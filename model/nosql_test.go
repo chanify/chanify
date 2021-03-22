@@ -2,13 +2,11 @@ package model
 
 import (
 	"encoding/hex"
-	"net/url"
 	"testing"
 )
 
 func TestNoSQL(t *testing.T) {
-	u, _ := url.Parse("nosql://?secret=123456")
-	db, err := drivers["nosql"](u)
+	db, err := drivers["nosql"]("nosql://?secret=123456")
 	if err != nil {
 		t.Fatal("Open nosql failed")
 	}
@@ -55,8 +53,7 @@ func TestNoSQL(t *testing.T) {
 }
 
 func TestNoSQLFailed(t *testing.T) {
-	u, _ := url.Parse("nosql://?secret=")
-	_, err := drivers["nosql"](u)
+	_, err := drivers["nosql"]("nosql://?secret=")
 	if err == nil {
 		t.Fatal("Check open nosql failed")
 	}

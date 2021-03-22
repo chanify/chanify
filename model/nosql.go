@@ -14,8 +14,9 @@ type nosql struct {
 }
 
 func init() {
-	drivers["nosql"] = func(dsn *url.URL) (DB, error) {
-		secret := []byte(dsn.Query().Get("secret"))
+	drivers["nosql"] = func(dsn string) (DB, error) {
+		u, _ := url.Parse(dsn)
+		secret := []byte(u.Query().Get("secret"))
 		if len(secret) <= 0 {
 			return nil, ErrInvalidDSN
 		}

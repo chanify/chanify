@@ -2,7 +2,6 @@ package model
 
 import (
 	"io/ioutil"
-	"net/url"
 	"os"
 	"testing"
 )
@@ -13,8 +12,7 @@ func TestSqliteOpen(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(file.Name())
-	u, _ := url.Parse("sqlite://" + file.Name())
-	db, err := drivers["sqlite"](u)
+	db, err := drivers["sqlite"]("sqlite://" + file.Name())
 	if err != nil {
 		t.Fatal("Open sqlite failed")
 	}
@@ -73,8 +71,7 @@ func TestSqliteOpen(t *testing.T) {
 }
 
 func TestSqliteGetDeviceFailed(t *testing.T) {
-	u, _ := url.Parse("sqlite://?mode=memory")
-	db, _ := drivers["sqlite"](u)
+	db, _ := drivers["sqlite"]("sqlite://?mode=memory")
 	defer db.Close()
 	db.(*sqlite).db.Exec("DROP TABLE `devices`;") // nolint: errcheck
 	if _, err := db.GetDevices("123"); err == nil {
@@ -83,15 +80,11 @@ func TestSqliteGetDeviceFailed(t *testing.T) {
 }
 
 func TestSqliteOpenFailed(t *testing.T) {
-	u := &url.URL{}
 	open := drivers["sqlite"]
-	u.Path = ".."
-	if _, err := open(u); err == nil {
+	if _, err := open("sqlite:///?mode=readonly"); err == nil {
 		t.Fatal("Check sqlite connect failed")
 	}
-
-	u.Path = "?mode=ro&vfs=unix"
-	if _, err := open(u); err == nil {
+	if _, err := open("sqlite://?mode=ro&vfs=unix"); err == nil {
 		t.Fatal("Check sqlite fix failed")
 	}
 }

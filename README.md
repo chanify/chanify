@@ -18,16 +18,20 @@ Chanify is a safe and simple notification tools. For developers, system administ
 
 ## Installation
 
-#### Command line
+### Precompiled binary
 
-```bash
-$ go install github.com/chanify/chanify
-```
+Download precompiled binary from [this](https://github.com/chanify/chanify/releases/latest).
 
-#### Docker
+### Docker
 
 ```bash
 $ docker pull wizjin/chanify:latest
+```
+
+### From source
+
+```bash
+$ go install github.com/chanify/chanify
 ```
 
 ## Usage
@@ -78,11 +82,20 @@ Start server
 
 ```bash
 # Start chanify
-$ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=~/.chanify
+$ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=~/.chanify --endpoint=http://<address>:<port>
 
 # Docker 
 $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
+
+Use MySQL as a backend
+
+```bash
+--dburl=mysql://<user>:<password>@tcp(<ip address>:<port>)/<database name>?charset=utf8mb4&parseTime=true&loc=Local
+```
+
+Chanify will not create database.
+
 
 ### Add New Node
 

@@ -1,12 +1,11 @@
 package model
 
 import (
-	"net/url"
 	"testing"
 )
 
 func TestInitDB(t *testing.T) {
-	drivers["mock"] = func(dsn *url.URL) (DB, error) {
+	drivers["mock"] = func(dsn string) (DB, error) {
 		return nil, nil
 	}
 	_, err := InitDB("mock://")

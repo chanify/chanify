@@ -4,7 +4,6 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"errors"
-	"net/url"
 	"strings"
 
 	"github.com/chanify/chanify/pb"
@@ -24,7 +23,7 @@ type DB interface {
 	Close()
 }
 
-type OpenDB func(dsn *url.URL) (DB, error)
+type OpenDB func(dsn string) (DB, error)
 
 var (
 	drivers        = map[string]OpenDB{}
@@ -49,13 +48,13 @@ func init() {
 }
 
 func InitDB(dsn string) (DB, error) {
-	u, err := url.Parse(dsn)
-	if err != nil {
-		return nil, err
+	dsnItems := strings.Split(dsn, "://")
+	if len(dsnItems) <= 1 {
+		return nil, ErrInvalidDSN
 	}
-	dbOpen, ok := drivers[strings.ToLower(u.Scheme)]
+	dbOpen, ok := drivers[strings.ToLower(dsnItems[0])]
 	if !ok {
 		return nil, ErrDriverNotFound
 	}
-	return dbOpen(u)
+	return dbOpen(dsn)
 }

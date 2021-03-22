@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 	"log"
-	"net/url"
 	"strings"
 
 	_ "modernc.org/sqlite"
@@ -14,12 +13,14 @@ type sqlite struct {
 }
 
 func init() {
-	drivers["sqlite"] = func(dsn *url.URL) (DB, error) {
-		db, _ := sql.Open("sqlite", "file:"+dsn.Path)
+	drivers["sqlite"] = func(dsn string) (DB, error) {
+		items := strings.Split(dsn, "://")
+		path := items[1]
+		db, _ := sql.Open(items[0], "file:"+path)
 		if err := db.Ping(); err != nil {
 			return nil, err
 		}
-		log.Println("Open sqlite database:", dsn.Path)
+		log.Println("Open sqlite database:", path)
 		s := &sqlite{db: db}
 		if err := s.fixDB(); err != nil {
 			return nil, err
