@@ -1,13 +1,24 @@
 package model
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"strings"
 
 	"github.com/chanify/chanify/crypto"
 )
+
+func NewAESGCM(key []byte) (cipher.AEAD, error) {
+	if len(key) < 32 {
+		return nil, errors.New("invalid key")
+	}
+	block, _ := aes.NewCipher(key[:32])
+	return cipher.NewGCM(block)
+}
 
 func DecodePushToken(token string) ([]byte, error) {
 	return base64Encode.DecodeString(token)

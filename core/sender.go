@@ -2,18 +2,14 @@ package core
 
 import (
 	"bytes"
-	"crypto/rand"
-	"encoding/binary"
 	"io/ioutil"
 	"net/http"
 	"time"
 
 	"github.com/chanify/chanify/logic"
 	"github.com/chanify/chanify/model"
-	"github.com/chanify/chanify/pb"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/proto"
 )
 
 func (c *Core) handleSender(ctx *gin.Context) {
@@ -53,7 +49,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	c.sendMsg(ctx, token, msg)
 }
 
-func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, text string) {
+func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
 	uid := token.GetUserID()
 	key, err := c.logic.GetUserKey(uid)
 	if err != nil {
@@ -65,44 +61,20 @@ func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, text string) {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices found"})
 		return
 	}
-	msg := c.logic.CreateMessage(token)
-	msg.Content, _ = proto.Marshal(&pb.MsgContent{
-		Type: pb.MsgType_Text,
-		Text: text,
-	})
-	data, _ := proto.Marshal(msg)
-	aesgcm, _ := NewAESGCM(key)
-	nonce := make([]byte, 12)
-	nonce[0] = 0x01
-	nonce[1] = 0x01
-	nonce[2] = 0x00
-	nonce[3] = 0x08
-	binary.BigEndian.PutUint64(nonce[4:], uint64(time.Now().UTC().UnixNano()))
-
-	tag := key[32 : 32+32]
-	out := aesgcm.Seal(nil, nonce, data, tag)
-	out = append(nonce, out...)
-	c.logic.SendAPNS(uid, out, devs) // nolint: errcheck
+	out := msg.EncryptData(key, uint64(time.Now().UTC().UnixNano()))
+	c.logic.SendAPNS(uid, msg, out, devs) // nolint: errcheck
 	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid.New().String()})
 }
 
-func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg string) {
-	content, _ := proto.Marshal(&pb.MsgContent{
-		Type: pb.MsgType_Text,
-		Text: msg,
-	})
+func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg *model.Message) {
+	msg.DisableToken()
 	key, err := c.logic.GetUserKey(token.GetUserID())
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
 		return
 	}
-	aesgcm, _ := NewAESGCM(key) // nolint: errcheck
-	nonce := make([]byte, 12)
-	rand.Read(nonce) // nolint: errcheck
-	data := aesgcm.Seal(nil, nonce, content, key[32:32+32])
-	data = append(nonce, data...)
-	m, _ := proto.Marshal(&pb.Message{Ciphertext: data})
-	resp, err := http.Post(logic.ApiEndpoint+"/rest/v1/push?token="+token.RawToken(), "application/x-protobuf", bytes.NewReader(m))
+	msg.EncryptContent(key)
+	resp, err := http.Post(logic.ApiEndpoint+"/rest/v1/push?token="+token.RawToken(), "application/x-protobuf", bytes.NewReader(msg.Marshal()))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send message failed"})
 		return
@@ -112,13 +84,13 @@ func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg string) {
 	ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), reader, map[string]string{})
 }
 
-func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg string) {
+func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, text string) {
 	if token == nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
 	}
-	if len(msg) <= 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message"})
+	if len(text) <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 		return
 	}
 	u, err := c.logic.GetUser(token.GetUserID())
@@ -126,6 +98,7 @@ func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg string) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
 		return
 	}
+	msg := model.NewMessage(token).TextContent(text)
 	if u.IsServerless() {
 		c.SendForward(ctx, token, msg)
 		return

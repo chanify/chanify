@@ -47,7 +47,7 @@ func TestUser(t *testing.T) {
 }
 
 func TestGetAPNS(t *testing.T) {
-	l, _ := NewLogic(&Options{DBUrl: "sqlite://mode=memory"})
+	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
 	MockPusher = nil
 	if l.GetAPNS(false) != l.apnsPClient {
 		t.Error("Get product apns failed")

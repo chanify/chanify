@@ -42,9 +42,22 @@ message MsgContent {
     string      link        = 3;
 }
 
+enum SoundType {
+    NormalSound             = 0;
+    CriticalSound           = 1;
+}
+
+message Sound {
+    SoundType   type        = 1;
+    string      name        = 2;
+    float       volume      = 3;
+}
+
 message Message {
     bytes       from        = 1;
     bytes       channel     = 2; // Channel
     bytes       content     = 3; // MsgContent
     bytes       ciphertext  = 4; // Encrypt MsgContent
+    int32       priority    = 5;
+    Sound       sound       = 6;
 }

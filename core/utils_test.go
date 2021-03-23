@@ -38,12 +38,6 @@ func TestVerify(t *testing.T) {
 	}
 }
 
-func TestNewAESGCM(t *testing.T) {
-	if _, err := NewAESGCM([]byte{}); err == nil {
-		t.Error("Check new aes gcm failed")
-	}
-}
-
 func TestGetToken(t *testing.T) {
 	c := New()
 	defer c.Close()

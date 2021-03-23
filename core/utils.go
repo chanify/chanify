@@ -1,10 +1,6 @@
 package core
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"errors"
-
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
@@ -38,14 +34,6 @@ func VerifySign(key string, sign []byte, data []byte) bool {
 		return false
 	}
 	return pk.Verify(data, sign)
-}
-
-func NewAESGCM(key []byte) (cipher.AEAD, error) {
-	if len(key) < 32 {
-		return nil, errors.New("invalid key")
-	}
-	block, _ := aes.NewCipher(key[:32])
-	return cipher.NewGCM(block)
 }
 
 func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {

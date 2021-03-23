@@ -2,6 +2,12 @@ package model
 
 import "testing"
 
+func TestNewAESGCM(t *testing.T) {
+	if _, err := NewAESGCM([]byte{}); err == nil {
+		t.Error("Check new aes gcm failed")
+	}
+}
+
 func TestDecodePushToken(t *testing.T) {
 	d, err := DecodePushToken("aGVsbG8")
 	if err != nil {

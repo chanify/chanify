@@ -15,7 +15,6 @@ import (
 
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
-	"github.com/chanify/chanify/pb"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/payload"
 	"github.com/sideshow/apns2/token"
@@ -186,13 +185,6 @@ func (l *Logic) VerifyToken(tk *model.Token) bool {
 	return tk.VerifySign(key)
 }
 
-func (l *Logic) CreateMessage(tk *model.Token) *pb.Message {
-	return &pb.Message{
-		From:    tk.GetNodeID(),
-		Channel: tk.GetChannel(),
-	}
-}
-
 func (l *Logic) GetAPNS(sandbox bool) APNSPusher {
 	if MockPusher != nil {
 		return MockPusher
@@ -203,14 +195,15 @@ func (l *Logic) GetAPNS(sandbox bool) APNSPusher {
 	return l.apnsPClient
 }
 
-func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device) error {
+func (l *Logic) SendAPNS(uid string, msg *model.Message, data []byte, devices []*model.Device) error {
+	payloadData := payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
+		Custom("uid", uid).
+		Custom("src", l.NodeID).
+		Custom("msg", base64.RawURLEncoding.EncodeToString(data))
 	notification := &apns2.Notification{
 		Topic:      "net.chanify.ios",
 		Expiration: time.Now().Add(24 * time.Hour),
-		Payload: payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
-			Custom("uid", uid).
-			Custom("src", l.NodeID).
-			Custom("msg", base64.RawURLEncoding.EncodeToString(data)),
+		Payload:    payloadData,
 	}
 	for _, dev := range devices {
 		notification.DeviceToken = hex.EncodeToString(dev.Token)

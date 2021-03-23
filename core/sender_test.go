@@ -111,7 +111,7 @@ func TestSendDirect(t *testing.T) {
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	c.SendDirect(ctx, tk, "")
+	c.SendDirect(ctx, tk, model.NewMessage(tk))
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check invalid user key failed")
 	}
@@ -124,7 +124,7 @@ func TestSendDirect(t *testing.T) {
 	c.logic.UpdatePushToken("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "aGVsbG8", false)                                                                     // nolint: errcheck                                            // nolint: errcheck
 	c.logic.GetDevices("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY")                                                                                                                                        // nolint: errcheck
 	logic.MockPusher = &MockAPNSPusher{}
-	c.SendDirect(ctx, tk, "")
+	c.SendDirect(ctx, tk, model.NewMessage(tk))
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatal("Send direct failed")
 	}
@@ -137,9 +137,11 @@ func TestSendForward(t *testing.T) {
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
 	w := httptest.NewRecorder()
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
+	msg := model.NewMessage(tk).DisableToken()
+
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	c.SendForward(ctx, tk, "")
+	c.SendForward(ctx, tk, msg)
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check invalid user failed")
 	}
@@ -148,7 +150,7 @@ func TestSendForward(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", true) // nolint: errcheck
-	c.SendForward(ctx, tk, "")
+	c.SendForward(ctx, tk, msg)
 	if w.Result().StatusCode != http.StatusInternalServerError {
 		t.Fatal("Check invalid key failed")
 	}
@@ -163,7 +165,7 @@ func TestSendForward(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", true) // nolint: errcheck
-	c.SendForward(ctx, tk, "")
+	c.SendForward(ctx, tk, msg)
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatal("Check invalid key failed")
 	}
