@@ -1,6 +1,7 @@
 package core
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/chanify/chanify/crypto"
@@ -57,6 +58,15 @@ func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {
 		return nil, model.ErrInvalidToken
 	}
 	return tk, nil
+}
+
+func parsePriority(priority string) int {
+	if len(priority) > 0 {
+		if p, err := strconv.Atoi(priority); err == nil {
+			return p
+		}
+	}
+	return 0
 }
 
 type JsonString string

@@ -42,6 +42,13 @@ func (m *Message) SoundName(sound string) *Message {
 	return m
 }
 
+func (m *Message) SetPriority(priority int) *Message {
+	if priority > 0 {
+		m.Priority = int32(priority)
+	}
+	return m
+}
+
 func (m *Message) EncryptContent(key []byte) {
 	if m.Content != nil {
 		aesgcm, _ := NewAESGCM(key)

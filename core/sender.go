@@ -18,13 +18,14 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token"})
 		return
 	}
-	c.sendMsg(ctx, token, ctx.Param("msg"), ctx.Query("sound"))
+	c.sendMsg(ctx, token, ctx.Param("msg"), ctx.Query("sound"), parsePriority(ctx.Query("priority")))
 }
 
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	token, _ := c.getToken(ctx)
 	var msg string
 	sound := ctx.Query("sound")
+	priority := parsePriority(ctx.Query("priority"))
 	switch ctx.ContentType() {
 	case "text/plain":
 		defer ctx.Request.Body.Close()
@@ -34,9 +35,10 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	case "application/json":
 		defer ctx.Request.Body.Close()
 		var params struct {
-			Token string     `json:"token,omitempty"`
-			Text  string     `json:"text,omitempty"`
-			Sound JsonString `json:"sound,omitempty"`
+			Token    string     `json:"token,omitempty"`
+			Text     string     `json:"text,omitempty"`
+			Sound    JsonString `json:"sound,omitempty"`
+			Priority int        `json:"priority,omitempty"`
 		}
 		if err := ctx.BindJSON(&params); err == nil {
 			if token == nil && len(params.Token) > 0 {
@@ -44,6 +46,9 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			}
 			if len(sound) <= 0 && len(params.Sound) > 0 {
 				sound = string(params.Sound)
+			}
+			if priority <= 0 {
+				priority = params.Priority
 			}
 			msg = params.Text
 		}
@@ -65,11 +70,17 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 					sound = ss[0]
 				}
 			}
+			if priority <= 0 {
+				ps := form.Value["priority"]
+				if len(ps) > 0 {
+					priority = parsePriority(ps[0])
+				}
+			}
 		}
 	default:
 		msg = ctx.PostForm("text")
 	}
-	c.sendMsg(ctx, token, msg, sound)
+	c.sendMsg(ctx, token, msg, sound, priority)
 }
 
 func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
@@ -85,7 +96,7 @@ func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Messa
 		return
 	}
 	out := msg.EncryptData(key, uint64(time.Now().UTC().UnixNano()))
-	c.logic.SendAPNS(uid, msg, out, devs) // nolint: errcheck
+	c.logic.SendAPNS(uid, msg, out, devs, int(msg.Priority)) // nolint: errcheck
 	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid.New().String()})
 }
 
@@ -107,7 +118,7 @@ func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg *model.Mess
 	ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), reader, map[string]string{})
 }
 
-func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, text string, sound string) {
+func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, text string, sound string, priority int) {
 	if token == nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
@@ -121,7 +132,7 @@ func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, text string, sound 
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
 		return
 	}
-	msg := model.NewMessage(token).TextContent(text).SoundName(sound)
+	msg := model.NewMessage(token).TextContent(text).SoundName(sound).SetPriority(priority)
 	if u.IsServerless() {
 		c.SendForward(ctx, token, msg)
 		return

@@ -86,6 +86,8 @@ func TestSenderPostForm(t *testing.T) {
 	partText.Write([]byte("hello"))                                                                                                    // nolint: errcheck                                                                                            // nolint: errcheck
 	partSound, _ := writer.CreateFormField("sound")                                                                                    // nolint: errcheck
 	partSound.Write([]byte("false"))                                                                                                   // nolint: errcheck                                                                                           // nolint: errcheck
+	partPriority, _ := writer.CreateFormField("priority")                                                                              // nolint: errcheck
+	partPriority.Write([]byte("5"))                                                                                                    // nolint: errcheck                                                                                           // nolint: errcheck
 	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
 	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
 	writer.Close()
@@ -147,7 +149,7 @@ func TestSendDirect(t *testing.T) {
 	c.logic.UpdatePushToken("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "aGVsbG8", false)                                                                     // nolint: errcheck                                            // nolint: errcheck
 	c.logic.GetDevices("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY")                                                                                                                                        // nolint: errcheck
 	logic.MockPusher = &MockAPNSPusher{}
-	c.SendDirect(ctx, tk, model.NewMessage(tk))
+	c.SendDirect(ctx, tk, model.NewMessage(tk).SetPriority(5))
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatal("Send direct failed")
 	}
@@ -202,7 +204,7 @@ func TestSendMsg(t *testing.T) {
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	c.sendMsg(ctx, tk, "123", "")
+	c.sendMsg(ctx, tk, "123", "", 5)
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check invalid user failed")
 	}
@@ -212,7 +214,7 @@ func TestSendMsg(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", true) // nolint: errcheck
-	c.sendMsg(ctx, tk, "123", "")
+	c.sendMsg(ctx, tk, "123", "", 5)
 	if w.Result().StatusCode != http.StatusInternalServerError {
 		t.Fatal("Check send serverless failed")
 	}
@@ -222,14 +224,14 @@ func TestSendMsg(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false) // nolint: errcheck
-	c.sendMsg(ctx, tk, "123", "")
+	c.sendMsg(ctx, tk, "123", "", 10)
 	if w.Result().StatusCode != http.StatusNotFound {
 		t.Fatal("Check send serverful failed")
 	}
 
 	w = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(w)
-	c.sendMsg(ctx, nil, "123", "")
+	c.sendMsg(ctx, nil, "123", "", 0)
 	if w.Result().StatusCode != http.StatusUnauthorized {
 		t.Fatal("Check send token format failed")
 	}
