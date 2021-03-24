@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -47,5 +48,23 @@ func TestGetToken(t *testing.T) {
 	ctx.Params = []gin.Param{{Key: "token", Value: "/EgMxMjMiBGNoYW4qBU1GUkdH..c2lnbg"}}
 	if _, err := c.getToken(ctx); err != model.ErrInvalidToken {
 		t.Fatal("Check get token failed")
+	}
+}
+
+func TestJsonString(t *testing.T) {
+	var data struct {
+		A JsonString `json:"a"`
+	}
+	if err := json.Unmarshal([]byte(`{"a":"false"}`), &data); err != nil {
+		t.Fatal("Unmarshal json failed", err)
+	}
+	if len(data.A) > 0 {
+		t.Fatal("Check unmarshal json failed")
+	}
+	if err := json.Unmarshal([]byte(`{"a":"abc"}`), &data); err != nil {
+		t.Fatal("Unmarshal json failed", err)
+	}
+	if data.A != "abc" {
+		t.Fatal("Check unmarshal json failed")
 	}
 }

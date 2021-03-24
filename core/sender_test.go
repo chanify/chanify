@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/chanify/chanify/logic"
@@ -81,8 +82,10 @@ func TestSenderPostForm(t *testing.T) {
 	handler := c.APIHandler()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	partText, _ := writer.CreateFormField("text")                                                                                      // nolint: errcheck
-	partText.Write([]byte("hello"))                                                                                                    // nolint: errcheck
+	partText, _ := writer.CreateFormField("text") // nolint: errcheck
+	partText.Write([]byte("hello"))
+	partSound, _ := writer.CreateFormField("sound")
+	partSound.Write([]byte("false"))                                                                                                   // nolint: errcheck
 	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
 	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
 	writer.Close()
@@ -94,6 +97,26 @@ func TestSenderPostForm(t *testing.T) {
 	resp := w.Result()
 	if resp.StatusCode != http.StatusInternalServerError {
 		t.Fatal("Check send post form failed")
+	}
+}
+
+func TestSenderPostJSON(t *testing.T) {
+	logic.ApiEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	handler := c.APIHandler()
+	req := httptest.NewRequest("POST", "/v1/sender", strings.NewReader(`{
+		"sound": 1,
+		"text": "hello",
+		"token": "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg"
+	}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatal("Send post json failed")
 	}
 }
 
@@ -179,7 +202,7 @@ func TestSendMsg(t *testing.T) {
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	c.sendMsg(ctx, tk, "123")
+	c.sendMsg(ctx, tk, "123", "")
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check invalid user failed")
 	}
@@ -189,7 +212,7 @@ func TestSendMsg(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", true) // nolint: errcheck
-	c.sendMsg(ctx, tk, "123")
+	c.sendMsg(ctx, tk, "123", "")
 	if w.Result().StatusCode != http.StatusInternalServerError {
 		t.Fatal("Check send serverless failed")
 	}
@@ -199,14 +222,14 @@ func TestSendMsg(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false) // nolint: errcheck
-	c.sendMsg(ctx, tk, "123")
+	c.sendMsg(ctx, tk, "123", "")
 	if w.Result().StatusCode != http.StatusNotFound {
 		t.Fatal("Check send serverful failed")
 	}
 
 	w = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(w)
-	c.sendMsg(ctx, nil, "123")
+	c.sendMsg(ctx, nil, "123", "")
 	if w.Result().StatusCode != http.StatusUnauthorized {
 		t.Fatal("Check send token format failed")
 	}

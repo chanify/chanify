@@ -20,6 +20,13 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
+var (
+	eciesKeyLen       = aes.BlockSize
+	base32Encode      = base32.StdEncoding.WithPadding(base32.NoPadding)
+	ErrInvalidKey     = errors.New("InvalidKey")
+	ErrInvalidMessage = errors.New("InvalidMessage")
+)
+
 type PublicKey struct {
 	ecdsa.PublicKey
 }
@@ -27,12 +34,6 @@ type PublicKey struct {
 type SecretKey struct {
 	ecdsa.PrivateKey
 }
-
-var (
-	eciesKeyLen       = aes.BlockSize
-	ErrInvalidKey     = errors.New("InvalidKey")
-	ErrInvalidMessage = errors.New("InvalidMessage")
-)
 
 func LoadPublicKey(key []byte) (*PublicKey, error) {
 	pk := &PublicKey{}
@@ -166,7 +167,7 @@ func formatToID(code byte, key []byte) string {
 	data = append(data, key...)
 	s2 := sha1.Sum(data)
 	data = append([]byte{code}, s2[:]...)
-	return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(data)
+	return base32Encode.EncodeToString(data)
 }
 
 func X963KDF(sharedKeySeed []byte, ephemeralPublicKey []byte, hfnc func() hash.Hash) []byte {

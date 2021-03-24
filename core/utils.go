@@ -1,6 +1,8 @@
 package core
 
 import (
+	"strings"
+
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
@@ -55,4 +57,19 @@ func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {
 		return nil, model.ErrInvalidToken
 	}
 	return tk, nil
+}
+
+type JsonString string
+
+func (s *JsonString) UnmarshalJSON(data []byte) error {
+	asString := strings.Trim(string(data), "\"")
+	switch asString {
+	case "1", "true", "TRUE", "True", "On", "on":
+		*s = "1"
+	case "0", "false", "FALSE", "False", "Off", "off", "none", "NONE", "null", "NULL":
+		*s = ""
+	default:
+		*s = JsonString(asString)
+	}
+	return nil
 }

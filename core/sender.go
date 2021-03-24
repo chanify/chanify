@@ -18,17 +18,34 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token"})
 		return
 	}
-	c.sendMsg(ctx, token, ctx.Param("msg"))
+	c.sendMsg(ctx, token, ctx.Param("msg"), ctx.Query("sound"))
 }
 
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	token, _ := c.getToken(ctx)
 	var msg string
+	sound := ctx.Query("sound")
 	switch ctx.ContentType() {
 	case "text/plain":
 		defer ctx.Request.Body.Close()
 		if d, err := ioutil.ReadAll(ctx.Request.Body); err == nil {
 			msg = string(d)
+		}
+	case "application/json":
+		defer ctx.Request.Body.Close()
+		var params struct {
+			Token string     `json:"token,omitempty"`
+			Text  string     `json:"text,omitempty"`
+			Sound JsonString `json:"sound,omitempty"`
+		}
+		if err := ctx.BindJSON(&params); err == nil {
+			if token == nil && len(params.Token) > 0 {
+				token, _ = model.ParseToken(params.Token)
+			}
+			if len(sound) <= 0 && len(params.Sound) > 0 {
+				sound = string(params.Sound)
+			}
+			msg = params.Text
 		}
 	case "multipart/form-data":
 		if form, err := ctx.MultipartForm(); err == nil {
@@ -42,11 +59,17 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 					token, _ = model.ParseToken(tks[0])
 				}
 			}
+			if len(sound) <= 0 {
+				ss := form.Value["sound"]
+				if len(ss) > 0 {
+					sound = ss[0]
+				}
+			}
 		}
 	default:
 		msg = ctx.PostForm("text")
 	}
-	c.sendMsg(ctx, token, msg)
+	c.sendMsg(ctx, token, msg, sound)
 }
 
 func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
@@ -84,7 +107,7 @@ func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg *model.Mess
 	ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), reader, map[string]string{})
 }
 
-func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, text string) {
+func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, text string, sound string) {
 	if token == nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
@@ -98,7 +121,7 @@ func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, text string) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
 		return
 	}
-	msg := model.NewMessage(token).TextContent(text)
+	msg := model.NewMessage(token).TextContent(text).SoundName(sound)
 	if u.IsServerless() {
 		c.SendForward(ctx, token, msg)
 		return

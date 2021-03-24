@@ -196,14 +196,13 @@ func (l *Logic) GetAPNS(sandbox bool) APNSPusher {
 }
 
 func (l *Logic) SendAPNS(uid string, msg *model.Message, data []byte, devices []*model.Device) error {
-	payloadData := payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
-		Custom("uid", uid).
-		Custom("src", l.NodeID).
-		Custom("msg", base64.RawURLEncoding.EncodeToString(data))
 	notification := &apns2.Notification{
 		Topic:      "net.chanify.ios",
 		Expiration: time.Now().Add(24 * time.Hour),
-		Payload:    payloadData,
+		Payload: payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
+			Custom("uid", uid).
+			Custom("src", l.NodeID).
+			Custom("msg", base64.RawURLEncoding.EncodeToString(data)),
 	}
 	for _, dev := range devices {
 		notification.DeviceToken = hex.EncodeToString(dev.Token)

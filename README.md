@@ -1,14 +1,44 @@
 # Chanify
 
 [![Docker](https://img.shields.io/docker/v/wizjin/chanify?sort=semver&logo=docker&style=flat-square)](https://hub.docker.com/r/wizjin/chanify)
+[![Release](https://img.shields.io/github/v/release/chanify/chanify?logo=github&style=flat-square)](https://github.com/chanify/chanify/releases/latest)
+[![iTunes App Store](https://img.shields.io/itunes/v/1531546573?logo=apple&style=flat-square)](https://itunes.apple.com/app/id1531546573)
 [![Workflow](https://img.shields.io/github/workflow/status/chanify/chanify/ci?label=build&logo=github&style=flat-square)](https://github.com/chanify/chanify/actions?workflow=ci)
 [![Codecov](https://img.shields.io/codecov/c/github/chanify/chanify?logo=codecov&style=flat-square)](https://codecov.io/gh/chanify/chanify)
-[![iTunes App Store](https://img.shields.io/itunes/v/1531546573?logo=apple&style=flat-square)](https://itunes.apple.com/app/id1531546573)
-[![GitHub](https://img.shields.io/github/license/chanify/chanify?style=flat-square)](LICENSE)
-
-<a href="https://www.producthunt.com/posts/chanify?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-chanify" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=287376&theme=light" alt="Chanify - Safe and simple notification tools | Product Hunt" style="width: 185px; height: 40px;" width="185" height="40" /></a>
+[![GitHub](https://img.shields.io/github/license/chanify/chanify?style=flat-square)](https://github.com/chanify/chanify/blob/main/LICENSE)
+[![Docker pull](https://img.shields.io/docker/pulls/wizjin/chanify?style=flat-square)](https://hub.docker.com/r/wizjin/chanify)
 
 Chanify is a safe and simple notification tools. For developers, system administrators, and everyone can push notifications with API.
+
+<!-- TABLE OF CONTENTS -->
+<details open="open">
+  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
+  <ol>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#installation">Installation</a></li>
+    <li>
+        <a href="#usage">Usage</a>
+        <ul>
+            <li><a href="#as-sneder-client">As Sneder Client</a></li>
+            <li><a href="#as-serverless-node">As Serverless node</a></li>
+            <li><a href="#as-serverful-node">As Serverful node</a></li>
+            <li><a href="#add-new-node">Add New Node</a></li>
+            <li>
+                <a href="#send-message">Send message</a>
+                <ul>
+                    <li><a href="#command-line">Command Line</a></li>
+                    <li><a href="#python-3">Python 3</a></li>
+                    <li><a href="#ruby">Ruby</a></li>
+                    <li><a href="#nodejs">NodeJS</a></li>
+                </ul>
+            </li>
+        </ul>
+    </li>
+    <li><a href="#http-api">HTTP API</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+  </ol>
+</details>
 
 ## Getting Started
 
@@ -96,7 +126,6 @@ Use MySQL as a backend
 
 Chanify will not create database.
 
-
 ### Add New Node
 
 - Start node server
@@ -160,6 +189,36 @@ req.write(data);
 req.end();
 ```
 
+## HTTP API
+
+- __GET__
+```
+http://<address>:<port>/v1/sender/<token>/<message>
+```
+
+- __POST__
+```
+http://<address>:<port>/v1/sender/<token>
+```
+
+Content-Type: 
+
+- ```text/plain```: Body is text message
+- ```multipart/form-data```: The block of data("text") is text message
+- ```application/x-www-form-urlencoded```: ```text=<url encoded text message>```
+
+Additional params
+
+| Key   | Description                               |
+| ----- | ----------------------------------------- |
+| sound | `1` enable sound, otherwise disable sound |
+
+E.g.
+
+```
+http://<address>:<port>/v1/sender/<token>?sound=1
+```
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -172,4 +231,4 @@ Contributions are what make the open source community such an amazing place to b
 
 ## License
 
-Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
+Distributed under the MIT License. See [`LICENSE`](https://github.com/chanify/chanify/blob/main/LICENSE) for more information.
