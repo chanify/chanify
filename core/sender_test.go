@@ -82,10 +82,10 @@ func TestSenderPostForm(t *testing.T) {
 	handler := c.APIHandler()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	partText, _ := writer.CreateFormField("text") // nolint: errcheck
-	partText.Write([]byte("hello"))
-	partSound, _ := writer.CreateFormField("sound")
-	partSound.Write([]byte("false"))                                                                                                   // nolint: errcheck
+	partText, _ := writer.CreateFormField("text")                                                                                      // nolint: errcheck
+	partText.Write([]byte("hello"))                                                                                                    // nolint: errcheck                                                                                            // nolint: errcheck
+	partSound, _ := writer.CreateFormField("sound")                                                                                    // nolint: errcheck
+	partSound.Write([]byte("false"))                                                                                                   // nolint: errcheck                                                                                           // nolint: errcheck
 	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
 	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
 	writer.Close()
