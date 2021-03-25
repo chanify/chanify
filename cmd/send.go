@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
-	"strings"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -22,7 +23,8 @@ func init() {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceErrors = true
 			cmd.SilenceUsage = true
-
+			sound := viper.GetString("client.sound")
+			priority := viper.GetInt("client.priority")
 			token := viper.GetString("client.token")
 			if len(token) <= 0 {
 				return fmt.Errorf("Send token not found.")
@@ -51,12 +53,24 @@ func init() {
 			if len(text) <= 0 {
 				return fmt.Errorf("No message content.")
 			}
-			resp, err := http.Post(viper.GetString("client.endpoint")+"/v1/sender/"+token, "text/plain", strings.NewReader(text))
+			data := url.Values{
+				"text":  {text},
+				"token": {token},
+			}
+			if len(sound) > 0 {
+				data.Add("sound", sound)
+			}
+			if priority > 0 {
+				data.Add("sound", strconv.Itoa(priority))
+			}
+			resp, err := http.PostForm(viper.GetString("client.endpoint")+"/v1/sender", data)
 			if err != nil {
 				return err
 			}
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("Send failed: %d", resp.StatusCode)
+				x, _ := ioutil.ReadAll(resp.Body)
+				defer resp.Body.Close()
+				return fmt.Errorf("Send failed: %d, %s", resp.StatusCode, string(x))
 			}
 			defer resp.Body.Close()
 			var res struct {
@@ -72,7 +86,11 @@ func init() {
 	rootCmd.AddCommand(sendCmd)
 	sendCmd.Flags().String("endpoint", "https://api.chanify.net", "Node server endpoint.")
 	sendCmd.Flags().String("token", "", "Send token.")
+	sendCmd.Flags().String("sound", "1", "Message sound.")
 	sendCmd.Flags().String("text", "", "Text message content.")
+	sendCmd.Flags().Int("priority", 0, "Message priority.")
 	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
+	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))       // nolint: errcheck
+	viper.BindPFlag("client.priority", sendCmd.Flags().Lookup("priority")) // nolint: errcheck
 	viper.BindPFlag("client.endpoint", sendCmd.Flags().Lookup("endpoint")) // nolint: errcheck
 }

@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -75,6 +76,27 @@ func TestSenderPost(t *testing.T) {
 }
 
 func TestSenderPostForm(t *testing.T) {
+	logic.ApiEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	handler := c.APIHandler()
+
+	data := url.Values{
+		"text":  {"123"},
+		"token": {"CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg"},
+	}
+	req := httptest.NewRequest("POST", "/v1/sender", strings.NewReader(data.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatal("Check send post failed")
+	}
+}
+
+func TestSenderPostFormData(t *testing.T) {
 	logic.ApiEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()

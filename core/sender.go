@@ -79,6 +79,15 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		}
 	default:
 		msg = ctx.PostForm("text")
+		if token == nil {
+			token, _ = model.ParseToken(ctx.PostForm("token"))
+		}
+		if len(sound) <= 0 {
+			sound = ctx.PostForm("sound")
+		}
+		if priority <= 0 {
+			priority = parsePriority(ctx.PostForm("priority"))
+		}
 	}
 	c.sendMsg(ctx, token, msg, sound, priority)
 }

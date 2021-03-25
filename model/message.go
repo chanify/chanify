@@ -3,7 +3,6 @@ package model
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"log"
 
 	"github.com/chanify/chanify/pb"
 	"google.golang.org/protobuf/proto"
@@ -36,7 +35,6 @@ func (m *Message) TextContent(text string) *Message {
 
 func (m *Message) SoundName(sound string) *Message {
 	if len(sound) > 0 {
-		log.Println("sound:", sound)
 		m.Sound = &pb.Sound{Name: sound}
 	}
 	return m

@@ -8,33 +8,33 @@
 [![GitHub](https://img.shields.io/github/license/chanify/chanify?style=flat-square)](LICENSE)
 [![Docker pull](https://img.shields.io/docker/pulls/wizjin/chanify?style=flat-square)](https://hub.docker.com/r/wizjin/chanify)
 
-English | [简体中文](README-zh_CN.md)
+[English](README.md) | 简体中文
 
-Chanify is a safe and simple notification tools. For developers, system administrators, and everyone can push notifications with API.
+Chanify是一个简单的消息推送工具。每一个人都可以利用提供的API来发送消息推送到自己的iOS设备上。
 
 <details open="open">
-  <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
+  <summary><h2 style="display: inline-block">目录</h2></summary>
   <ol>
-    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#入门">入门</a></li>
     <li>
-        <a href="#installation">Installation</a>
+        <a href="#安装">安装</a>
         <ul>
-            <li><a href="#precompiled-binary">Precompiled binary</a></li>
+            <li><a href="#预编译包">预编译包</a></li>
             <li><a href="#docker">Docker</a></li>
-            <li><a href="#from-source">From source</a></li>
+            <li><a href="#从源代码">从源代码</a></li>
         </ul>
     </li>
     <li>
-        <a href="#usage">Usage</a>
+        <a href="#用法">用法</a>
         <ul>
-            <li><a href="#as-sender-client">As Sender Client</a></li>
-            <li><a href="#as-serverless-node">As Serverless node</a></li>
-            <li><a href="#as-serverful-node">As Serverful node</a></li>
-            <li><a href="#add-new-node">Add New Node</a></li>
+            <li><a href="#作为客户端">作为客户端</a></li>
+            <li><a href="#作为无状态服务器">作为无状态服务器</a></li>
+            <li><a href="#作为有状态服务器">作为有状态服务器</a></li>
+            <li><a href="#添加节点服务器">添加节点服务器</a></li>
             <li>
-                <a href="#send-message">Send message</a>
+                <a href="#发送消息">发送消息</a>
                 <ul>
-                    <li><a href="#command-line">Command Line</a></li>
+                    <li><a href="#命令行">命令行</a></li>
                     <li><a href="#python-3">Python 3</a></li>
                     <li><a href="#ruby">Ruby</a></li>
                     <li><a href="#nodejs">NodeJS</a></li>
@@ -43,21 +43,21 @@ Chanify is a safe and simple notification tools. For developers, system administ
         </ul>
     </li>
     <li><a href="#http-api">HTTP API</a></li>
-    <li><a href="#license">License</a></li>
+    <li><a href="#许可证">许可证</a></li>
   </ol>
 </details>
 
-## Getting Started
+## 入门
 
-1. Install [iOS App](https://itunes.apple.com/us/app/id1531546573)(1.0.0 version and above).
-2. Get send token, [more detail](https://github.com/chanify/chanify-ios).
-3. Send message.
+1. 从AppStore安装[iOS应用](https://itunes.apple.com/us/app/id1531546573)（1.0.0或以上版本）。
+2. 获取发送使用的令牌```token```，[更多细节](https://github.com/chanify/chanify-ios)。
+3. 使用API来发送消息。
 
-## Installation
+## 安装
 
-### Precompiled binary
+### 预编译包
 
-Download precompiled binary from [this](https://github.com/chanify/chanify/releases/latest).
+可以[这里](https://github.com/chanify/chanify/releases/latest)下载最新的预编译二进制包。
 
 ### Docker
 
@@ -65,88 +65,89 @@ Download precompiled binary from [this](https://github.com/chanify/chanify/relea
 $ docker pull wizjin/chanify:latest
 ```
 
-### From source
+### 从源代码
 
 ```bash
 $ go install github.com/chanify/chanify
 ```
 
-## Usage
+## 用法
 
-### As Sender Client
+### 作为客户端
 
-Use chanify to send message.
+可以使用下列命令来发送消息
 
 ```bash
 $ chanify send --token=<token> --text=<message>
 ```
 
-### As Serverless node
+### 作为无状态服务器
 
-Chanify run in stateless mode, no device token will be stored in node.
+Chanify可以作为无状态服务器运行，在这种模式下节点服务器不会保存设备信息（APNS令牌）。
 
-All device token will be stored in api.chanify.net.
+所有的设备信息会被存储在 api.chanify.net。
 
-Message will send to apple apns server by api.chanify.net.
+消息会在节点服务器加密之后由 api.chanify.net 代理发送给苹果的APNS服务器。
 
-Send message workflow:
+消息的流动如下:
 
 ```
-Start => node server => api.chanify.net => Apple server => iOS client
+开始 => 自建节点服务器 => api.chanify.net => 苹果APNS服务器 => iOS客户端
 ```
 
 ```bash
-# Start chanify
+# 命令行启动
 $ chanify serve --host=<ip address> --port=<port> --secret=<secret key> --name=<node name> --endpoint=http://<address>:<port>
 
-# Docker
+# 使用Docker启动
 $ docker run -it wizjin/chanify:latest serve --secret=<secret key> --name=<node name> --endpoint=http://<address>:<port>
 ```
 
-### As Serverful node
+### 作为有状态服务器
 
-Chanify run in stateful mode, device token will be stored in node.
+Chanify可以作为有状态服务器运行，在这种模式下节点服务器会保存用户的设备信息（APNS令牌）。
 
-Message will send to apple apns server direct.
+消息会直接由节点服务器加密之后发送给苹果的APNS服务器。
 
-Send message workflow:
+消息的流动如下:
 
 ```
-Start => node server => Apple server => iOS client
+开始 => 自建节点服务器 => Apple server => iOS客户端
 ```
 
-Start server
+启动服务器
 
 ```bash
-# Start chanify
+# 命令行启动
 $ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=~/.chanify --endpoint=http://<address>:<port>
 
-# Docker
+# 使用Docker启动
 $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
 
-Use MySQL as a backend
+默认会使用sqlite保存数据，如果要使用MySQL作为数据库存储信息可以添加如下参数：
 
 ```bash
 --dburl=mysql://<user>:<password>@tcp(<ip address>:<port>)/<database name>?charset=utf8mb4&parseTime=true&loc=Local
 ```
 
-Chanify will not create database.
+注意：Chanify不会创建数据库，只会创建表格，所以使用前请先自行建立数据库。
 
-### Add New Node
+### 添加节点服务器
 
-- Start node server
-- iOS client can scan QRCode(```http://<address>:<port>/```) to add node.
+- 启动节点服务器
+- 获取服务器二维码（```http://<address>:<port>/```）
+- 打开iOS的客户端扫描二维码添加节点
 
-### Send message
+### 发送消息
 
-#### Command Line
+#### 命令行
 
 ```bash
-# Text message
+# 发送文本消息
 $ curl --form-string "text=hello" "http://<address>:<port>/v1/sender/<token>"
 
-# Text file
+# 发送文本文件
 $ cat message.txt | curl -H "Content-Type: text/plain" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
 ```
 
@@ -214,19 +215,19 @@ Content-Type:
 - ```multipart/form-data```: The block of data("text") is text message
 - ```application/x-www-form-urlencoded```: ```text=<url encoded text message>```
 
-Additional params
+支持以下参数：
 
-| Key      | Description                               |
-| -------- | ----------------------------------------- |
-| sound    | `1` enable sound, otherwise disable sound |
-| priority | `10` default, or `5`                      |
+| 参数名    | 描述                               |
+| -------- | --------------------------------- |
+| sound    | `1` 启用声音提示, 其他情况会静音推送   |
+| priority | `10` 默认优先级, 或者 `5` 较低优先级  |
 
-E.g.
+例如：
 
 ```
 http://<address>:<port>/v1/sender/<token>?sound=1&priority=10
 ```
 
-## License
+## 许可证
 
-Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
+根据MIT许可证分发，详情查看[`LICENSE`](LICENSE)。
