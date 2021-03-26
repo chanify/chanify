@@ -25,11 +25,15 @@ func (m *Message) DisableToken() *Message {
 	return m
 }
 
-func (m *Message) TextContent(text string) *Message {
-	m.Content, _ = proto.Marshal(&pb.MsgContent{
+func (m *Message) TextContent(text string, title string) *Message {
+	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Text,
 		Text: text,
-	})
+	}
+	if len(title) > 0 {
+		ctx.Title = title
+	}
+	m.Content, _ = proto.Marshal(ctx)
 	return m
 }
 

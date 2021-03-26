@@ -2,7 +2,7 @@
 
 [![Docker](https://img.shields.io/docker/v/wizjin/chanify?sort=semver&logo=docker&style=flat-square)](https://hub.docker.com/r/wizjin/chanify)
 [![Release](https://img.shields.io/github/v/release/chanify/chanify?logo=github&style=flat-square)](https://github.com/chanify/chanify/releases/latest)
-[![iTunes App Store](https://img.shields.io/itunes/v/1531546573?logo=apple&style=flat-square)](https://itunes.apple.com/app/id1531546573)
+[![iTunes App Store](https://img.shields.io/itunes/v/1531546573?logo=apple&style=flat-square)](https://itunes.apple.com/cn/app/id1531546573)
 [![Workflow](https://img.shields.io/github/workflow/status/chanify/chanify/ci?label=build&logo=github&style=flat-square)](https://github.com/chanify/chanify/actions?workflow=ci)
 [![Codecov](https://img.shields.io/codecov/c/github/chanify/chanify?logo=codecov&style=flat-square)](https://codecov.io/gh/chanify/chanify)
 [![GitHub](https://img.shields.io/github/license/chanify/chanify?style=flat-square)](LICENSE)
@@ -43,13 +43,14 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
         </ul>
     </li>
     <li><a href="#http-api">HTTP API</a></li>
+    <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
 </details>
 
 ## 入门
 
-1. 从AppStore安装[iOS应用](https://itunes.apple.com/us/app/id1531546573)（1.0.0或以上版本）。
+1. 从AppStore安装[iOS应用](https://itunes.apple.com/cn/app/id1531546573)（1.0.0或以上版本）。
 2. 获取发送使用的令牌```token```，[更多细节](https://github.com/chanify/chanify-ios)。
 3. 使用API来发送消息。
 
@@ -219,14 +220,25 @@ Content-Type:
 
 | 参数名    | 描述                               |
 | -------- | --------------------------------- |
+| title    | 通知消息的标题                      |
 | sound    | `1` 启用声音提示, 其他情况会静音推送   |
 | priority | `10` 默认优先级, 或者 `5` 较低优先级  |
 
 例如：
 
 ```
-http://<address>:<port>/v1/sender/<token>?sound=1&priority=10
+http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello
 ```
+
+## 贡献
+
+贡献使开源社区成为了一个令人赞叹的学习，启发和创造场所。 **十分感谢**您做出的任何贡献。
+
+1. Fork本项目
+2. 创建您的Feature分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启一个Pull Request
 
 ## 许可证
 

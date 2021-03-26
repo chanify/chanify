@@ -18,24 +18,33 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token"})
 		return
 	}
-	c.sendMsg(ctx, token, ctx.Param("msg"), ctx.Query("sound"), parsePriority(ctx.Query("priority")))
+	text := ctx.Param("msg")
+	if len(text) <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
+		return
+	}
+	msg := model.NewMessage(token).TextContent(text, ctx.Query("title")).
+		SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority")))
+	c.sendMsg(ctx, token, msg)
 }
 
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	token, _ := c.getToken(ctx)
-	var msg string
+	var text string
+	title := ctx.Query("title")
 	sound := ctx.Query("sound")
 	priority := parsePriority(ctx.Query("priority"))
 	switch ctx.ContentType() {
 	case "text/plain":
 		defer ctx.Request.Body.Close()
 		if d, err := ioutil.ReadAll(ctx.Request.Body); err == nil {
-			msg = string(d)
+			text = string(d)
 		}
 	case "application/json":
 		defer ctx.Request.Body.Close()
 		var params struct {
 			Token    string     `json:"token,omitempty"`
+			Title    string     `json:"title,omitempty"`
 			Text     string     `json:"text,omitempty"`
 			Sound    JsonString `json:"sound,omitempty"`
 			Priority int        `json:"priority,omitempty"`
@@ -44,24 +53,33 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			if token == nil && len(params.Token) > 0 {
 				token, _ = model.ParseToken(params.Token)
 			}
+			if len(title) <= 0 && len(params.Title) > 0 {
+				title = params.Title
+			}
 			if len(sound) <= 0 && len(params.Sound) > 0 {
 				sound = string(params.Sound)
 			}
 			if priority <= 0 {
 				priority = params.Priority
 			}
-			msg = params.Text
+			text = params.Text
 		}
 	case "multipart/form-data":
 		if form, err := ctx.MultipartForm(); err == nil {
 			ts := form.Value["text"]
 			if len(ts) > 0 {
-				msg = ts[0]
+				text = ts[0]
 			}
 			if token == nil {
 				tks := form.Value["token"]
 				if len(tks) > 0 {
 					token, _ = model.ParseToken(tks[0])
+				}
+			}
+			if len(title) <= 0 {
+				ts := form.Value["title"]
+				if len(ts) > 0 {
+					title = ts[0]
 				}
 			}
 			if len(sound) <= 0 {
@@ -78,7 +96,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			}
 		}
 	default:
-		msg = ctx.PostForm("text")
+		text = ctx.PostForm("text")
 		if token == nil {
 			token, _ = model.ParseToken(ctx.PostForm("token"))
 		}
@@ -89,7 +107,16 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			priority = parsePriority(ctx.PostForm("priority"))
 		}
 	}
-	c.sendMsg(ctx, token, msg, sound, priority)
+	if token == nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
+		return
+	}
+	if len(text) <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
+		return
+	}
+	msg := model.NewMessage(token).TextContent(text, title).SoundName(sound).SetPriority(priority)
+	c.sendMsg(ctx, token, msg)
 }
 
 func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
@@ -127,21 +154,12 @@ func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg *model.Mess
 	ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), reader, map[string]string{})
 }
 
-func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, text string, sound string, priority int) {
-	if token == nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
-		return
-	}
-	if len(text) <= 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
-		return
-	}
+func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg *model.Message) {
 	u, err := c.logic.GetUser(token.GetUserID())
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
 		return
 	}
-	msg := model.NewMessage(token).TextContent(text).SoundName(sound).SetPriority(priority)
 	if u.IsServerless() {
 		c.SendForward(ctx, token, msg)
 		return
