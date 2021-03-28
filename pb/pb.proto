@@ -28,6 +28,7 @@ message Token {
     bytes       device_id   = 3;
     bytes       channel     = 4;
     string      node_id     = 5;
+    bytes       data_hash   = 6;
 }
 
 enum MsgType {
@@ -38,14 +39,20 @@ enum MsgType {
     Audio                   = 4;
 }
 
+message Thumbnail {
+    uint32      type        = 1;
+    int32       width       = 2;
+    int32       height      = 3;
+    bytes       data        = 4;
+}
+
 message MsgContent {
     MsgType     type        = 1;
     string      text        = 2;
-    string      link        = 3;
+    string      file        = 3;
     string      title       = 4;
-    string      image       = 5;
-    string      video       = 6;
-    string      audio       = 7;
+    Thumbnail   preview     = 5;
+    uint64      duration    = 6;
 }
 
 enum SoundType {

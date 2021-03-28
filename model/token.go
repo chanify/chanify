@@ -2,7 +2,9 @@ package model
 
 import (
 	"crypto/hmac"
+	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/subtle"
 	"strings"
 	"time"
 
@@ -59,6 +61,10 @@ func (tk *Token) GetChannel() []byte {
 	return tk.data.Channel
 }
 
+func (tk *Token) IsStatful() bool {
+	return (len(tk.signNode) > 0 && len(tk.signSys) <= 0)
+}
+
 func (tk *Token) IsExpires() bool {
 	return time.Now().UTC().UnixNano()/1e9 >= int64(tk.data.Expires)
 }
@@ -67,6 +73,14 @@ func (tk *Token) VerifySign(key []byte) bool {
 	mac := hmac.New(sha256.New, key[0:32])
 	mac.Write(tk.rawData) // nolint: errcheck
 	return hmac.Equal(mac.Sum(nil), tk.signNode)
+}
+
+func (tk *Token) VerifyDataHash(data []byte) bool {
+	if len(tk.data.DataHash) > 0 && len(data) > 0 {
+		h := sha1.Sum(data)
+		return subtle.ConstantTimeCompare(tk.data.DataHash, h[:]) == 1
+	}
+	return false
 }
 
 func (tk *Token) RawToken() string {

@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/base64"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -12,7 +13,9 @@ import (
 )
 
 var (
-	base64Encode = base64.RawURLEncoding
+	base64Encode      = base64.RawURLEncoding
+	ErrNoContent      = errors.New("NoContent")
+	ErrInvalidContent = errors.New("InvalidContent")
 )
 
 type Core struct {
@@ -61,6 +64,9 @@ func (c *Core) APIHandler() http.Handler {
 	api.POST("/bind-user", c.handleBindUser)
 	api.POST("/unbind-user", c.handleUnbindUser)
 	api.POST("/push-token", c.handleUpdatePushToken)
+
+	file := r.Group("/files")
+	file.GET("/images/:fname", c.handleImageFile)
 	return r
 }
 

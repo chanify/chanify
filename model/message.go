@@ -37,6 +37,15 @@ func (m *Message) TextContent(text string, title string) *Message {
 	return m
 }
 
+func (m *Message) ImageContent(path string) *Message {
+	ctx := &pb.MsgContent{
+		Type: pb.MsgType_Image,
+		File: path,
+	}
+	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
 func (m *Message) SoundName(sound string) *Message {
 	if len(sound) > 0 {
 		m.Sound = &pb.Sound{Name: sound}

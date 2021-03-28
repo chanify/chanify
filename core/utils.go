@@ -50,6 +50,10 @@ func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {
 			}
 		}
 	}
+	return c.parseToken(token)
+}
+
+func (c *Core) parseToken(token string) (*model.Token, error) {
 	tk, err := model.ParseToken(token)
 	if err != nil {
 		return nil, err
@@ -67,6 +71,14 @@ func parsePriority(priority string) int {
 		}
 	}
 	return 0
+}
+
+func parseImageContentType(data []byte) string {
+	if string(data[:len(pngHeader)]) == pngHeader {
+		return "image/png"
+	} else {
+		return "image/jpeg"
+	}
 }
 
 type JsonString string

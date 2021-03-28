@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -62,7 +64,7 @@ func TestSenderNull(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	resp := w.Result()
-	if resp.StatusCode != http.StatusBadRequest {
+	if resp.StatusCode != http.StatusNoContent {
 		t.Fatal("Check sender null failed")
 	}
 }
@@ -172,6 +174,48 @@ func TestSenderPostJSON(t *testing.T) {
 	}
 }
 
+func TestSenderPostImage(t *testing.T) {
+	logic.ApiEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	handler := c.APIHandler()
+	req := httptest.NewRequest("POST", "/v1/sender", nil)
+	req.Header.Set("Token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
+	req.Header.Set("Content-Type", "image/png")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatal("Check send post image failed", resp.StatusCode)
+	}
+}
+
+func TestSenderPostFormImage(t *testing.T) {
+	logic.ApiEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	handler := c.APIHandler()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)                                                                                                // nolint: errcheck                                                                                           // nolint: errcheck
+	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
+	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
+	partImage, _ := writer.CreateFormFile("image", "image")
+	partImage.Write([]byte("")) // nolint: errcheck
+	writer.Close()
+
+	req := httptest.NewRequest("POST", "/v1/sender", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatal("Check send post image failed", resp.StatusCode)
+	}
+}
+
 type MockAPNSPusher struct{}
 
 func (m *MockAPNSPusher) Push(n *apns2.Notification) (*apns2.Response, error) {
@@ -277,5 +321,33 @@ func TestSendMsg(t *testing.T) {
 	c.sendMsg(ctx, tk, model.NewMessage(tk).TextContent("123", "title").SetPriority(5))
 	if w.Result().StatusCode != http.StatusNotFound {
 		t.Fatal("Check send serverful failed")
+	}
+}
+
+func TestSaveImageFile(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+	os.MkdirAll(fpath+"/images/", os.ModePerm) // nolint: errcheck
+
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg") // nolint: errcheck
+	if _, err := c.saveUploadImage(ctx, tk, []byte("123")); err != nil {
+		t.Error("Save image failed", err)
+	}
+}
+
+func TestSaveImageFileFailed(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	c.saveUploadImage(ctx, nil, []byte("123")) // nolint: errcheck
+	if w.Result().StatusCode != http.StatusBadRequest {
+		t.Fatal("Check save image failed")
 	}
 }

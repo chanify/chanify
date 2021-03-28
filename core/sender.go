@@ -34,6 +34,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	title := ctx.Query("title")
 	sound := ctx.Query("sound")
 	priority := parsePriority(ctx.Query("priority"))
+	var msg *model.Message = nil
 	switch ctx.ContentType() {
 	case "text/plain":
 		defer ctx.Request.Body.Close()
@@ -51,7 +52,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		}
 		if err := ctx.BindJSON(&params); err == nil {
 			if token == nil && len(params.Token) > 0 {
-				token, _ = model.ParseToken(params.Token)
+				token, _ = c.parseToken(params.Token)
 			}
 			if len(title) <= 0 && len(params.Title) > 0 {
 				title = params.Title
@@ -73,7 +74,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			if token == nil {
 				tks := form.Value["token"]
 				if len(tks) > 0 {
-					token, _ = model.ParseToken(tks[0])
+					token, _ = c.parseToken(tks[0])
 				}
 			}
 			if len(title) <= 0 {
@@ -94,11 +95,33 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 					priority = parsePriority(ps[0])
 				}
 			}
+			if token != nil && token.IsStatful() && len(title) <= 0 {
+				fs := form.File["image"]
+				if len(fs) > 0 {
+					if fp, err := fs[0].Open(); err == nil {
+						defer fp.Close()
+						data, _ := ioutil.ReadAll(fp)
+						msg, err = c.saveUploadImage(ctx, token, data)
+						if err != nil {
+							return
+						}
+					}
+				}
+			}
+		}
+	case "image/png", "image/jpeg":
+		if token != nil && token.IsStatful() {
+			var err error
+			data, _ := ctx.GetRawData()
+			msg, err = c.saveUploadImage(ctx, token, data)
+			if err != nil {
+				return
+			}
 		}
 	default:
 		text = ctx.PostForm("text")
 		if token == nil {
-			token, _ = model.ParseToken(ctx.PostForm("token"))
+			token, _ = c.parseToken(ctx.PostForm("token"))
 		}
 		if len(sound) <= 0 {
 			sound = ctx.PostForm("sound")
@@ -111,12 +134,14 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
 	}
-	if len(text) <= 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
-		return
+	if msg == nil {
+		if len(text) <= 0 {
+			ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
+			return
+		}
+		msg = model.NewMessage(token).TextContent(text, title)
 	}
-	msg := model.NewMessage(token).TextContent(text, title).SoundName(sound).SetPriority(priority)
-	c.sendMsg(ctx, token, msg)
+	c.sendMsg(ctx, token, msg.SoundName(sound).SetPriority(priority))
 }
 
 func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
@@ -165,4 +190,17 @@ func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg *model.Message)
 		return
 	}
 	c.SendDirect(ctx, token, msg)
+}
+
+func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte) (*model.Message, error) {
+	if len(data) <= 0 {
+		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no image content"})
+		return nil, ErrNoContent
+	}
+	path, err := c.logic.SaveImageFile(data)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid image content"})
+		return nil, ErrInvalidContent
+	}
+	return model.NewMessage(token).ImageContent(path), nil
 }

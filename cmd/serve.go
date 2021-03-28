@@ -45,6 +45,7 @@ func init() {
 					Version:  Version,
 					Endpoint: endpoint,
 					DataPath: GetDataPath(),
+					FilePath: viper.GetString("server.filepath"),
 					DBUrl:    viper.GetString("server.dburl"),
 					Secret:   viper.GetString("server.secret"),
 				}); err != nil {
@@ -76,6 +77,7 @@ func init() {
 	serveCmd.Flags().String("endpoint", "", "Http restful service endpoint")
 	serveCmd.Flags().String("name", "", "Http service name")
 	serveCmd.Flags().String("datapath", "~/.chanify", "Data file path")
+	serveCmd.Flags().String("filepath", "", "Store file path")
 	serveCmd.Flags().String("dburl", "", "Databse dsn uri")
 	serveCmd.Flags().String("secret", "", "Secret key for serverless mode")
 	viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))         // nolint: errcheck
@@ -83,6 +85,7 @@ func init() {
 	viper.BindPFlag("server.endpoint", serveCmd.Flags().Lookup("endpoint")) // nolint: errcheck
 	viper.BindPFlag("server.name", serveCmd.Flags().Lookup("name"))         // nolint: errcheck
 	viper.BindPFlag("server.datapath", serveCmd.Flags().Lookup("datapath")) // nolint: errcheck
+	viper.BindPFlag("server.filepath", serveCmd.Flags().Lookup("filepath")) // nolint: errcheck
 	viper.BindPFlag("server.dburl", serveCmd.Flags().Lookup("dburl"))       // nolint: errcheck
 	viper.BindPFlag("server.secret", serveCmd.Flags().Lookup("secret"))     // nolint: errcheck
 }

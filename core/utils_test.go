@@ -51,6 +51,12 @@ func TestGetToken(t *testing.T) {
 	}
 }
 
+func TestParseImageContentType(t *testing.T) {
+	if parseImageContentType([]byte{137, 80, 78, 71, 13, 10, 26, 10}) != "image/png" {
+		t.Fatal("Parse png header failed")
+	}
+}
+
 func TestJsonString(t *testing.T) {
 	var data struct {
 		A JsonString `json:"a"`

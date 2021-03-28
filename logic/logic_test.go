@@ -46,6 +46,17 @@ func TestUser(t *testing.T) {
 	}
 }
 
+func TestSaveImageFileFailed(t *testing.T) {
+	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
+	l.filepath = " "
+	if _, err := l.SaveImageFile(nil); err != ErrInvalidContent {
+		t.Fatal("Check image data failed")
+	}
+	if _, err := l.SaveImageFile([]byte("123")); err == nil {
+		t.Fatal("Check image save failed")
+	}
+}
+
 func TestGetAPNS(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
 	MockPusher = nil
@@ -59,7 +70,7 @@ func TestGetAPNS(t *testing.T) {
 
 func TestFixDataPath(t *testing.T) {
 	opts := &Options{DataPath: "/"}
-	opts.fixDataPath()
+	opts.fixOptions()
 	if len(opts.DBUrl) <= 0 {
 		t.Error("Fix data path failed")
 	}

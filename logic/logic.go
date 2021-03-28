@@ -3,6 +3,7 @@ package logic
 import (
 	"crypto/ecdsa"
 	"crypto/rand"
+	"crypto/sha1"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
@@ -25,6 +26,9 @@ var (
 	MockPusher  APNSPusher = nil
 
 	randReader = rand.Read
+
+	ErrNoSupportMethod = errors.New("No support method")
+	ErrInvalidContent  = errors.New("Invalid content")
 )
 
 type Options struct {
@@ -32,6 +36,7 @@ type Options struct {
 	Version  string
 	Endpoint string
 	DataPath string
+	FilePath string
 	DBUrl    string
 	Secret   string
 }
@@ -46,6 +51,7 @@ type Logic struct {
 	Endpoint string
 	Features []string
 
+	filepath    string
 	apnsPClient *apns2.Client
 	apnsDClient *apns2.Client
 }
@@ -56,17 +62,22 @@ type APNSPusher interface {
 
 const authKey = "MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgQ6vCLkUeDj223nfPfKGrjG+Coc53EbKHmO6Oa9YcHiGgCgYIKoZIzj0DAQehRANCAAQNwg3W2eOqNlX0nl9kGbfmMxwSZoO4RmqKoKJnH/vGkU8csJuN5Dg4JiI6ni5PEx+A1rb19DuDm4AzwBVvl8Jt"
 
-func (opts *Options) fixDataPath() {
-	if len(opts.DBUrl) <= 0 && len(opts.Secret) <= 0 && len(opts.DataPath) > 0 {
+func (opts *Options) fixOptions() {
+	if len(opts.DataPath) > 0 {
 		s, err := os.Stat(opts.DataPath)
 		if err == nil && s.IsDir() {
-			opts.DBUrl = "sqlite://" + filepath.Join(opts.DataPath, "chanify.db")
+			if len(opts.Secret) <= 0 && len(opts.DBUrl) <= 0 {
+				opts.DBUrl = "sqlite://" + filepath.Join(opts.DataPath, "chanify.db")
+			}
+			if len(opts.FilePath) <= 0 {
+				opts.FilePath = filepath.Join(opts.DataPath, "files")
+			}
 		}
 	}
 }
 
 func NewLogic(opts *Options) (*Logic, error) {
-	opts.fixDataPath()
+	opts.fixOptions()
 	l := &Logic{
 		srvless:  false,
 		Name:     opts.Name,
@@ -95,8 +106,14 @@ func NewLogic(opts *Options) (*Logic, error) {
 			KeyID:   "CPBF9RLA6G",
 			TeamID:  "P4XS4AVCLW",
 		}
+		l.filepath = opts.FilePath
 		l.apnsPClient = apns2.NewTokenClient(tk).Production()
 		l.apnsDClient = apns2.NewTokenClient(tk).Development()
+		if len(l.filepath) > 0 {
+			l.Features = append(l.Features, "msg.image")
+			FixPath(filepath.Join(l.filepath, "images")) // nolint: errcheck
+			log.Println("Files path:", l.filepath)
+		}
 	}
 	log.Printf("Node server name: %s, version: %s, serverless: %v, node-id: %s\n", l.Name, l.Version, l.srvless, l.NodeID)
 	return l, nil
@@ -183,6 +200,29 @@ func (l *Logic) VerifyToken(tk *model.Token) bool {
 		return false
 	}
 	return tk.VerifySign(key)
+}
+
+func (l *Logic) LoadImageFile(name string) ([]byte, error) {
+	if len(l.filepath) <= 0 {
+		return nil, ErrNoSupportMethod
+	}
+	return LoadFile(filepath.Join(l.filepath, "images", name))
+}
+
+func (l *Logic) SaveImageFile(data []byte) (string, error) {
+	if len(l.filepath) <= 0 {
+		return "", ErrNoSupportMethod
+	}
+	if len(data) <= 0 {
+		return "", ErrInvalidContent
+	}
+	key := sha1.Sum(data)
+	name := hex.EncodeToString(key[:])
+	path := filepath.Join(l.filepath, "images", name)
+	if err := SaveFile(path, data); err != nil {
+		return "", err
+	}
+	return filepath.Join("/files/images", name), nil
 }
 
 func (l *Logic) GetAPNS(sandbox bool) APNSPusher {
