@@ -42,7 +42,13 @@ Chanify is a safe and simple notification tools. For developers, system administ
             </li>
         </ul>
     </li>
-    <li><a href="#http-api">HTTP API</a></li>
+    <li>
+        <a href="#http-api">HTTP API</a>
+        <ul>
+            <li><a href="#send-text">Send Text</a></li>
+            <li><a href="#send-image">Send Image</a></li>
+        </ul>
+    </li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
   </ol>
@@ -79,7 +85,11 @@ $ go install github.com/chanify/chanify
 Use chanify to send message.
 
 ```bash
+# Text message
 $ chanify send --token=<token> --text=<message>
+
+# Image message
+$ chanify send --token=<token> --image=<image file path>
 ```
 
 ### As Serverless node
@@ -199,6 +209,8 @@ req.end();
 
 ## HTTP API
 
+### Send Text
+
 - __GET__
 ```
 http://<address>:<port>/v1/sender/<token>/<message>
@@ -214,6 +226,16 @@ Content-Type:
 - ```text/plain```: Body is text message
 - ```multipart/form-data```: The block of data("text") is text message
 - ```application/x-www-form-urlencoded```: ```text=<url encoded text message>```
+- ```application/json; charset=utf-8```: The fields are optional
+```json
+{
+    "token": "<token>",
+    "title": "<message title>",
+    "text": "<text message content>",
+    "sound": 1,
+    "priority": 10,
+}
+```
 
 Additional params
 
@@ -227,6 +249,22 @@ E.g.
 
 ```
 http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello
+```
+
+### Send Image
+
+Send image only support **POST** method used serverless node.
+
+- Content-Type: ```image/png``` OR ```image/jpeg```
+
+```bash
+cat <jpeg image path> | curl -H "Content-Type: image/jpeg" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
+```
+
+- Content-Type: ```multipart/form-data```
+
+```bash
+$ curl --form "image=@<jpeg image path>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ## Contributing

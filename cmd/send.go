@@ -3,11 +3,12 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 
@@ -50,20 +51,60 @@ func init() {
 					}
 				}
 			}
-			if len(text) <= 0 {
+			var image []byte
+			imagePath, _ := cmd.Flags().GetString("image")
+			if err != nil {
+				return err
+			}
+			if len(imagePath) > 0 {
+				if imagePath[0] == '-' {
+					in, err := ioutil.ReadAll(os.Stdin)
+					if err != nil {
+						return err
+					}
+					image = in
+				} else {
+					in, err := ioutil.ReadFile(imagePath)
+					if err != nil {
+						return err
+					}
+					image = in
+				}
+			}
+			if len(text) <= 0 && len(image) <= 0 {
 				return fmt.Errorf("No message content.")
 			}
-			data := url.Values{
-				"text":  {text},
-				"token": {token},
+			var data bytes.Buffer
+			w := multipart.NewWriter(&data)
+			fw, _ := w.CreateFormField("token")
+			fw.Write([]byte(token)) // nolint: errcheck
+			if len(text) > 0 {
+				fw, _ = w.CreateFormField("text")
+				fw.Write([]byte(text)) // nolint: errcheck
+			}
+			if len(image) > 0 {
+				fw, _ = w.CreateFormFile("image", "image")
+				fw.Write(image) // nolint: errcheck
+			}
+			if title, err := cmd.Flags().GetString("title"); err == nil && len(title) > 0 {
+				fw, _ = w.CreateFormField("title")
+				fw.Write([]byte(title)) // nolint: errcheck
 			}
 			if len(sound) > 0 {
-				data.Add("sound", sound)
+				fw, _ = w.CreateFormField("sound")
+				fw.Write([]byte(sound)) // nolint: errcheck
 			}
 			if priority > 0 {
-				data.Add("sound", strconv.Itoa(priority))
+				fw, _ = w.CreateFormField("priority")
+				fw.Write([]byte(strconv.Itoa(priority))) // nolint: errcheck
 			}
-			resp, err := http.PostForm(viper.GetString("client.endpoint")+"/v1/sender", data)
+			w.Close()
+			req, err := http.NewRequest("POST", viper.GetString("client.endpoint")+"/v1/sender", &data)
+			if err != nil {
+				return err
+			}
+			req.Header.Set("Content-Type", w.FormDataContentType())
+			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				return err
 			}
@@ -88,6 +129,8 @@ func init() {
 	sendCmd.Flags().String("token", "", "Send token.")
 	sendCmd.Flags().String("sound", "1", "Message sound.")
 	sendCmd.Flags().String("text", "", "Text message content.")
+	sendCmd.Flags().String("image", "", "Image file path.")
+	sendCmd.Flags().String("title", "", "Message title.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")
 	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
 	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))       // nolint: errcheck

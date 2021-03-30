@@ -95,7 +95,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 					priority = parsePriority(ps[0])
 				}
 			}
-			if token != nil && token.IsStatful() && len(title) <= 0 {
+			if token != nil && token.IsStatful() && len(text) <= 0 {
 				fs := form.File["image"]
 				if len(fs) > 0 {
 					if fp, err := fs[0].Open(); err == nil {

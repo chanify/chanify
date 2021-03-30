@@ -42,7 +42,13 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
             </li>
         </ul>
     </li>
-    <li><a href="#http-api">HTTP API</a></li>
+    <li>
+        <a href="#http-api">HTTP API</a>
+        <ul>
+            <li><a href="#发送文本">发送文本</a></li>
+            <li><a href="#发送图片">发送图片</a></li>
+        </ul>
+    </li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
@@ -79,7 +85,11 @@ $ go install github.com/chanify/chanify
 可以使用下列命令来发送消息
 
 ```bash
+# 文本消息
 $ chanify send --token=<token> --text=<message>
+
+# 图片消息
+$ chanify send --token=<token> --image=<image file path>
 ```
 
 ### 作为无状态服务器
@@ -200,6 +210,8 @@ req.end();
 
 ## HTTP API
 
+### 发送文本
+
 - __GET__
 ```
 http://<address>:<port>/v1/sender/<token>/<message>
@@ -215,6 +227,16 @@ Content-Type:
 - ```text/plain```: Body is text message
 - ```multipart/form-data```: The block of data("text") is text message
 - ```application/x-www-form-urlencoded```: ```text=<url encoded text message>```
+- ```application/json; charset=utf-8```: 字段都是可选的
+```json
+{
+    "token": "<令牌Token>",
+    "title": "<消息标题>",
+    "text": "<文本消息内容>",
+    "sound": 1,
+    "priority": 10,
+}
+```
 
 支持以下参数：
 
@@ -224,10 +246,27 @@ Content-Type:
 | sound    | `1` 启用声音提示, 其他情况会静音推送   |
 | priority | `10` 默认优先级, 或者 `5` 较低优先级  |
 
+
 例如：
 
 ```
 http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello
+```
+
+### 发送图片
+
+目前仅支持使用 **POST** 方法通过自建的有状态服务器才能发送图片。
+
+- Content-Type: ```image/png``` 或者 ```image/jpeg```
+
+```bash
+cat <jpeg文件路径> | curl -H "Content-Type: image/jpeg" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
+```
+
+- Content-Type: ```multipart/form-data```
+
+```bash
+$ curl --form "image=@<jpeg文件路径>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ## 贡献
