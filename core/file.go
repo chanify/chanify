@@ -7,10 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const (
-	pngHeader = "\x89PNG\r\n\x1a\n"
-)
-
 func (c *Core) handleImageFile(ctx *gin.Context) {
 	token, _ := c.getToken(ctx)
 	c.downloadImageFile(ctx, token)

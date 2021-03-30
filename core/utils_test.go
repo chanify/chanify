@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -52,8 +53,21 @@ func TestGetToken(t *testing.T) {
 }
 
 func TestParseImageContentType(t *testing.T) {
-	if parseImageContentType([]byte{137, 80, 78, 71, 13, 10, 26, 10}) != "image/png" {
+	if parseImageContentType([]byte{137, 80, 78, 71, 13, 10, 26, 10, 0}) != "image/png" {
 		t.Fatal("Parse png header failed")
+	}
+}
+
+func TestCreateThumbnail(t *testing.T) {
+	d1, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACAQMAAACjTyRkAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEWZAAD///+fsNhWAAAAAWJLR0QB/wIt3gAAAAd0SU1FB+UDHRczLl5aCAkAAAAMSURBVAjXY2BgYAAAAAQAASc0JwoAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDMtMjlUMjM6NTE6NDYrMDA6MDCUDk5dAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAzLTI5VDIzOjUxOjQ2KzAwOjAw5VP24QAAAABJRU5ErkJggg==")
+	tb1 := CreateThumbnail(d1)
+	if tb1 == nil {
+		t.Error("Create png thumbnail failed")
+	}
+	d2, _ := base64.StdEncoding.DecodeString("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAACAAEDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAVAQEBAAAAAAAAAAAAAAAAAAAHCP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/ABIOllv/2Q==")
+	tb2 := CreateThumbnail(d2)
+	if tb2 == nil {
+		t.Error("Create jpeg thumbnail failed")
 	}
 }
 

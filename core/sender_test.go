@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"errors"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -219,7 +220,7 @@ func TestSenderPostFormImage(t *testing.T) {
 type MockAPNSPusher struct{}
 
 func (m *MockAPNSPusher) Push(n *apns2.Notification) (*apns2.Response, error) {
-	return nil, nil
+	return &apns2.Response{}, errors.New("Do nothing")
 }
 
 func TestSendDirect(t *testing.T) {

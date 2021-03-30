@@ -51,7 +51,7 @@ message MsgContent {
     string      text        = 2;
     string      file        = 3;
     string      title       = 4;
-    Thumbnail   preview     = 5;
+    Thumbnail   thumbnail   = 5;
     uint64      duration    = 6;
 }
 

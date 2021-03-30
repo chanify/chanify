@@ -249,7 +249,10 @@ func (l *Logic) SendAPNS(uid string, msg *model.Message, data []byte, devices []
 	}
 	for _, dev := range devices {
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
-		l.GetAPNS(dev.Sandbox).Push(notification) // nolint: errcheck
+		res, err := l.GetAPNS(dev.Sandbox).Push(notification)
+		if err != nil {
+			log.Println("Send apns failed:", res.StatusCode, res.Reason)
+		}
 	}
 	return nil
 }

@@ -37,10 +37,17 @@ func (m *Message) TextContent(text string, title string) *Message {
 	return m
 }
 
-func (m *Message) ImageContent(path string) *Message {
+func (m *Message) ImageContent(path string, t *Thumbnail) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Image,
 		File: path,
+	}
+	if t != nil {
+		ctx.Thumbnail = &pb.Thumbnail{
+			Width:  int32(t.width),
+			Height: int32(t.height),
+			Data:   t.preview,
+		}
 	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m

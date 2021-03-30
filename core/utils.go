@@ -1,12 +1,19 @@
 package core
 
 import (
+	"bytes"
+	"image/jpeg"
+	"image/png"
 	"strconv"
 	"strings"
 
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	pngHeader = "\x89PNG\r\n\x1a\n"
 )
 
 func VerifyUser(ctx *gin.Context, key string) bool {
@@ -74,11 +81,23 @@ func parsePriority(priority string) int {
 }
 
 func parseImageContentType(data []byte) string {
-	if string(data[:len(pngHeader)]) == pngHeader {
+	if len(data) > len(pngHeader) && string(data[:len(pngHeader)]) == pngHeader {
 		return "image/png"
 	} else {
 		return "image/jpeg"
 	}
+}
+
+func CreateThumbnail(data []byte) *model.Thumbnail {
+	if parseImageContentType(data) == "image/png" {
+		if cfg, err := png.DecodeConfig(bytes.NewReader(data)); err == nil {
+			return model.NewThumbnail(cfg.Width, cfg.Height)
+		}
+	}
+	if cfg, err := jpeg.DecodeConfig(bytes.NewReader(data)); err == nil {
+		return model.NewThumbnail(cfg.Width, cfg.Height)
+	}
+	return nil
 }
 
 type JsonString string
