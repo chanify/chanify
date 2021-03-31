@@ -73,7 +73,7 @@ func TestNotFound(t *testing.T) {
 func TestUpdatePushToken(t *testing.T) {
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"})                                                                                                                                          // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true})                                                                                                                      // nolint: errcheck
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false)                                      // nolint: errcheck
 	c.logic.BindDevice("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "BDuFNLkmxyK0-NN3H3oKzzOtISq1w17-JAibD7X4pljYl6IEaEglWkKD5Iw537h-DYxAooXkHtu6un078sm7IiQ") // nolint: errcheck
 	handler := c.APIHandler()
@@ -92,7 +92,7 @@ func TestUpdatePushToken(t *testing.T) {
 func TestUpdatePushTokenFailed(t *testing.T) {
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true}) // nolint: errcheck
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/rest/v1/push-token", strings.NewReader(`{
 		"nonce": 123,

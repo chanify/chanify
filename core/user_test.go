@@ -12,7 +12,7 @@ import (
 func TestBindUser(t *testing.T) {
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true}) // nolint: errcheck
 	handler := c.APIHandler()
 	s := `{"user": {"uid": "ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY","key": "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4"}}`
 	req := httptest.NewRequest("POST", "/rest/v1/bind-user", strings.NewReader(s))
@@ -54,10 +54,48 @@ func TestBindUser(t *testing.T) {
 	}
 }
 
+func TestBindUserLimited(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{ // nolint: errcheck
+		DBUrl:        "sqlite://?mode=memory",
+		Registerable: false,
+		RegUsers:     []string{"ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY"},
+	})
+	handler := c.APIHandler()
+	s := `{"user": {"uid": "ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY","key": "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4"}}`
+	req := httptest.NewRequest("POST", "/rest/v1/bind-user", strings.NewReader(s))
+	req.Header.Set("CHUserSign", "MEUCIQDD93w25DdEJCIkIZU5GioFFAvTBILvuq3l-YBbapMOpQIgKJaszx-jwcWjhADsD2XlWTLtLlBPSTUch9LoNP0pS9Y")
+	req.Header.Set("CHDevSign", "MEQCIEqo-nBRlEempp1U43xfGMYzRbWEvnJXcROAZP2dpuWtAiBIicKZgDYNpc6y7Ihov9w21EK8CTPztNx0c_4pmz5ehA")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Error("Bind limited user failed")
+	}
+}
+
+func TestBindUserLimitedFailed(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: false}) // nolint: errcheck
+	handler := c.APIHandler()
+	s := `{"user": {"uid": "ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY","key": "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4"}}`
+	req := httptest.NewRequest("POST", "/rest/v1/bind-user", strings.NewReader(s))
+	req.Header.Set("CHUserSign", "MEUCIQDD93w25DdEJCIkIZU5GioFFAvTBILvuq3l-YBbapMOpQIgKJaszx-jwcWjhADsD2XlWTLtLlBPSTUch9LoNP0pS9Y")
+	req.Header.Set("CHDevSign", "MEQCIEqo-nBRlEempp1U43xfGMYzRbWEvnJXcROAZP2dpuWtAiBIicKZgDYNpc6y7Ihov9w21EK8CTPztNx0c_4pmz5ehA")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNotAcceptable {
+		t.Error("Check bind user limit failed")
+	}
+}
+
 func TestBindUserFailed(t *testing.T) {
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true}) // nolint: errcheck
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/rest/v1/bind-user", nil)
 	w := httptest.NewRecorder()
@@ -110,7 +148,7 @@ func TestUnbindUser(t *testing.T) {
 func TestUnbindUserInvalidSign(t *testing.T) {
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"})                                                                                                     // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true})                                                                                 // nolint: errcheck
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false) // nolint: errcheck
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/rest/v1/unbind-user", strings.NewReader(`{

@@ -29,28 +29,33 @@ var (
 
 	ErrNoSupportMethod = errors.New("No support method")
 	ErrInvalidContent  = errors.New("Invalid content")
+	ErrSystemLimited   = errors.New("SystemLimited")
 )
 
 type Options struct {
-	Name     string
-	Version  string
-	Endpoint string
-	DataPath string
-	FilePath string
-	DBUrl    string
-	Secret   string
+	Name         string
+	Version      string
+	Endpoint     string
+	DataPath     string
+	FilePath     string
+	DBUrl        string
+	Secret       string
+	Registerable bool
+	RegUsers     []string
 }
 
 type Logic struct {
-	srvless  bool
-	db       model.DB
-	secKey   *crypto.SecretKey
-	Name     string
-	NodeID   string
-	Version  string
-	Endpoint string
-	Features []string
+	srvless      bool
+	registerable bool
+	db           model.DB
+	secKey       *crypto.SecretKey
+	Name         string
+	NodeID       string
+	Version      string
+	Endpoint     string
+	Features     []string
 
+	whitelist   map[string]bool
 	filepath    string
 	apnsPClient *apns2.Client
 	apnsDClient *apns2.Client
@@ -79,11 +84,24 @@ func (opts *Options) fixOptions() {
 func NewLogic(opts *Options) (*Logic, error) {
 	opts.fixOptions()
 	l := &Logic{
-		srvless:  false,
-		Name:     opts.Name,
-		Version:  opts.Version,
-		Endpoint: opts.Endpoint,
-		Features: []string{"msg.text"},
+		srvless:      false,
+		registerable: opts.Registerable,
+		Name:         opts.Name,
+		Version:      opts.Version,
+		Endpoint:     opts.Endpoint,
+		Features:     []string{"msg.text"},
+	}
+	if l.registerable {
+		log.Println("Register user enabled")
+	} else {
+		log.Println("Register user disabled")
+		whitelist := map[string]bool{}
+		for _, u := range opts.RegUsers {
+			whitelist[u] = true
+		}
+		l.whitelist = whitelist
+		log.Println("Find", len(whitelist), "user(s) in whitelist")
+		l.Features = append([]string{"register.limit"}, l.Features...)
 	}
 	if len(opts.DBUrl) <= 0 {
 		if len(opts.Secret) > 0 {
@@ -124,6 +142,10 @@ func (l *Logic) Close() {
 		l.db.Close()
 		l.db = nil
 	}
+}
+
+func (l *Logic) CanFileStore() bool {
+	return len(l.filepath) > 0
 }
 
 func (l *Logic) GetUser(uid string) (*model.User, error) {
@@ -284,6 +306,9 @@ func (l *Logic) fixSecretKey() error {
 }
 
 func (l *Logic) createUser(uid string, pk *crypto.PublicKey, serverless bool) (*model.User, error) {
+	if !l.canRegisterUser(uid) {
+		return nil, ErrSystemLimited
+	}
 	u := &model.User{
 		Uid:       uid,
 		PublicKey: pk.MarshalPublicKey(),
@@ -297,4 +322,12 @@ func (l *Logic) createUser(uid string, pk *crypto.PublicKey, serverless bool) (*
 		return nil, err
 	}
 	return u, nil
+}
+
+func (l *Logic) canRegisterUser(uid string) bool {
+	if l.registerable {
+		return true
+	}
+	_, ok := l.whitelist[uid]
+	return ok
 }

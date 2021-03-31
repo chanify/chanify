@@ -61,10 +61,6 @@ func (tk *Token) GetChannel() []byte {
 	return tk.data.Channel
 }
 
-func (tk *Token) IsStatful() bool {
-	return (len(tk.signNode) > 0 && len(tk.signSys) <= 0)
-}
-
 func (tk *Token) IsExpires() bool {
 	return time.Now().UTC().UnixNano()/1e9 >= int64(tk.data.Expires)
 }

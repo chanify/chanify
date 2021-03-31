@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/chanify/chanify/logic"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 )
@@ -37,7 +38,11 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 	serverless := (params.Device == nil)
 	u, err := c.logic.UpsertUser(params.User.Uid, params.User.Key, serverless)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user id"})
+		if err == logic.ErrSystemLimited {
+			ctx.JSON(http.StatusNotAcceptable, gin.H{"res": http.StatusNotAcceptable, "msg": "system limited"})
+		} else {
+			ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user id"})
+		}
 		return
 	}
 	if serverless {

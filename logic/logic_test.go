@@ -88,7 +88,7 @@ func TestFixSecretKey(t *testing.T) {
 }
 
 func TestUpsertUserFailed(t *testing.T) {
-	l, _ := NewLogic(&Options{DBUrl: "nosql://?secret=123456"})
+	l, _ := NewLogic(&Options{DBUrl: "nosql://?secret=123456", Registerable: true})
 	if _, err := l.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false); err == nil {
 		t.Fatal("Check upsert user serverful failed")
 	}
@@ -106,7 +106,7 @@ func TestUpsertUserFailed(t *testing.T) {
 	randReader = func(b []byte) (n int, err error) {
 		return 0, io.EOF
 	}
-	l, _ = NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
+	l, _ = NewLogic(&Options{DBUrl: "sqlite://?mode=memory", Registerable: true})
 	if _, err := l.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false); err == nil {
 		t.Fatal("Check upsert user serverless failed")
 	}

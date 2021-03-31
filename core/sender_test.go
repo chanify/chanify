@@ -176,10 +176,12 @@ func TestSenderPostJSON(t *testing.T) {
 }
 
 func TestSenderPostImage(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
 	logic.ApiEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123", FilePath: fpath}) // nolint: errcheck
 	handler := c.APIHandler()
 	req := httptest.NewRequest("POST", "/v1/sender", nil)
 	req.Header.Set("Token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
@@ -193,10 +195,13 @@ func TestSenderPostImage(t *testing.T) {
 }
 
 func TestSenderPostFormImage(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+
 	logic.ApiEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123", FilePath: fpath}) // nolint: errcheck
 	handler := c.APIHandler()
 
 	body := &bytes.Buffer{}
@@ -226,7 +231,7 @@ func (m *MockAPNSPusher) Push(n *apns2.Notification) (*apns2.Response, error) {
 func TestSendDirect(t *testing.T) {
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true}) // nolint: errcheck
 	w := httptest.NewRecorder()
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
@@ -254,7 +259,7 @@ func TestSendForward(t *testing.T) {
 	logic.ApiEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true}) // nolint: errcheck
 	w := httptest.NewRecorder()
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	msg := model.NewMessage(tk).DisableToken()
@@ -294,7 +299,7 @@ func TestSendForward(t *testing.T) {
 func TestSendMsg(t *testing.T) {
 	c := New()
 	defer c.Close()
-	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true}) // nolint: errcheck
 	w := httptest.NewRecorder()
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
