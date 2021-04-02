@@ -2,8 +2,10 @@ package core
 
 import (
 	"bytes"
+	"encoding/json"
 	"image/jpeg"
 	"image/png"
+	"io/ioutil"
 	"strconv"
 	"strings"
 
@@ -16,8 +18,23 @@ const (
 	pngHeader = "\x89PNG\r\n\x1a\n"
 )
 
+func (c *Core) BindBodyJson(ctx *gin.Context, obj interface{}) error {
+	body, err := ioutil.ReadAll(ctx.Request.Body)
+	if err != nil {
+		return err
+	}
+	ctx.Set(gin.BodyBytesKey, body)
+	if strings.HasPrefix(ctx.ContentType(), "application/x-chsec-json") {
+		body, err = c.logic.Decrypt(body)
+		if err != nil {
+			return err
+		}
+	}
+	return json.Unmarshal(body, obj)
+}
+
 func VerifyUser(ctx *gin.Context, key string) bool {
-	sign, err := base64Encode.DecodeString(ctx.GetHeader("CHUserSign"))
+	sign, err := model.Base64Encode.DecodeString(ctx.GetHeader("CHUserSign"))
 	if err != nil {
 		return false
 	}
@@ -26,7 +43,7 @@ func VerifyUser(ctx *gin.Context, key string) bool {
 }
 
 func VerifyDevice(ctx *gin.Context, key string) bool {
-	sign, err := base64Encode.DecodeString(ctx.GetHeader("CHDevSign"))
+	sign, err := model.Base64Encode.DecodeString(ctx.GetHeader("CHDevSign"))
 	if err != nil {
 		return false
 	}
@@ -35,7 +52,7 @@ func VerifyDevice(ctx *gin.Context, key string) bool {
 }
 
 func VerifySign(key string, sign []byte, data []byte) bool {
-	kd, err := base64Encode.DecodeString(key)
+	kd, err := model.Base64Encode.DecodeString(key)
 	if err != nil {
 		return false
 	}

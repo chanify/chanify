@@ -3,13 +3,40 @@ package core
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"testing/iotest"
 
+	"github.com/chanify/chanify/logic"
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
 )
+
+func TestBindBodyJson(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/", nil)
+	ctx.Request.Body = io.NopCloser(iotest.ErrReader(errors.New("no body")))
+	var x int
+	if err := c.BindBodyJson(ctx, &x); err == nil {
+		t.Error("Check bind body failed")
+	}
+
+	ctx, _ = gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/", nil)
+	ctx.Request.Header.Set("Content-Type", "application/x-chsec-json")
+	ctx.Request.Body = io.NopCloser(strings.NewReader("123"))
+	if err := c.BindBodyJson(ctx, &x); err == nil {
+		t.Error("Check bind ecode body failed")
+	}
+}
 
 func TestVerifyUser(t *testing.T) {
 	w := httptest.NewRecorder()

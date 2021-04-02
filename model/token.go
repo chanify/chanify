@@ -25,7 +25,7 @@ func ParseToken(token string) (*Token, error) {
 	if len(tks) < 3 {
 		return nil, ErrInvalidToken
 	}
-	data, err := base64Encode.DecodeString(tks[0])
+	data, err := Base64Encode.DecodeString(tks[0])
 	if err != nil {
 		return nil, err
 	}
@@ -33,10 +33,10 @@ func ParseToken(token string) (*Token, error) {
 	if err := proto.Unmarshal(data, &tk.data); err != nil {
 		return nil, err
 	}
-	if tk.signSys, err = base64Encode.DecodeString(tks[1]); err != nil {
+	if tk.signSys, err = Base64Encode.DecodeString(tks[1]); err != nil {
 		return nil, err
 	}
-	if tk.signNode, err = base64Encode.DecodeString(tks[2]); err != nil {
+	if tk.signNode, err = Base64Encode.DecodeString(tks[2]); err != nil {
 		return nil, err
 	}
 	return tk, nil
@@ -47,7 +47,7 @@ func (tk *Token) GetUserID() string {
 }
 
 func (tk *Token) GetNodeID() []byte {
-	nid, err := base32Encode.DecodeString(tk.data.NodeId)
+	nid, err := Base32Encode.DecodeString(tk.data.NodeId)
 	if err != nil {
 		return []byte{}
 	}

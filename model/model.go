@@ -27,8 +27,8 @@ type OpenDB func(dsn string) (DB, error)
 
 var (
 	drivers        = map[string]OpenDB{}
-	base64Encode   = base64.RawURLEncoding
-	base32Encode   = base32.StdEncoding.WithPadding(base32.NoPadding)
+	Base64Encode   = base64.RawURLEncoding
+	Base32Encode   = base32.StdEncoding.WithPadding(base32.NoPadding)
 	defaultChannel []byte
 
 	ErrDriverNotFound   = errors.New("driver not found")

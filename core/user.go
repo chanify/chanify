@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/chanify/chanify/logic"
+	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 )
 
 func (c *Core) handleBindUser(ctx *gin.Context) {
@@ -23,7 +23,7 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 			Sandbox   bool   `json:"sandbox,omitempty"`
 		} `json:"device,omitempty"`
 	}
-	if err := ctx.ShouldBindBodyWith(&params, binding.JSON); err != nil {
+	if err := c.BindBodyJson(ctx, &params); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid params"})
 		return
 	}
@@ -58,7 +58,7 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 		}
 	}
 	kdata := u.PublicKeyEncrypt(u.SecretKey)
-	ctx.JSON(http.StatusOK, gin.H{"key": base64Encode.EncodeToString(kdata)})
+	ctx.JSON(http.StatusOK, gin.H{"key": model.Base64Encode.EncodeToString(kdata)})
 }
 
 func (c *Core) handleUnbindUser(ctx *gin.Context) {
@@ -67,7 +67,7 @@ func (c *Core) handleUnbindUser(ctx *gin.Context) {
 		DeviceID string `json:"device"`
 		UserID   string `json:"user"`
 	}
-	if err := ctx.ShouldBindBodyWith(&params, binding.JSON); err != nil {
+	if err := c.BindBodyJson(ctx, &params); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "unbind user device failed"})
 		return
 	}

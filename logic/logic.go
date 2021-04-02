@@ -55,6 +55,8 @@ type Logic struct {
 	Endpoint     string
 	Features     []string
 
+	infoData    []byte
+	infoSign    string
 	whitelist   map[string]bool
 	filepath    string
 	apnsPClient *apns2.Client
@@ -133,6 +135,7 @@ func NewLogic(opts *Options) (*Logic, error) {
 			log.Println("Files path:", l.filepath)
 		}
 	}
+	l.InitInfo()
 	log.Printf("Node server name: %s, version: %s, serverless: %v, node-id: %s\n", l.Name, l.Version, l.srvless, l.NodeID)
 	return l, nil
 }
@@ -211,6 +214,10 @@ func (l *Logic) GetDeviceKey(uuid string) ([]byte, error) {
 
 func (l *Logic) GetDevices(uid string) ([]*model.Device, error) {
 	return l.db.GetDevices(uid)
+}
+
+func (l *Logic) Decrypt(data []byte) ([]byte, error) {
+	return l.secKey.Decrypt(data)
 }
 
 func (l *Logic) VerifyToken(tk *model.Token) bool {

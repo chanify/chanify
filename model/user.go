@@ -22,7 +22,7 @@ func (u *User) SetServerless(s bool) {
 }
 
 func (u *User) GetPublicKeyString() string {
-	return base64Encode.EncodeToString(u.PublicKey)
+	return Base64Encode.EncodeToString(u.PublicKey)
 }
 
 func (u *User) PublicKeyEncrypt(data []byte) []byte {
