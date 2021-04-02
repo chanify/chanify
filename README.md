@@ -253,7 +253,7 @@ http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello
 
 ### Send Image
 
-Send image only support **POST** method used serverless node.
+Send image only support **POST** method used serverful node.
 
 - Content-Type: ```image/png``` OR ```image/jpeg```
 

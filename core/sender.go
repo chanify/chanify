@@ -157,7 +157,10 @@ func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Messa
 		return
 	}
 	out := msg.EncryptData(key, uint64(time.Now().UTC().UnixNano()))
-	c.logic.SendAPNS(uid, msg, out, devs, int(msg.Priority)) // nolint: errcheck
+	if n := c.logic.SendAPNS(uid, msg, out, devs, int(msg.Priority)); n <= 0 {
+		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices send success"})
+		return
+	}
 	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid.New().String()})
 }
 

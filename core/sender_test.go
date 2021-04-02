@@ -222,10 +222,12 @@ func TestSenderPostFormImage(t *testing.T) {
 	}
 }
 
-type MockAPNSPusher struct{}
+type MockAPNSPusher struct {
+	Error error
+}
 
 func (m *MockAPNSPusher) Push(n *apns2.Notification) (*apns2.Response, error) {
-	return &apns2.Response{}, errors.New("Do nothing")
+	return &apns2.Response{}, m.Error
 }
 
 func TestSendDirect(t *testing.T) {
@@ -252,6 +254,15 @@ func TestSendDirect(t *testing.T) {
 	c.SendDirect(ctx, tk, model.NewMessage(tk).SetPriority(5))
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatal("Send direct failed")
+	}
+
+	w = httptest.NewRecorder()
+	ctx, _ = gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "", nil)
+	logic.MockPusher = &MockAPNSPusher{Error: errors.New("TestSendFailed")}
+	c.SendDirect(ctx, tk, model.NewMessage(tk))
+	if w.Result().StatusCode != http.StatusNotFound {
+		t.Fatal("Check send direct failed")
 	}
 }
 

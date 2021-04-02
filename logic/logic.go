@@ -257,7 +257,7 @@ func (l *Logic) GetAPNS(sandbox bool) APNSPusher {
 	return l.apnsPClient
 }
 
-func (l *Logic) SendAPNS(uid string, msg *model.Message, data []byte, devices []*model.Device, priority int) error {
+func (l *Logic) SendAPNS(uid string, msg *model.Message, data []byte, devices []*model.Device, priority int) int {
 	notification := &apns2.Notification{
 		Topic:      "net.chanify.ios",
 		Expiration: time.Now().Add(24 * time.Hour),
@@ -269,14 +269,16 @@ func (l *Logic) SendAPNS(uid string, msg *model.Message, data []byte, devices []
 	if priority == 5 { // only 10 or 5
 		notification.Priority = priority
 	}
+	n := len(devices)
 	for _, dev := range devices {
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
 		res, err := l.GetAPNS(dev.Sandbox).Push(notification)
 		if err != nil {
 			log.Println("Send apns failed:", res.StatusCode, res.Reason)
+			n -= 1
 		}
 	}
-	return nil
+	return n
 }
 
 func (l *Logic) loadDB(dburl string) error {
