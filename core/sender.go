@@ -31,6 +31,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	token, _ := c.getToken(ctx)
 	var text string
+	link := ctx.Query("link")
 	title := ctx.Query("title")
 	sound := ctx.Query("sound")
 	priority := parsePriority(ctx.Query("priority"))
@@ -47,12 +48,16 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			Token    string     `json:"token,omitempty"`
 			Title    string     `json:"title,omitempty"`
 			Text     string     `json:"text,omitempty"`
+			Link     string     `json:"link,omitempty"`
 			Sound    JsonString `json:"sound,omitempty"`
 			Priority int        `json:"priority,omitempty"`
 		}
 		if err := ctx.BindJSON(&params); err == nil {
 			if token == nil && len(params.Token) > 0 {
 				token, _ = c.parseToken(params.Token)
+			}
+			if len(link) <= 0 && len(params.Link) > 0 {
+				link = params.Link
 			}
 			if len(title) <= 0 && len(params.Title) > 0 {
 				title = params.Title
@@ -81,6 +86,12 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 				ts := form.Value["title"]
 				if len(ts) > 0 {
 					title = ts[0]
+				}
+			}
+			if len(link) <= 0 {
+				ls := form.Value["link"]
+				if len(ls) > 0 {
+					link = ls[0]
 				}
 			}
 			if len(sound) <= 0 {
@@ -123,6 +134,9 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		if token == nil {
 			token, _ = c.parseToken(ctx.PostForm("token"))
 		}
+		if len(link) <= 0 {
+			link = ctx.PostForm("link")
+		}
 		if len(sound) <= 0 {
 			sound = ctx.PostForm("sound")
 		}
@@ -133,6 +147,9 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	if token == nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
+	}
+	if msg == nil && len(link) > 0 {
+		msg = model.NewMessage(token).LinkContent(link)
 	}
 	if msg == nil {
 		if len(text) <= 0 {

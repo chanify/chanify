@@ -34,6 +34,10 @@ func init() {
 			if err != nil {
 				return err
 			}
+			link, err := cmd.Flags().GetString("link")
+			if err != nil {
+				return err
+			}
 			if len(text) > 1 {
 				if text[0] == '@' {
 					if text[1] == '-' {
@@ -71,7 +75,7 @@ func init() {
 					image = in
 				}
 			}
-			if len(text) <= 0 && len(image) <= 0 {
+			if len(text) <= 0 && len(image) <= 0 && len(link) <= 0 {
 				return fmt.Errorf("No message content.")
 			}
 			var data bytes.Buffer
@@ -81,6 +85,10 @@ func init() {
 			if len(text) > 0 {
 				fw, _ = w.CreateFormField("text")
 				fw.Write([]byte(text)) // nolint: errcheck
+			}
+			if len(link) > 0 {
+				fw, _ = w.CreateFormField("link")
+				fw.Write([]byte(link)) // nolint: errcheck
 			}
 			if len(image) > 0 {
 				fw, _ = w.CreateFormFile("image", "image")
@@ -129,6 +137,7 @@ func init() {
 	sendCmd.Flags().String("token", "", "Send token.")
 	sendCmd.Flags().String("sound", "1", "Message sound.")
 	sendCmd.Flags().String("text", "", "Text message content.")
+	sendCmd.Flags().String("link", "", "Link message content.")
 	sendCmd.Flags().String("image", "", "Image file path.")
 	sendCmd.Flags().String("title", "", "Message title.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")

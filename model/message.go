@@ -25,6 +25,15 @@ func (m *Message) DisableToken() *Message {
 	return m
 }
 
+func (m *Message) LinkContent(link string) *Message {
+	ctx := &pb.MsgContent{
+		Type: pb.MsgType_Link,
+		Link: link,
+	}
+	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
 func (m *Message) TextContent(text string, title string) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Text,

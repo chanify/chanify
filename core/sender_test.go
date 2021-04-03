@@ -136,6 +136,8 @@ func TestSenderPostFormData(t *testing.T) {
 	partText.Write([]byte("hello"))                                                                                                    // nolint: errcheck                                                                                            // nolint: errcheck
 	partTitle, _ := writer.CreateFormField("title")                                                                                    // nolint: errcheck
 	partTitle.Write([]byte("MyTitle"))                                                                                                 // nolint: errcheck
+	partLink, _ := writer.CreateFormField("link")                                                                                      // nolint: errcheck
+	partLink.Write([]byte("https://api.chanify.net"))                                                                                  // nolint: errcheck
 	partSound, _ := writer.CreateFormField("sound")                                                                                    // nolint: errcheck
 	partSound.Write([]byte("false"))                                                                                                   // nolint: errcheck                                                                                           // nolint: errcheck
 	partPriority, _ := writer.CreateFormField("priority")                                                                              // nolint: errcheck
@@ -164,6 +166,7 @@ func TestSenderPostJSON(t *testing.T) {
 		"sound": 1,
 		"title": "abc",
 		"text": "hello",
+		"link": "https://api.chanify.net",
 		"token": "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg"
 	}`))
 	req.Header.Set("Content-Type", "application/json")
