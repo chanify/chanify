@@ -34,7 +34,7 @@ func (c *Core) BindBodyJson(ctx *gin.Context, obj interface{}) error {
 }
 
 func VerifyUser(ctx *gin.Context, key string) bool {
-	sign, err := model.Base64Encode.DecodeString(ctx.GetHeader("CHUserSign"))
+	sign, err := crypto.Base64Encode.DecodeString(ctx.GetHeader("CHUserSign"))
 	if err != nil {
 		return false
 	}
@@ -43,7 +43,7 @@ func VerifyUser(ctx *gin.Context, key string) bool {
 }
 
 func VerifyDevice(ctx *gin.Context, key string) bool {
-	sign, err := model.Base64Encode.DecodeString(ctx.GetHeader("CHDevSign"))
+	sign, err := crypto.Base64Encode.DecodeString(ctx.GetHeader("CHDevSign"))
 	if err != nil {
 		return false
 	}
@@ -52,7 +52,7 @@ func VerifyDevice(ctx *gin.Context, key string) bool {
 }
 
 func VerifySign(key string, sign []byte, data []byte) bool {
-	kd, err := model.Base64Encode.DecodeString(key)
+	kd, err := crypto.Base64Encode.DecodeString(key)
 	if err != nil {
 		return false
 	}

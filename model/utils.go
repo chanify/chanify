@@ -21,11 +21,11 @@ func NewAESGCM(key []byte) (cipher.AEAD, error) {
 }
 
 func DecodePushToken(token string) ([]byte, error) {
-	return Base64Encode.DecodeString(token)
+	return crypto.Base64Encode.DecodeString(token)
 }
 
 func CalcDeviceKey(uuid string, key string) (*crypto.PublicKey, error) {
-	data, err := Base64Encode.DecodeString(key)
+	data, err := crypto.Base64Encode.DecodeString(key)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func CalcDeviceKey(uuid string, key string) (*crypto.PublicKey, error) {
 }
 
 func CalcUserKey(uid string, key string) (*crypto.PublicKey, error) {
-	data, err := Base64Encode.DecodeString(key)
+	data, err := crypto.Base64Encode.DecodeString(key)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func CalcUserKey(uid string, key string) (*crypto.PublicKey, error) {
 	out = append(out, data...)
 	h := sha1.Sum(out)
 	udata := append([]byte{0x00}, h[:]...)
-	if Base32Encode.EncodeToString(udata) != uid {
+	if crypto.Base32Encode.EncodeToString(udata) != uid {
 		return nil, ErrInvalidUserID
 	}
 	return pk, nil

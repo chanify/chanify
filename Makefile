@@ -4,7 +4,7 @@ PACKAGE?=$(shell go list .|head -1)
 PROJECT_NAME?=$(notdir $(PACKAGE))
 
 ## Env variables
-TAG_COMMIT=$(shell git rev-list --tags=v* --max-count=1)
+TAG_COMMIT=$(shell git rev-list --tags --max-count=1)
 COMMIT_REF_NAME=$(shell git rev-parse --abbrev-ref HEAD)
 ifeq ($(TAG_COMMIT),)
 	MAIN_VER=0.0.0
@@ -14,14 +14,11 @@ endif
 ifeq ($(GITHUB_SHA),)
 	GITHUB_SHA=$(shell git rev-parse HEAD)
 endif
-ifeq ($(COMMIT_REF_NAME), main)
-	TAGS=latest ${MAIN_VER}
-else
-	TAGS=${COMMIT_REF_NAME}
+ifneq ($(GITHUB_SHA), $(TAG_COMMIT))
+	SUB_VER=-$(COMMIT_REF_NAME)
 endif
 
-
-VERSION=${MAIN_VER}
+VERSION=${MAIN_VER}${SUB_VER}
 GIT_COMMIT=$(shell echo ${GITHUB_SHA}|cut -c1-7)
 BUILD_TIME=$(shell date -u +%FT%TZ)
 LDFLAGS= -ldflags "\

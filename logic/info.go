@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"github.com/chanify/chanify/model"
+	"github.com/chanify/chanify/crypto"
 	"github.com/skip2/go-qrcode"
 )
 
@@ -28,7 +28,7 @@ func (l *Logic) InitInfo() {
 	}
 	l.infoData, _ = json.Marshal(info)
 	sign, _ := l.secKey.Sign(l.infoData)
-	l.infoSign = model.Base64Encode.EncodeToString(sign)
+	l.infoSign = crypto.Base64Encode.EncodeToString(sign)
 }
 
 func (l *Logic) GetInfo() ([]byte, string) {

@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/logic"
-	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -58,7 +58,7 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 		}
 	}
 	kdata := u.PublicKeyEncrypt(u.SecretKey)
-	ctx.JSON(http.StatusOK, gin.H{"key": model.Base64Encode.EncodeToString(kdata)})
+	ctx.JSON(http.StatusOK, gin.H{"key": crypto.Base64Encode.EncodeToString(kdata)})
 }
 
 func (c *Core) handleUnbindUser(ctx *gin.Context) {

@@ -1,8 +1,6 @@
 package model
 
 import (
-	"encoding/base32"
-	"encoding/base64"
 	"errors"
 	"strings"
 
@@ -27,8 +25,6 @@ type OpenDB func(dsn string) (DB, error)
 
 var (
 	drivers        = map[string]OpenDB{}
-	Base64Encode   = base64.RawURLEncoding
-	Base32Encode   = base32.StdEncoding.WithPadding(base32.NoPadding)
 	defaultChannel []byte
 
 	ErrDriverNotFound   = errors.New("driver not found")

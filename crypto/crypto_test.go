@@ -2,7 +2,6 @@ package crypto
 
 import (
 	"bytes"
-	"encoding/base64"
 	"math/big"
 	"testing"
 )
@@ -47,7 +46,7 @@ func TestPublicKey(t *testing.T) {
 	if len(data) <= 0 {
 		t.Error("Encode public key failed")
 	}
-	dk, err := base64.RawStdEncoding.DecodeString(data)
+	dk, err := Base64Encode.DecodeString(data)
 	if err != nil {
 		t.Error("Encode public key invalid:", err)
 	}

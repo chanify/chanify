@@ -43,7 +43,7 @@ func (s *nosql) SetOption(key string, value interface{}) error {
 }
 
 func (s *nosql) GetUser(uid string) (*User, error) {
-	data, err := Base32Encode.DecodeString(uid)
+	data, err := crypto.Base32Encode.DecodeString(uid)
 	if err != nil {
 		return nil, err
 	}

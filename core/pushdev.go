@@ -3,7 +3,7 @@ package core
 import (
 	"net/http"
 
-	"github.com/chanify/chanify/model"
+	"github.com/chanify/chanify/crypto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,7 +37,7 @@ func (c *Core) handleUpdatePushToken(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid device id"})
 		return
 	}
-	if !VerifyDevice(ctx, model.Base64Encode.EncodeToString(dev)) {
+	if !VerifyDevice(ctx, crypto.Base64Encode.EncodeToString(dev)) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid device sign"})
 		return
 	}

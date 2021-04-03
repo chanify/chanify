@@ -22,7 +22,8 @@ import (
 
 var (
 	eciesKeyLen       = aes.BlockSize
-	base32Encode      = base32.StdEncoding.WithPadding(base32.NoPadding)
+	Base64Encode      = base64.RawURLEncoding
+	Base32Encode      = base32.StdEncoding.WithPadding(base32.NoPadding)
 	ErrInvalidKey     = errors.New("InvalidKey")
 	ErrInvalidMessage = errors.New("InvalidMessage")
 )
@@ -121,7 +122,7 @@ func (k *SecretKey) ToID(code byte) string {
 }
 
 func (k *SecretKey) EncodePublicKey() string {
-	return base64.RawStdEncoding.EncodeToString(k.MarshalPublicKey())
+	return Base64Encode.EncodeToString(k.MarshalPublicKey())
 }
 
 func (k *SecretKey) Sign(msg []byte) ([]byte, error) {
@@ -167,7 +168,7 @@ func formatToID(code byte, key []byte) string {
 	data = append(data, key...)
 	s2 := sha1.Sum(data)
 	data = append([]byte{code}, s2[:]...)
-	return base32Encode.EncodeToString(data)
+	return Base32Encode.EncodeToString(data)
 }
 
 func X963KDF(sharedKeySeed []byte, ephemeralPublicKey []byte, hfnc func() hash.Hash) []byte {
