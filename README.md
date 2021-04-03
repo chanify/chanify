@@ -15,6 +15,7 @@ Chanify is a safe and simple notification tools. For developers, system administ
 <details open="open">
   <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
   <ol>
+    <li><a href="#features">Features</a></li>
     <li><a href="#getting-started">Getting Started</a></li>
     <li>
         <a href="#installation">Installation</a>
@@ -47,12 +48,24 @@ Chanify is a safe and simple notification tools. For developers, system administ
         <ul>
             <li><a href="#send-text">Send Text</a></li>
             <li><a href="#send-image">Send Image</a></li>
+            <li><a href="#send-link">Send Link</a></li>
         </ul>
     </li>
+    <li><a href="#configuration">Configuration</a></li>
+    <li><a href="#security">Security</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
   </ol>
 </details>
+
+## Features
+
+Chanify is include these features:
+
+- Customize channel for notifications.
+- Deploy your own node server.
+- Distributed architecture design.
+- Design for privacy protection.
 
 ## Getting Started
 
@@ -90,6 +103,9 @@ $ chanify send --token=<token> --text=<message>
 
 # Image message
 $ chanify send --token=<token> --image=<image file path>
+
+# URL message
+$ chanify send --token=<token> --link=<web url>
 ```
 
 ### As Serverless node
@@ -266,6 +282,45 @@ cat <jpeg image path> | curl -H "Content-Type: image/jpeg" --data-binary @- "htt
 ```bash
 $ curl --form "image=@<jpeg image path>" "http://<address>:<port>/v1/sender/<token>"
 ```
+
+### Send Link
+
+```bash
+$ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
+```
+
+```json
+{
+    "link": "<web url>",
+    "sound": 1,
+    "priority": 10,
+}
+```
+
+## Configuration
+
+Chanify can be configured with a yml format file, and the default path is ```~/.chanify.yml```.
+
+```yml
+server:
+    host: 0.0.0.0   # Listen ip address
+    port: 8080      # Listen port
+    endpoint: http://my.server/path # Endpoint URL
+    name: Node name # Name for node server
+    secret: <secret code> # key for serverless node server
+    dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # database dsn for serverful node server
+```
+
+## Security
+
+Node server can be disabled user registration and become a private server.
+
+```bash
+chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
+```
+
+- ```--registerable=false```: used to disable user registration
+- ```whitelist```: list users can be add into node server
 
 ## Contributing
 

@@ -15,6 +15,7 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
 <details open="open">
   <summary><h2 style="display: inline-block">目录</h2></summary>
   <ol>
+    <li><a href="#功能">功能</a></li>
     <li><a href="#入门">入门</a></li>
     <li>
         <a href="#安装">安装</a>
@@ -47,12 +48,24 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
         <ul>
             <li><a href="#发送文本">发送文本</a></li>
             <li><a href="#发送图片">发送图片</a></li>
+            <li><a href="#发送链接">发送链接</a></li>
         </ul>
     </li>
+    <li><a href="#配置文件">配置文件</a></li>
+    <li><a href="#安全">安全</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
 </details>
+
+## 功能
+
+Chanify包括这些功能：
+
+- 支持自定义频道分类消息
+- 支持部署自己的节点服务器
+- 依照分布式架构设计系统
+- 随机账号生成保护隐私
 
 ## 入门
 
@@ -90,6 +103,9 @@ $ chanify send --token=<token> --text=<message>
 
 # 图片消息
 $ chanify send --token=<token> --image=<image file path>
+
+# 链接消息
+$ chanify send --token=<token> --link=<web url>
 ```
 
 ### 作为无状态服务器
@@ -268,6 +284,45 @@ cat <jpeg文件路径> | curl -H "Content-Type: image/jpeg" --data-binary @- "ht
 ```bash
 $ curl --form "image=@<jpeg文件路径>" "http://<address>:<port>/v1/sender/<token>"
 ```
+
+### 发送链接
+
+```bash
+$ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
+```
+
+```json
+{
+    "link": "<web url>",
+    "sound": 1,
+    "priority": 10,
+}
+```
+
+## 配置文件
+
+可以通过yml文件来配置Chanify，默认路径```~/.chanify.yml```。
+
+```yml
+server:
+    host: 0.0.0.0   # 监听IP地址
+    port: 8080      # 监听端口
+    endpoint: http://my.server/path # 入口URL
+    name: Node name # 节点名称
+    secret: <secret code> # 无状态服务器使用的密钥
+    dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
+```
+
+## 安全
+
+可以通过禁用节点服务器的用户注册功能，来使Node服务器成为私有服务器，防止非授权用户使用。
+
+```bash
+chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
+```
+
+- ```--registerable=false```: 这个参数用来禁用用户注册
+- ```whitelist```: 服务器禁用用户注册后，仍然可以添加使用的用户
 
 ## 贡献
 
