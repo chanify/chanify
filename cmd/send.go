@@ -56,7 +56,7 @@ func init() {
 				}
 			}
 			var image []byte
-			imagePath, _ := cmd.Flags().GetString("image")
+			imagePath, err := cmd.Flags().GetString("image")
 			if err != nil {
 				return err
 			}
@@ -80,30 +80,34 @@ func init() {
 			}
 			var data bytes.Buffer
 			w := multipart.NewWriter(&data)
-			fw, _ := w.CreateFormField("token")
-			fw.Write([]byte(token)) // nolint: errcheck
+			if len(token) <= 0 {
+				return fmt.Errorf("No token.")
+			} else {
+				fw, _ := w.CreateFormField("token")
+				fw.Write([]byte(token)) // nolint: errcheck
+			}
 			if len(text) > 0 {
-				fw, _ = w.CreateFormField("text")
+				fw, _ := w.CreateFormField("text")
 				fw.Write([]byte(text)) // nolint: errcheck
 			}
 			if len(link) > 0 {
-				fw, _ = w.CreateFormField("link")
+				fw, _ := w.CreateFormField("link")
 				fw.Write([]byte(link)) // nolint: errcheck
 			}
 			if len(image) > 0 {
-				fw, _ = w.CreateFormFile("image", "image")
+				fw, _ := w.CreateFormFile("image", "image")
 				fw.Write(image) // nolint: errcheck
 			}
 			if title, err := cmd.Flags().GetString("title"); err == nil && len(title) > 0 {
-				fw, _ = w.CreateFormField("title")
+				fw, _ := w.CreateFormField("title")
 				fw.Write([]byte(title)) // nolint: errcheck
 			}
 			if len(sound) > 0 {
-				fw, _ = w.CreateFormField("sound")
+				fw, _ := w.CreateFormField("sound")
 				fw.Write([]byte(sound)) // nolint: errcheck
 			}
 			if priority > 0 {
-				fw, _ = w.CreateFormField("priority")
+				fw, _ := w.CreateFormField("priority")
 				fw.Write([]byte(strconv.Itoa(priority))) // nolint: errcheck
 			}
 			w.Close()
