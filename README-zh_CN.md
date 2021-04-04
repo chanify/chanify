@@ -99,14 +99,17 @@ $ go install github.com/chanify/chanify
 
 ```bash
 # 文本消息
-$ chanify send --token=<token> --text=<message>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --text=<message>
 
 # 图片消息
-$ chanify send --token=<token> --image=<image file path>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<image file path>
 
 # 链接消息
-$ chanify send --token=<token> --link=<web url>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<web url>
 ```
+
+```endpoint``` 默认值是 ```https://api.chanify.net```，并且会使用默认服务器发送消息。
+如果使用的是自建的节点服务器，请在讲```endpoint```设置成自建服务器的URL。
 
 ### 作为无状态服务器
 

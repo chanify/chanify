@@ -99,14 +99,17 @@ Use chanify to send message.
 
 ```bash
 # Text message
-$ chanify send --token=<token> --text=<message>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --text=<message>
 
 # Image message
-$ chanify send --token=<token> --image=<image file path>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<image file path>
 
 # URL message
-$ chanify send --token=<token> --link=<web url>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<web url>
 ```
+
+```endpoint``` default value is ```https://api.chanify.net```, and notification will send by default server.
+If you have own node server, please set ```endpoint``` to your node server url.
 
 ### As Serverless node
 
