@@ -267,6 +267,15 @@ func TestSendDirect(t *testing.T) {
 	if w.Result().StatusCode != http.StatusNotFound {
 		t.Fatal("Check send direct failed")
 	}
+
+	w = httptest.NewRecorder()
+	ctx, _ = gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "", nil)
+	logic.MockPusher = &MockAPNSPusher{}
+	c.SendDirect(ctx, tk, model.NewMessage(tk).TextContent(strings.Repeat("A", 4000), ""))
+	if w.Result().StatusCode != http.StatusRequestEntityTooLarge {
+		t.Fatal("Check send direct failed")
+	}
 }
 
 func TestSendForward(t *testing.T) {

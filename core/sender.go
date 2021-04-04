@@ -174,7 +174,11 @@ func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Messa
 		return
 	}
 	out := msg.EncryptData(key, uint64(time.Now().UTC().UnixNano()))
-	if n := c.logic.SendAPNS(uid, msg, out, devs, int(msg.Priority)); n <= 0 {
+	if len(out) > 4000 {
+		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "message body too large"})
+		return
+	}
+	if n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority)); n <= 0 {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices send success"})
 		return
 	}
