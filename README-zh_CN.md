@@ -3,6 +3,7 @@
 [![Docker](https://img.shields.io/docker/v/wizjin/chanify?sort=semver&logo=docker&style=flat-square)](https://hub.docker.com/r/wizjin/chanify)
 [![Release](https://img.shields.io/github/v/release/chanify/chanify?logo=github&style=flat-square)](https://github.com/chanify/chanify/releases/latest)
 [![iTunes App Store](https://img.shields.io/itunes/v/1531546573?logo=apple&style=flat-square)](https://itunes.apple.com/cn/app/id1531546573)
+[![WebStore](https://img.shields.io/chrome-web-store/v/llpdpmhkemkjeeigibdamadahmhoebdg?style=flat-square)](https://chrome.google.com/webstore/detail/chanify/llpdpmhkemkjeeigibdamadahmhoebdg)
 [![Workflow](https://img.shields.io/github/workflow/status/chanify/chanify/ci?label=build&logo=github&style=flat-square)](https://github.com/chanify/chanify/actions?workflow=ci)
 [![Codecov](https://img.shields.io/codecov/c/github/chanify/chanify?logo=codecov&style=flat-square)](https://codecov.io/gh/chanify/chanify)
 [![GitHub](https://img.shields.io/github/license/chanify/chanify?style=flat-square)](LICENSE)
@@ -53,6 +54,7 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
     </li>
     <li><a href="#配置文件">配置文件</a></li>
     <li><a href="#安全">安全</a></li>
+    <li><a href="#chrome插件">Chrome插件</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
@@ -326,6 +328,15 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 - ```--registerable=false```: 这个参数用来禁用用户注册
 - ```whitelist```: 服务器禁用用户注册后，仍然可以添加使用的用户
+
+## Chrome插件
+
+可以从[Chrome web store](https://chrome.google.com/webstore/detail/chanify/llpdpmhkemkjeeigibdamadahmhoebdg)下载插件.
+
+插件有以下功能:
+
+- 发送选中的```文本/图片/链接```消息到Chanify
+- 发送网页链接到Chanify
 
 ## 贡献
 
