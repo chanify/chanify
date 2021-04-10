@@ -48,8 +48,9 @@ Chanify is a safe and simple notification tools. For developers, system administ
         <a href="#http-api">HTTP API</a>
         <ul>
             <li><a href="#send-text">Send Text</a></li>
-            <li><a href="#send-image">Send Image</a></li>
             <li><a href="#send-link">Send Link</a></li>
+            <li><a href="#send-image">Send Image</a></li>
+            <li><a href="#send-file">Send File</a></li>
         </ul>
     </li>
     <li><a href="#configuration">Configuration</a></li>
@@ -103,11 +104,14 @@ Use chanify to send message.
 # Text message
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --text=<message>
 
+# URL message
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<web url>
+
 # Image message
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<image file path>
 
-# URL message
-$ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<web url>
+# File message
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<file path>
 ```
 
 ```endpoint``` default value is ```https://api.chanify.net```, and notification will send by default server.
@@ -272,6 +276,20 @@ E.g.
 http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello
 ```
 
+### Send Link
+
+```bash
+$ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
+```
+
+```json
+{
+    "link": "<web url>",
+    "sound": 1,
+    "priority": 10,
+}
+```
+
 ### Send Image
 
 Send image only support **POST** method used serverful node.
@@ -288,18 +306,14 @@ cat <jpeg image path> | curl -H "Content-Type: image/jpeg" --data-binary @- "htt
 $ curl --form "image=@<jpeg image path>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
-### Send Link
+### Send File
+
+Send file only support **POST** method used serverful node.
+
+- Content-Type: ```multipart/form-data```
 
 ```bash
-$ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
-```
-
-```json
-{
-    "link": "<web url>",
-    "sound": 1,
-    "priority": 10,
-}
+$ curl --form "file=@<file path>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ## Configuration

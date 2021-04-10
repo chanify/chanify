@@ -91,7 +91,7 @@ func NewLogic(opts *Options) (*Logic, error) {
 		Name:         opts.Name,
 		Version:      opts.Version,
 		Endpoint:     opts.Endpoint,
-		Features:     []string{"msg.text"},
+		Features:     []string{"msg.text", "msg.link"},
 	}
 	if l.registerable {
 		log.Println("Register user enabled")
@@ -130,8 +130,9 @@ func NewLogic(opts *Options) (*Logic, error) {
 		l.apnsPClient = apns2.NewTokenClient(tk).Production()
 		l.apnsDClient = apns2.NewTokenClient(tk).Development()
 		if len(l.filepath) > 0 {
-			l.Features = append(l.Features, "msg.image")
+			l.Features = append(l.Features, "msg.image", "msg.file")
 			FixPath(filepath.Join(l.filepath, "images")) // nolint: errcheck
+			FixPath(filepath.Join(l.filepath, "files"))  // nolint: errcheck
 			log.Println("Files path:", l.filepath)
 		}
 	}
@@ -231,14 +232,14 @@ func (l *Logic) VerifyToken(tk *model.Token) bool {
 	return tk.VerifySign(key)
 }
 
-func (l *Logic) LoadImageFile(name string) ([]byte, error) {
+func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 	if len(l.filepath) <= 0 {
 		return nil, ErrNoSupportMethod
 	}
-	return LoadFile(filepath.Join(l.filepath, "images", name))
+	return LoadFile(filepath.Join(l.filepath, tname, name))
 }
 
-func (l *Logic) SaveImageFile(data []byte) (string, error) {
+func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 	if len(l.filepath) <= 0 {
 		return "", ErrNoSupportMethod
 	}
@@ -247,11 +248,11 @@ func (l *Logic) SaveImageFile(data []byte) (string, error) {
 	}
 	key := sha1.Sum(data)
 	name := hex.EncodeToString(key[:])
-	path := filepath.Join(l.filepath, "images", name)
+	path := filepath.Join(l.filepath, tname, name)
 	if err := SaveFile(path, data); err != nil {
 		return "", err
 	}
-	return filepath.Join("/files/images", name), nil
+	return filepath.Join("/files/"+tname, name), nil
 }
 
 func (l *Logic) GetAPNS(sandbox bool) APNSPusher {

@@ -48,8 +48,9 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
         <a href="#http-api">HTTP API</a>
         <ul>
             <li><a href="#发送文本">发送文本</a></li>
-            <li><a href="#发送图片">发送图片</a></li>
             <li><a href="#发送链接">发送链接</a></li>
+            <li><a href="#发送图片">发送图片</a></li>
+            <li><a href="#发送文件">发送文件</a></li>
         </ul>
     </li>
     <li><a href="#配置文件">配置文件</a></li>
@@ -101,13 +102,16 @@ $ go install github.com/chanify/chanify
 
 ```bash
 # 文本消息
-$ chanify send --endpoint=http://<address>:<port> --token=<token> --text=<message>
-
-# 图片消息
-$ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<image file path>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --text=<文本消息>
 
 # 链接消息
-$ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<web url>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<网页链接>
+
+# 图片消息
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<图片文件路径>
+
+# 文件消息
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<文件路径>
 ```
 
 ```endpoint``` 默认值是 ```https://api.chanify.net```，并且会使用默认服务器发送消息。
@@ -274,6 +278,20 @@ Content-Type:
 http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello
 ```
 
+### 发送链接
+
+```bash
+$ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
+```
+
+```json
+{
+    "link": "<web url>",
+    "sound": 1,
+    "priority": 10,
+}
+```
+
 ### 发送图片
 
 目前仅支持使用 **POST** 方法通过自建的有状态服务器才能发送图片。
@@ -290,18 +308,14 @@ cat <jpeg文件路径> | curl -H "Content-Type: image/jpeg" --data-binary @- "ht
 $ curl --form "image=@<jpeg文件路径>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
-### 发送链接
+### 发送文件
+
+目前仅支持使用 **POST** 方法通过自建的有状态服务器才能发文件。
+
+- Content-Type: ```multipart/form-data```
 
 ```bash
-$ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
-```
-
-```json
-{
-    "link": "<web url>",
-    "sound": 1,
-    "priority": 10,
-}
+$ curl --form "file=@<文件路径>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ## 配置文件

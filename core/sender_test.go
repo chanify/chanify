@@ -225,6 +225,34 @@ func TestSenderPostFormImage(t *testing.T) {
 	}
 }
 
+func TestSenderPostFormFile(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+
+	logic.ApiEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123", FilePath: fpath}) // nolint: errcheck
+	handler := c.APIHandler()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)                                                                                                // nolint: errcheck                                                                                           // nolint: errcheck
+	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
+	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
+	partFile, _ := writer.CreateFormFile("file", "test.txt")
+	partFile.Write([]byte("")) // nolint: errcheck
+	writer.Close()
+
+	req := httptest.NewRequest("POST", "/v1/sender", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatal("Check send post test failed", resp.StatusCode)
+	}
+}
+
 type MockAPNSPusher struct {
 	Error error
 }
@@ -376,6 +404,34 @@ func TestSaveImageFileFailed(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	c.saveUploadImage(ctx, nil, []byte("123")) // nolint: errcheck
+	if w.Result().StatusCode != http.StatusBadRequest {
+		t.Fatal("Check save image failed")
+	}
+}
+
+func TestSaveFile(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+	os.MkdirAll(fpath+"/files/", os.ModePerm) // nolint: errcheck
+
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg") // nolint: errcheck
+	if _, err := c.saveUploadFile(ctx, tk, []byte("123"), "test.txt"); err != nil {
+		t.Error("Save text failed", err)
+	}
+}
+
+func TestSaveFileFailed(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	c.saveUploadFile(ctx, nil, []byte("123"), "test.txt") // nolint: errcheck
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check save image failed")
 	}

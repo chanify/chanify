@@ -46,6 +46,17 @@ func (m *Message) TextContent(text string, title string) *Message {
 	return m
 }
 
+func (m *Message) FileContent(path string, filename string, size int) *Message {
+	ctx := &pb.MsgContent{
+		Type:     pb.MsgType_File,
+		File:     path,
+		Filename: filename,
+		Size:     uint64(size),
+	}
+	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
 func (m *Message) ImageContent(path string, t *Thumbnail) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Image,

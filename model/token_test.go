@@ -13,6 +13,7 @@ func TestParseToken(t *testing.T) {
 	if tk.GetUserID() != "123" || string(tk.GetNodeID()) != "abc" || string(tk.GetChannel()) != "chan" || tk.RawToken() != "EgMxMjMiBGNoYW4qBU1GUkdH..c2lnbg" {
 		t.Fatal("Parse token value failed", string(tk.GetNodeID()))
 	}
+
 }
 
 func TestParseTokenFailed(t *testing.T) {

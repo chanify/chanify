@@ -118,6 +118,17 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 						}
 					}
 				}
+				fs = form.File["file"]
+				if len(fs) > 0 {
+					if fp, err := fs[0].Open(); err == nil {
+						defer fp.Close()
+						data, _ := ioutil.ReadAll(fp)
+						msg, err = c.saveUploadFile(ctx, token, data, fs[0].Filename)
+						if err != nil {
+							return
+						}
+					}
+				}
 			}
 		}
 	case "image/png", "image/jpeg":
@@ -221,10 +232,23 @@ func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no image content"})
 		return nil, ErrNoContent
 	}
-	path, err := c.logic.SaveImageFile(data)
+	path, err := c.logic.SaveFile("images", data)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid image content"})
 		return nil, ErrInvalidContent
 	}
 	return model.NewMessage(token).ImageContent(path, CreateThumbnail(data)), nil
+}
+
+func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string) (*model.Message, error) {
+	if len(data) <= 0 {
+		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no file content"})
+		return nil, ErrNoContent
+	}
+	path, err := c.logic.SaveFile("files", data)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid file content"})
+		return nil, ErrInvalidContent
+	}
+	return model.NewMessage(token).FileContent(path, filename, len(data)), nil
 }

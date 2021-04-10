@@ -64,7 +64,8 @@ func (c *Core) APIHandler() http.Handler {
 	api.POST("/push-token", c.handleUpdatePushToken)
 
 	file := r.Group("/files")
-	file.GET("/images/:fname", c.handleImageFile)
+	file.GET("/images/:fname", c.handleImageDownload)
+	file.GET("/files/:fname", c.handleFileDownload)
 	return r
 }
 
