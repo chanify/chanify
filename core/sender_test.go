@@ -420,7 +420,7 @@ func TestSaveFile(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg") // nolint: errcheck
-	if _, err := c.saveUploadFile(ctx, tk, []byte("123"), "test.txt"); err != nil {
+	if _, err := c.saveUploadFile(ctx, tk, []byte("123"), "test.txt", "abc"); err != nil {
 		t.Error("Save text failed", err)
 	}
 }
@@ -431,7 +431,7 @@ func TestSaveFileFailed(t *testing.T) {
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	c.saveUploadFile(ctx, nil, []byte("123"), "test.txt") // nolint: errcheck
+	c.saveUploadFile(ctx, nil, []byte("123"), "test.txt", "123") // nolint: errcheck
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check save image failed")
 	}

@@ -46,12 +46,15 @@ func (m *Message) TextContent(text string, title string) *Message {
 	return m
 }
 
-func (m *Message) FileContent(path string, filename string, size int) *Message {
+func (m *Message) FileContent(path string, filename string, desc string, size int) *Message {
 	ctx := &pb.MsgContent{
 		Type:     pb.MsgType_File,
 		File:     path,
 		Filename: filename,
 		Size:     uint64(size),
+	}
+	if len(desc) > 0 {
+		ctx.Text = desc
 	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m

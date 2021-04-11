@@ -106,7 +106,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 					priority = parsePriority(ps[0])
 				}
 			}
-			if token != nil && c.logic.CanFileStore() && len(text) <= 0 {
+			if token != nil && c.logic.CanFileStore() {
 				fs := form.File["image"]
 				if len(fs) > 0 {
 					if fp, err := fs[0].Open(); err == nil {
@@ -123,7 +123,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 					if fp, err := fs[0].Open(); err == nil {
 						defer fp.Close()
 						data, _ := ioutil.ReadAll(fp)
-						msg, err = c.saveUploadFile(ctx, token, data, fs[0].Filename)
+						msg, err = c.saveUploadFile(ctx, token, data, fs[0].Filename, text)
 						if err != nil {
 							return
 						}
@@ -240,7 +240,7 @@ func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte
 	return model.NewMessage(token).ImageContent(path, CreateThumbnail(data)), nil
 }
 
-func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string) (*model.Message, error) {
+func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string, desc string) (*model.Message, error) {
 	if len(data) <= 0 {
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no file content"})
 		return nil, ErrNoContent
@@ -250,5 +250,5 @@ func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte,
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid file content"})
 		return nil, ErrInvalidContent
 	}
-	return model.NewMessage(token).FileContent(path, filename, len(data)), nil
+	return model.NewMessage(token).FileContent(path, filename, desc, len(data)), nil
 }

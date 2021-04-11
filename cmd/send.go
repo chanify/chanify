@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -75,7 +76,21 @@ func init() {
 					image = in
 				}
 			}
-			if len(text) <= 0 && len(image) <= 0 && len(link) <= 0 {
+			var file []byte
+			var filename string
+			filePath, err := cmd.Flags().GetString("file")
+			if err != nil {
+				return err
+			}
+			if len(filePath) > 0 {
+				in, err := ioutil.ReadFile(filePath)
+				if err != nil {
+					return err
+				}
+				file = in
+				filename = filepath.Base(filePath)
+			}
+			if len(text) <= 0 && len(image) <= 0 && len(link) <= 0 && len(file) <= 0 {
 				return fmt.Errorf("No message content.")
 			}
 			var data bytes.Buffer
@@ -97,6 +112,10 @@ func init() {
 			if len(image) > 0 {
 				fw, _ := w.CreateFormFile("image", "image")
 				fw.Write(image) // nolint: errcheck
+			}
+			if len(file) > 0 && len(filename) > 0 {
+				fw, _ := w.CreateFormFile("file", filename)
+				fw.Write(file) // nolint: errcheck
 			}
 			if title, err := cmd.Flags().GetString("title"); err == nil && len(title) > 0 {
 				fw, _ := w.CreateFormField("title")
@@ -143,6 +162,7 @@ func init() {
 	sendCmd.Flags().String("text", "", "Text message content.")
 	sendCmd.Flags().String("link", "", "Link message content.")
 	sendCmd.Flags().String("image", "", "Image file path.")
+	sendCmd.Flags().String("file", "", "File path.")
 	sendCmd.Flags().String("title", "", "Message title.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")
 	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
