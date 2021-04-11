@@ -111,7 +111,7 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<web ur
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<image file path>
 
 # File message
-$ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<file path>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<file path> --text=<file description>
 ```
 
 ```endpoint``` default value is ```https://api.chanify.net```, and notification will send by default server.
@@ -257,6 +257,7 @@ Content-Type:
     "token": "<token>",
     "title": "<message title>",
     "text": "<text message content>",
+    "copy": "<copy text for text message>",
     "sound": 1,
     "priority": 10,
 }
@@ -267,6 +268,7 @@ Additional params
 | Key      | Description                               |
 | -------- | ----------------------------------------- |
 | title    | The title for notification message.       |
+| copy     | The copy text for text notification.      |
 | sound    | `1` enable sound, otherwise disable sound |
 | priority | `10` default, or `5`                      |
 

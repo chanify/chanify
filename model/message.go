@@ -34,13 +34,16 @@ func (m *Message) LinkContent(link string) *Message {
 	return m
 }
 
-func (m *Message) TextContent(text string, title string) *Message {
+func (m *Message) TextContent(text string, title string, copytext string) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Text,
 		Text: text,
 	}
 	if len(title) > 0 {
 		ctx.Title = title
+	}
+	if len(copytext) > 0 {
+		ctx.Copytext = copytext
 	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m

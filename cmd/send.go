@@ -121,6 +121,10 @@ func init() {
 				fw, _ := w.CreateFormField("title")
 				fw.Write([]byte(title)) // nolint: errcheck
 			}
+			if copytext, err := cmd.Flags().GetString("copy"); err == nil && len(copytext) > 0 {
+				fw, _ := w.CreateFormField("copy")
+				fw.Write([]byte(copytext)) // nolint: errcheck
+			}
 			if len(sound) > 0 {
 				fw, _ := w.CreateFormField("sound")
 				fw.Write([]byte(sound)) // nolint: errcheck
@@ -164,6 +168,7 @@ func init() {
 	sendCmd.Flags().String("image", "", "Image file path.")
 	sendCmd.Flags().String("file", "", "File path.")
 	sendCmd.Flags().String("title", "", "Message title.")
+	sendCmd.Flags().String("copy", "", "Copy test for text message.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")
 	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
 	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))       // nolint: errcheck

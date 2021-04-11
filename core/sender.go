@@ -23,7 +23,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 		return
 	}
-	msg := model.NewMessage(token).TextContent(text, ctx.Query("title")).
+	msg := model.NewMessage(token).TextContent(text, ctx.Query("title"), ctx.Query("copy")).
 		SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority")))
 	c.sendMsg(ctx, token, msg)
 }
@@ -34,6 +34,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	link := ctx.Query("link")
 	title := ctx.Query("title")
 	sound := ctx.Query("sound")
+	copytext := ctx.Query("copy")
 	priority := parsePriority(ctx.Query("priority"))
 	var msg *model.Message = nil
 	switch ctx.ContentType() {
@@ -48,6 +49,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			Token    string     `json:"token,omitempty"`
 			Title    string     `json:"title,omitempty"`
 			Text     string     `json:"text,omitempty"`
+			Copy     string     `json:"copy,omitempty"`
 			Link     string     `json:"link,omitempty"`
 			Sound    JsonString `json:"sound,omitempty"`
 			Priority int        `json:"priority,omitempty"`
@@ -64,6 +66,9 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			}
 			if len(sound) <= 0 && len(params.Sound) > 0 {
 				sound = string(params.Sound)
+			}
+			if len(copytext) <= 0 && len(params.Copy) > 0 {
+				copytext = params.Copy
 			}
 			if priority <= 0 {
 				priority = params.Priority
@@ -92,6 +97,12 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 				ls := form.Value["link"]
 				if len(ls) > 0 {
 					link = ls[0]
+				}
+			}
+			if len(copytext) <= 0 {
+				cs := form.Value["copy"]
+				if len(cs) > 0 {
+					copytext = cs[0]
 				}
 			}
 			if len(sound) <= 0 {
@@ -148,6 +159,9 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		if len(link) <= 0 {
 			link = ctx.PostForm("link")
 		}
+		if len(copytext) <= 0 {
+			copytext = ctx.PostForm("copy")
+		}
 		if len(sound) <= 0 {
 			sound = ctx.PostForm("sound")
 		}
@@ -167,7 +181,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 			return
 		}
-		msg = model.NewMessage(token).TextContent(text, title)
+		msg = model.NewMessage(token).TextContent(text, title, copytext)
 	}
 	c.sendMsg(ctx, token, msg.SoundName(sound).SetPriority(priority))
 }

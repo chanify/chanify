@@ -133,15 +133,17 @@ func TestSenderPostFormData(t *testing.T) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	partText, _ := writer.CreateFormField("text")                                                                                      // nolint: errcheck
-	partText.Write([]byte("hello"))                                                                                                    // nolint: errcheck                                                                                            // nolint: errcheck
+	partText.Write([]byte("hello"))                                                                                                    // nolint: errcheck
 	partTitle, _ := writer.CreateFormField("title")                                                                                    // nolint: errcheck
 	partTitle.Write([]byte("MyTitle"))                                                                                                 // nolint: errcheck
+	partCopy, _ := writer.CreateFormField("copy")                                                                                      // nolint: errcheck
+	partCopy.Write([]byte("copy text"))                                                                                                // nolint: errcheck
 	partLink, _ := writer.CreateFormField("link")                                                                                      // nolint: errcheck
 	partLink.Write([]byte("https://api.chanify.net"))                                                                                  // nolint: errcheck
 	partSound, _ := writer.CreateFormField("sound")                                                                                    // nolint: errcheck
-	partSound.Write([]byte("false"))                                                                                                   // nolint: errcheck                                                                                           // nolint: errcheck
+	partSound.Write([]byte("false"))                                                                                                   // nolint: errcheck
 	partPriority, _ := writer.CreateFormField("priority")                                                                              // nolint: errcheck
-	partPriority.Write([]byte("5"))                                                                                                    // nolint: errcheck                                                                                           // nolint: errcheck
+	partPriority.Write([]byte("5"))                                                                                                    // nolint: errcheck
 	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
 	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
 	writer.Close()
@@ -166,6 +168,7 @@ func TestSenderPostJSON(t *testing.T) {
 		"sound": 1,
 		"title": "abc",
 		"text": "hello",
+		"copy": "abc",
 		"link": "https://api.chanify.net",
 		"token": "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg"
 	}`))
@@ -300,7 +303,7 @@ func TestSendDirect(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	logic.MockPusher = &MockAPNSPusher{}
-	c.SendDirect(ctx, tk, model.NewMessage(tk).TextContent(strings.Repeat("A", 4000), ""))
+	c.SendDirect(ctx, tk, model.NewMessage(tk).TextContent(strings.Repeat("A", 4000), "", "123"))
 	if w.Result().StatusCode != http.StatusRequestEntityTooLarge {
 		t.Fatal("Check send direct failed")
 	}
@@ -355,7 +358,7 @@ func TestSendMsg(t *testing.T) {
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	c.sendMsg(ctx, tk, model.NewMessage(tk).TextContent("123", "title").SetPriority(5))
+	c.sendMsg(ctx, tk, model.NewMessage(tk).TextContent("123", "title", "abc").SetPriority(5))
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check invalid user failed")
 	}
@@ -365,7 +368,7 @@ func TestSendMsg(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", true) // nolint: errcheck
-	c.sendMsg(ctx, tk, model.NewMessage(tk).TextContent("123", "title"))
+	c.sendMsg(ctx, tk, model.NewMessage(tk).TextContent("123", "title", "abc"))
 	if w.Result().StatusCode != http.StatusInternalServerError {
 		t.Fatal("Check send serverless failed")
 	}
@@ -375,7 +378,7 @@ func TestSendMsg(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false) // nolint: errcheck
-	c.sendMsg(ctx, tk, model.NewMessage(tk).TextContent("123", "title").SetPriority(5))
+	c.sendMsg(ctx, tk, model.NewMessage(tk).TextContent("123", "title", "abc").SetPriority(5))
 	if w.Result().StatusCode != http.StatusNotFound {
 		t.Fatal("Check send serverful failed")
 	}

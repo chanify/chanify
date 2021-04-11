@@ -111,7 +111,7 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<网页
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<图片文件路径>
 
 # 文件消息
-$ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<文件路径>
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<文件路径> --text=<文件描述>
 ```
 
 ```endpoint``` 默认值是 ```https://api.chanify.net```，并且会使用默认服务器发送消息。
@@ -258,6 +258,7 @@ Content-Type:
     "token": "<令牌Token>",
     "title": "<消息标题>",
     "text": "<文本消息内容>",
+    "copy": "<可选的复制文本>",
     "sound": 1,
     "priority": 10,
 }
@@ -268,6 +269,7 @@ Content-Type:
 | 参数名    | 描述                               |
 | -------- | --------------------------------- |
 | title    | 通知消息的标题                      |
+| copy     | 可选的复制文本（仅文本消息有效）       |
 | sound    | `1` 启用声音提示, 其他情况会静音推送   |
 | priority | `10` 默认优先级, 或者 `5` 较低优先级  |
 

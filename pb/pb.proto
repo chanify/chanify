@@ -58,6 +58,8 @@ message MsgContent {
     uint64      size        = 7;
     string      link        = 8;
     string      filename    = 9;
+    // actions
+    string      copytext    = 16;
 }
 
 enum SoundType {
