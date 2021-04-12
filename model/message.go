@@ -34,7 +34,7 @@ func (m *Message) LinkContent(link string) *Message {
 	return m
 }
 
-func (m *Message) TextContent(text string, title string, copytext string) *Message {
+func (m *Message) TextContent(text string, title string, copytext string, autocopy string) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Text,
 		Text: text,
@@ -44,6 +44,9 @@ func (m *Message) TextContent(text string, title string, copytext string) *Messa
 	}
 	if len(copytext) > 0 {
 		ctx.Copytext = copytext
+	}
+	if len(autocopy) > 0 {
+		ctx.Flags = 1
 	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m

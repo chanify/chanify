@@ -26,6 +26,7 @@ func init() {
 			cmd.SilenceErrors = true
 			cmd.SilenceUsage = true
 			sound := viper.GetString("client.sound")
+			autocopy := viper.GetString("client.autocopy")
 			priority := viper.GetInt("client.priority")
 			token := viper.GetString("client.token")
 			if len(token) <= 0 {
@@ -125,6 +126,10 @@ func init() {
 				fw, _ := w.CreateFormField("copy")
 				fw.Write([]byte(copytext)) // nolint: errcheck
 			}
+			if len(autocopy) > 0 {
+				fw, _ := w.CreateFormField("autocopy")
+				fw.Write([]byte(autocopy)) // nolint: errcheck
+			}
 			if len(sound) > 0 {
 				fw, _ := w.CreateFormField("sound")
 				fw.Write([]byte(sound)) // nolint: errcheck
@@ -162,16 +167,18 @@ func init() {
 	rootCmd.AddCommand(sendCmd)
 	sendCmd.Flags().String("endpoint", "https://api.chanify.net", "Node server endpoint.")
 	sendCmd.Flags().String("token", "", "Send token.")
-	sendCmd.Flags().String("sound", "1", "Message sound.")
+	sendCmd.Flags().String("sound", "", "Message sound.")
 	sendCmd.Flags().String("text", "", "Text message content.")
 	sendCmd.Flags().String("link", "", "Link message content.")
 	sendCmd.Flags().String("image", "", "Image file path.")
 	sendCmd.Flags().String("file", "", "File path.")
 	sendCmd.Flags().String("title", "", "Message title.")
 	sendCmd.Flags().String("copy", "", "Copy test for text message.")
+	sendCmd.Flags().String("autocopy", "", "Auto copy text for text message.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")
 	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
 	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))       // nolint: errcheck
+	viper.BindPFlag("client.autocopy", sendCmd.Flags().Lookup("autocopy")) // nolint: errcheck
 	viper.BindPFlag("client.priority", sendCmd.Flags().Lookup("priority")) // nolint: errcheck
 	viper.BindPFlag("client.endpoint", sendCmd.Flags().Lookup("endpoint")) // nolint: errcheck
 }

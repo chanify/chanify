@@ -40,6 +40,7 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
                     <li><a href="#python-3">Python 3</a></li>
                     <li><a href="#ruby">Ruby</a></li>
                     <li><a href="#nodejs">NodeJS</a></li>
+                    <li><a href="#php">PHP</a></li>
                 </ul>
             </li>
         </ul>
@@ -73,7 +74,7 @@ Chanify包括这些功能：
 ## 入门
 
 1. 从AppStore安装[iOS应用](https://itunes.apple.com/cn/app/id1531546573)（1.0.0或以上版本）。
-2. 获取发送使用的令牌```token```，[更多细节](https://github.com/chanify/chanify-ios)。
+2. 获取发送使用的令牌`token`，[更多细节](https://github.com/chanify/chanify-ios)。
 3. 使用API来发送消息。
 
 ## 安装
@@ -114,8 +115,8 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<图�
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<文件路径> --text=<文件描述>
 ```
 
-```endpoint``` 默认值是 ```https://api.chanify.net```，并且会使用默认服务器发送消息。
-如果使用的是自建的节点服务器，请在讲```endpoint```设置成自建服务器的URL。
+`endpoint` 默认值是 `https://api.chanify.net`，并且会使用默认服务器发送消息。
+如果使用的是自建的节点服务器，请在讲`endpoint`设置成自建服务器的URL。
 
 ### 作为无状态服务器
 
@@ -172,7 +173,7 @@ $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<
 ### 添加节点服务器
 
 - 启动节点服务器
-- 获取服务器二维码（```http://<address>:<port>/```）
+- 获取服务器二维码（`http://<address>:<port>/`）
 - 打开iOS的客户端扫描二维码添加节点
 
 ### 发送消息
@@ -241,10 +242,7 @@ $curl = curl_init();
 curl_setopt_array($curl, [
     CURLOPT_URL           => 'http://<address>:<port>/v1/sender/<token>',
     CURLOPT_CUSTOMREQUEST => 'POST',
-    CURLOPT_POSTFIELDS    => [
-        'text' => 'hello',
-        // 'link' => 'https://api.chanify.net'
-    ],
+    CURLOPT_POSTFIELDS    => [ 'text' => 'hello' ],
 ]);
 
 $response = curl_exec($curl);
@@ -269,16 +267,17 @@ http://<address>:<port>/v1/sender/<token>
 
 Content-Type: 
 
-- ```text/plain```: Body is text message
-- ```multipart/form-data```: The block of data("text") is text message
-- ```application/x-www-form-urlencoded```: ```text=<url encoded text message>```
-- ```application/json; charset=utf-8```: 字段都是可选的
+- `text/plain`: Body is text message
+- `multipart/form-data`: The block of data("text") is text message
+- `application/x-www-form-urlencoded`: `text=<url encoded text message>`
+- `application/json; charset=utf-8`: 字段都是可选的
 ```json
 {
     "token": "<令牌Token>",
     "title": "<消息标题>",
     "text": "<文本消息内容>",
     "copy": "<可选的复制文本>",
+    "autocopy": 1, // 是否自动复制文本
     "sound": 1,
     "priority": 10,
 }
@@ -286,18 +285,18 @@ Content-Type:
 
 支持以下参数：
 
-| 参数名    | 描述                               |
-| -------- | --------------------------------- |
-| title    | 通知消息的标题                      |
-| copy     | 可选的复制文本（仅文本消息有效）       |
-| sound    | `1` 启用声音提示, 其他情况会静音推送   |
-| priority | `10` 默认优先级, 或者 `5` 较低优先级  |
-
+| 参数名    | 默认值 | 描述                              |
+| -------- | ----- | -------------------------------- |
+| title    | 无    | 通知消息的标题                      |
+| copy     | 无    | 可选的复制文本（仅文本消息有效）       |
+| autocopy | `0`   | 是否自动复制文本（仅文本消息有效）     |
+| sound    | `0`   | `1` 启用声音提示, 其他情况会静音推送  |
+| priority | `10`  | `10` 正常优先级, `5` 较低优先级     ｜
 
 例如：
 
 ```
-http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello
+http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello&copy=123&autocopy=1
 ```
 
 ### 发送链接
@@ -318,13 +317,13 @@ $ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
 
 目前仅支持使用 **POST** 方法通过自建的有状态服务器才能发送图片。
 
-- Content-Type: ```image/png``` 或者 ```image/jpeg```
+- Content-Type: `image/png` 或者 `image/jpeg`
 
 ```bash
 cat <jpeg文件路径> | curl -H "Content-Type: image/jpeg" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
 ```
 
-- Content-Type: ```multipart/form-data```
+- Content-Type: `multipart/form-data`
 
 ```bash
 $ curl --form "image=@<jpeg文件路径>" "http://<address>:<port>/v1/sender/<token>"
@@ -334,7 +333,7 @@ $ curl --form "image=@<jpeg文件路径>" "http://<address>:<port>/v1/sender/<to
 
 目前仅支持使用 **POST** 方法通过自建的有状态服务器才能发文件。
 
-- Content-Type: ```multipart/form-data```
+- Content-Type: `multipart/form-data`
 
 ```bash
 $ curl --form "file=@<文件路径>" "http://<address>:<port>/v1/sender/<token>"
@@ -342,7 +341,7 @@ $ curl --form "file=@<文件路径>" "http://<address>:<port>/v1/sender/<token>"
 
 ## 配置文件
 
-可以通过yml文件来配置Chanify，默认路径```~/.chanify.yml```。
+可以通过yml文件来配置Chanify，默认路径`~/.chanify.yml`。
 
 ```yml
 server:
@@ -362,8 +361,8 @@ server:
 chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 ```
 
-- ```--registerable=false```: 这个参数用来禁用用户注册
-- ```whitelist```: 服务器禁用用户注册后，仍然可以添加使用的用户
+- `--registerable=false`: 这个参数用来禁用用户注册
+- `whitelist`: 服务器禁用用户注册后，仍然可以添加使用的用户
 
 ## Chrome插件
 
@@ -371,18 +370,19 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 插件有以下功能:
 
-- 发送选中的```文本/图片/链接```消息到Chanify
+- 发送选中的`文本/图片/链接`消息到Chanify
 - 发送网页链接到Chanify
 
 ## 贡献
 
 贡献使开源社区成为了一个令人赞叹的学习，启发和创造场所。 **十分感谢**您做出的任何贡献。
 
-1. Fork本项目
-2. 创建您的Feature分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启一个Pull Request
+1. Fork 本项目
+2. 切换到 dev 分支 (`git checkout dev`)
+3. 创建您的 Feature 分支 (`git checkout -b feature/AmazingFeature`)
+4. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)
+5. 推送到分支 (`git push origin feature/AmazingFeature`)
+6. 开启一个 Pull Request (合并到 `chanify:dev` 分支)
 
 ## 许可证
 

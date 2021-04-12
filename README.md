@@ -40,6 +40,7 @@ Chanify is a safe and simple notification tools. For developers, system administ
                     <li><a href="#python-3">Python 3</a></li>
                     <li><a href="#ruby">Ruby</a></li>
                     <li><a href="#nodejs">NodeJS</a></li>
+                    <li><a href="#php">PHP</a></li>
                 </ul>
             </li>
         </ul>
@@ -114,8 +115,8 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<image
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<file path> --text=<file description>
 ```
 
-```endpoint``` default value is ```https://api.chanify.net```, and notification will send by default server.
-If you have own node server, please set ```endpoint``` to your node server url.
+`endpoint` default value is `https://api.chanify.net`, and notification will send by default server.
+If you have own node server, please set `endpoint` to your node server url.
 
 ### As Serverless node
 
@@ -172,7 +173,7 @@ Chanify will not create database.
 ### Add New Node
 
 - Start node server
-- iOS client can scan QRCode(```http://<address>:<port>/```) to add node.
+- iOS client can scan QRCode(`http://<address>:<port>/`) to add node.
 
 ### Send message
 
@@ -240,10 +241,7 @@ $curl = curl_init();
 curl_setopt_array($curl, [
     CURLOPT_URL           => 'http://<address>:<port>/v1/sender/<token>',
     CURLOPT_CUSTOMREQUEST => 'POST',
-    CURLOPT_POSTFIELDS    => [
-        'text' => 'hello',
-        // 'link' => 'https://api.chanify.net'
-    ],
+    CURLOPT_POSTFIELDS    => [ 'text' => 'hello' ],
 ]);
 
 $response = curl_exec($curl);
@@ -268,16 +266,17 @@ http://<address>:<port>/v1/sender/<token>
 
 Content-Type: 
 
-- ```text/plain```: Body is text message
-- ```multipart/form-data```: The block of data("text") is text message
-- ```application/x-www-form-urlencoded```: ```text=<url encoded text message>```
-- ```application/json; charset=utf-8```: The fields are optional
+- `text/plain`: Body is text message
+- `multipart/form-data`: The block of data("text") is text message
+- `application/x-www-form-urlencoded`: `text=<url encoded text message>`
+- `application/json; charset=utf-8`: The fields are optional
 ```json
 {
     "token": "<token>",
     "title": "<message title>",
     "text": "<text message content>",
     "copy": "<copy text for text message>",
+    "autocopy": 1, // autocopy text for text message
     "sound": 1,
     "priority": 10,
 }
@@ -285,17 +284,18 @@ Content-Type:
 
 Additional params
 
-| Key      | Description                               |
-| -------- | ----------------------------------------- |
-| title    | The title for notification message.       |
-| copy     | The copy text for text notification.      |
-| sound    | `1` enable sound, otherwise disable sound |
-| priority | `10` default, or `5`                      |
+| Key      | Default | Description                                 |
+| -------- | ------- | ------------------------------------------- |
+| title    | None    | The title for notification message.         |
+| copy     | None    | The copy text for text notification.        |
+| autocopy | `0`     | Enable autocopy text for text notification. |
+| sound    | `0`     | `1` enable sound, otherwise disable sound.  |
+| priority | `10`    | `10` normal, `5` lower level.               |
 
 E.g.
 
 ```
-http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello
+http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello&copy=123&autocopy=1
 ```
 
 ### Send Link
@@ -316,13 +316,13 @@ $ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
 
 Send image only support **POST** method used serverful node.
 
-- Content-Type: ```image/png``` OR ```image/jpeg```
+- Content-Type: `image/png` OR `image/jpeg`
 
 ```bash
 cat <jpeg image path> | curl -H "Content-Type: image/jpeg" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
 ```
 
-- Content-Type: ```multipart/form-data```
+- Content-Type: `multipart/form-data`
 
 ```bash
 $ curl --form "image=@<jpeg image path>" "http://<address>:<port>/v1/sender/<token>"
@@ -332,7 +332,7 @@ $ curl --form "image=@<jpeg image path>" "http://<address>:<port>/v1/sender/<tok
 
 Send file only support **POST** method used serverful node.
 
-- Content-Type: ```multipart/form-data```
+- Content-Type: `multipart/form-data`
 
 ```bash
 $ curl --form "file=@<file path>" "http://<address>:<port>/v1/sender/<token>"
@@ -340,7 +340,7 @@ $ curl --form "file=@<file path>" "http://<address>:<port>/v1/sender/<token>"
 
 ## Configuration
 
-Chanify can be configured with a yml format file, and the default path is ```~/.chanify.yml```.
+Chanify can be configured with a yml format file, and the default path is `~/.chanify.yml`.
 
 ```yml
 server:
@@ -360,8 +360,8 @@ Node server can be disabled user registration and become a private server.
 chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 ```
 
-- ```--registerable=false```: used to disable user registration
-- ```whitelist```: list users can be add into node server
+- `--registerable=false`: used to disable user registration
+- `whitelist`: list users can be add into node server
 
 ## Chrome Extension
 
@@ -369,7 +369,7 @@ Download the extension for [Chrome web store](https://chrome.google.com/webstore
 
 Extension features:
 
-- Send select ```text/image/url``` message to Chanify
+- Send select `text/image/url` message to Chanify
 - Send page url to Chanify
 
 ## Contributing
@@ -377,10 +377,11 @@ Extension features:
 Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
 1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Change to dev Branch (`git checkout dev`)
+3. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+4. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+5. Push to the Branch (`git push origin feature/AmazingFeature`)
+6. Open a Pull Request (merge to `chanify:dev` branch)
 
 ## License
 
