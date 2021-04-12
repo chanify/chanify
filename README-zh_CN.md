@@ -233,6 +233,26 @@ req.write(data);
 req.end();
 ```
 
+#### PHP
+
+```php
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+    CURLOPT_URL           => 'http://<address>:<port>/v1/sender/<token>',
+    CURLOPT_CUSTOMREQUEST => 'POST',
+    CURLOPT_POSTFIELDS    => [
+        'text' => 'hello',
+        // 'link' => 'https://api.chanify.net'
+    ],
+]);
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
+```
+
 ## HTTP API
 
 ### 发送文本
