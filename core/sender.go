@@ -265,7 +265,7 @@ func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid image content"})
 		return nil, ErrInvalidContent
 	}
-	return model.NewMessage(token).ImageContent(path, CreateThumbnail(data)), nil
+	return model.NewMessage(token).ImageContent(path, CreateThumbnail(data), len(data)), nil
 }
 
 func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string, desc string) (*model.Message, error) {

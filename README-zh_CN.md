@@ -350,7 +350,18 @@ server:
     endpoint: http://my.server/path # 入口URL
     name: Node name # 节点名称
     secret: <secret code> # 无状态服务器使用的密钥
+    datapath: <data path> # 有状态服务器使用的数据存储路径
     dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
+    register:
+        enable: false # 关闭注册
+        whitelist: # 白名单
+            - <user id 1>
+            - <user id 2>
+
+client: # 作为客户端发送消息时使用
+    sound: 1    # 是否有提示音
+    endpoint: <default node server endpoint>
+    token: <default token>
 ```
 
 ## 安全

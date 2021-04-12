@@ -66,10 +66,11 @@ func (m *Message) FileContent(path string, filename string, desc string, size in
 	return m
 }
 
-func (m *Message) ImageContent(path string, t *Thumbnail) *Message {
+func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Image,
 		File: path,
+		Size: uint64(size),
 	}
 	if t != nil {
 		ctx.Thumbnail = &pb.Thumbnail{

@@ -349,7 +349,18 @@ server:
     endpoint: http://my.server/path # Endpoint URL
     name: Node name # Name for node server
     secret: <secret code> # key for serverless node server
+    datapath: <data path> # data storage path for serverful node server
     dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # database dsn for serverful node server
+    register:
+        enable: false # Disable user register
+        whitelist: # whitelist for user register
+            - <user id 1>
+            - <user id 2>
+
+client: # configuration for sender client
+    sound: 1    # enable sound
+    endpoint: <default node server endpoint>
+    token: <default token>
 ```
 
 ## Security
