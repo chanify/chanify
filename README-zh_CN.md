@@ -277,7 +277,7 @@ Content-Type:
     "title": "<消息标题>",
     "text": "<文本消息内容>",
     "copy": "<可选的复制文本>",
-    "autocopy": 1, // 是否自动复制文本
+    "autocopy": 1,
     "sound": 1,
     "priority": 10,
 }

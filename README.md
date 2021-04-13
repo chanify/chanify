@@ -276,7 +276,7 @@ Content-Type:
     "title": "<message title>",
     "text": "<text message content>",
     "copy": "<copy text for text message>",
-    "autocopy": 1, // autocopy text for text message
+    "autocopy": 1,
     "sound": 1,
     "priority": 10,
 }
