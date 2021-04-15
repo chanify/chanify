@@ -122,7 +122,7 @@ func TestVerifyToken(t *testing.T) {
 
 func TestLoadFile(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
-	l.filepath = "./"
+	l.filepath = "."
 	if _, err := l.LoadFile("test", "../."); err != ErrNotFound {
 		t.Error("Check load empty file failed")
 	}
