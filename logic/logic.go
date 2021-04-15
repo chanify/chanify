@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/chanify/chanify/crypto"
@@ -239,13 +238,12 @@ func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 	if len(l.filepath) <= 0 {
 		return nil, ErrNoSupportMethod
 	}
-	name = filepath.Clean(name)
-	name = filepath.Base(name)
-	name = strings.ReplaceAll(name, "\\", "")
-	if len(name) <= 1 || name == ".." {
+
+	fh, err := hex.DecodeString(name)
+	if err != nil || len(fh) < 0 {
 		return nil, ErrNotFound
 	}
-	path := filepath.Join(l.filepath, tname, name)
+	path := filepath.Join(l.filepath, tname, hex.EncodeToString(fh))
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err

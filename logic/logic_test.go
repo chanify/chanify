@@ -126,7 +126,7 @@ func TestLoadFile(t *testing.T) {
 	if _, err := l.LoadFile("test", "../."); err != ErrNotFound {
 		t.Error("Check load empty file failed")
 	}
-	if _, err := l.LoadFile("test", "a.txt"); err == nil {
+	if _, err := l.LoadFile("test", "1234"); err == nil {
 		t.Error("Check open empty file failed")
 	}
 }
