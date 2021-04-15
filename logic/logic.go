@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -238,13 +239,19 @@ func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 	if len(l.filepath) <= 0 {
 		return nil, ErrNoSupportMethod
 	}
+	name = filepath.Clean(name)
 	name = filepath.Base(name)
 	name = strings.ReplaceAll(name, "\\", "")
-	name = strings.ReplaceAll(name, "/", "")
 	if len(name) <= 1 || name == ".." {
 		return nil, ErrNotFound
 	}
-	return LoadFile(filepath.Join(l.filepath, tname, name))
+	path := filepath.Join(l.filepath, tname, name)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return ioutil.ReadAll(f)
 }
 
 func (l *Logic) SaveFile(tname string, data []byte) (string, error) {

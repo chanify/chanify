@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"io/ioutil"
 	"os"
 )
 
@@ -11,15 +10,6 @@ func FixPath(path string) error {
 		return nil
 	}
 	return os.MkdirAll(path, os.ModePerm)
-}
-
-func LoadFile(path string) ([]byte, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	return ioutil.ReadAll(f)
 }
 
 func SaveFile(path string, data []byte) error {

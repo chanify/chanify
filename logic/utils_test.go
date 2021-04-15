@@ -14,12 +14,6 @@ func TestFixPath(t *testing.T) {
 	}
 }
 
-func TestLoadFileFailed(t *testing.T) {
-	if _, err := LoadFile(""); err == nil {
-		t.Error("Check load failed failed")
-	}
-}
-
 func TestSaveFile(t *testing.T) {
 	if err := SaveFile("/", nil); err != nil {
 		t.Error("Check save failed failed", err)
