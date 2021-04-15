@@ -28,6 +28,7 @@ var (
 	randReader = rand.Read
 
 	ErrNoSupportMethod = errors.New("No support method")
+	ErrNotFound        = errors.New("Not found")
 	ErrInvalidContent  = errors.New("Invalid content")
 	ErrSystemLimited   = errors.New("SystemLimited")
 )
@@ -235,6 +236,10 @@ func (l *Logic) VerifyToken(tk *model.Token) bool {
 func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 	if len(l.filepath) <= 0 {
 		return nil, ErrNoSupportMethod
+	}
+	_, name = filepath.Split(name)
+	if len(name) <= 1 {
+		return nil, ErrNotFound
 	}
 	return LoadFile(filepath.Join(l.filepath, tname, name))
 }

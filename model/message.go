@@ -91,7 +91,7 @@ func (m *Message) SoundName(sound string) *Message {
 }
 
 func (m *Message) SetPriority(priority int) *Message {
-	if priority > 0 {
+	if priority > 0 && priority < 0x7fffffff {
 		m.Priority = int32(priority)
 	}
 	return m
