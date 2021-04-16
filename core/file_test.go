@@ -47,7 +47,7 @@ func TestImageFileFailed(t *testing.T) {
 		t.Fatal("Check download token failed")
 	}
 
-	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhTJH7dPQ2HFxdZ1CWt3RPyCM8SMJeQ..c2lnbg") // nolint: errcheck
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg") // nolint: errcheck
 	w = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/files/images/1234567890", nil)
@@ -112,7 +112,7 @@ func TestFileFailed(t *testing.T) {
 		t.Fatal("Check download token failed")
 	}
 
-	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQZZ_-F4Oa-oQO0sLHXKqNSU8Qmw..c2lnbg") // nolint: errcheck
+	tk, _ := model.ParseToken("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..c2lnbg") // nolint: errcheck
 	w = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/files/files/1234567890", nil)

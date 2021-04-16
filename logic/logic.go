@@ -238,9 +238,8 @@ func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 	if len(l.filepath) <= 0 {
 		return nil, ErrNoSupportMethod
 	}
-
 	fh, err := hex.DecodeString(name)
-	if err != nil || len(fh) < 0 {
+	if err != nil || len(fh) <= 0 {
 		return nil, ErrNotFound
 	}
 	path := filepath.Join(l.filepath, tname, hex.EncodeToString(fh))
