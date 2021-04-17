@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/chanify/chanify/logic"
@@ -23,9 +24,13 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 		return
 	}
-	msg := model.NewMessage(token).TextContent(text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy")).
-		SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority")))
-	c.sendMsg(ctx, token, msg)
+	msg := model.NewMessage(token)
+	msg, err = c.MakeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"))
+	if err != nil {
+		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
+		return
+	}
+	c.sendMsg(ctx, token, msg.SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority"))))
 }
 
 func (c *Core) handlePostSender(ctx *gin.Context) {
@@ -195,7 +200,12 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 			return
 		}
-		msg = model.NewMessage(token).TextContent(text, title, copytext, autocopy)
+		var err error
+		msg, err = c.MakeTextContent(model.NewMessage(token), text, title, copytext, autocopy)
+		if err != nil {
+			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
+			return
+		}
 	}
 	c.sendMsg(ctx, token, msg.SoundName(sound).SetPriority(priority))
 }
@@ -279,4 +289,32 @@ func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte,
 		return nil, ErrInvalidContent
 	}
 	return model.NewMessage(token).FileContent(path, filename, desc, len(data)), nil
+}
+
+func (c *Core) MakeTextContent(msg *model.Message, text string, title string, copytext string, autocopy string) (*model.Message, error) {
+	if len(copytext) > 1000 {
+		return nil, ErrTooLargeContent
+	}
+	if len(text)+len(title) < 1200 {
+		return msg.TextContent(text, title, copytext, autocopy), nil
+	}
+	if !c.logic.CanFileStore() {
+		return nil, ErrTooLargeContent
+	}
+	txts := []string{}
+	if len(title) > 0 {
+		txts = append(txts, title)
+	}
+	if len(text) > 0 {
+		txts = append(txts, text)
+	}
+	data := []byte(strings.Join(txts, "\n"))
+	path, err := c.logic.SaveFile("files", data)
+	if err != nil {
+		return nil, err
+	}
+	if len(title) > 100 {
+		title = string([]rune(title)[:100]) + "⋯"
+	}
+	return msg.TextFileContent(path, "text.txt", title, string([]rune(text)[:100])+"⋯", len(data)), nil
 }

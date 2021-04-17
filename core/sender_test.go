@@ -53,6 +53,14 @@ func TestSenderFailed(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatal("Check sender failed")
 	}
+
+	req = httptest.NewRequest("GET", "/v1/sender/CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg/"+strings.Repeat("1", 2000), nil)
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp = w.Result()
+	if resp.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Fatal("Check sender too large failed")
+	}
 }
 
 func TestSenderNull(t *testing.T) {
@@ -100,6 +108,16 @@ func TestSenderPostFailed(t *testing.T) {
 	resp := w.Result()
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatal("Check send post token failed")
+	}
+
+	req = httptest.NewRequest("POST", "/v1/sender", bytes.NewReader([]byte(strings.Repeat("1", 2000))))
+	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp = w.Result()
+	if resp.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Fatal("Check send post too large token failed")
 	}
 }
 
@@ -440,5 +458,43 @@ func TestSaveFileFailed(t *testing.T) {
 	c.saveUploadFile(ctx, nil, []byte("123"), "test.txt", "123") // nolint: errcheck
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check save image failed")
+	}
+}
+
+func TestTooLargeText(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+	os.MkdirAll(fpath+"/files/", os.ModePerm) // nolint: errcheck
+	logic.ApiEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
+
+	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQZZ_-_F4Oa-oQO0sLHXKqNSU8Qmw..c2lnbg") // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/", nil)
+	if _, err := c.MakeTextContent(model.NewMessage(tk), strings.Repeat("1", 1001), strings.Repeat("2", 1001), "", "1"); err != nil {
+		t.Error("Fix too large text failed", err)
+	}
+}
+
+func TestTooLargeTextFailed(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"})                                      // nolint: errcheck
+	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQZZ_-_F4Oa-oQO0sLHXKqNSU8Qmw..c2lnbg") // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/", nil)
+	if _, err := c.MakeTextContent(model.NewMessage(tk), "", "", strings.Repeat("1", 1001), "1"); err != ErrTooLargeContent {
+		t.Error("Check too large copy text failed")
+	}
+
+	w = httptest.NewRecorder()
+	ctx, _ = gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/", nil)
+	if _, err := c.MakeTextContent(model.NewMessage(tk), strings.Repeat("1", 1001), strings.Repeat("2", 1001), "", "1"); err == nil {
+		t.Error("Check save too large text failed")
 	}
 }

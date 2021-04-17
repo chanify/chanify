@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	ErrNoContent      = errors.New("NoContent")
-	ErrInvalidContent = errors.New("InvalidContent")
+	ErrNoContent       = errors.New("NoContent")
+	ErrTooLargeContent = errors.New("TooLargeContent")
+	ErrInvalidContent  = errors.New("InvalidContent")
 )
 
 type Core struct {
