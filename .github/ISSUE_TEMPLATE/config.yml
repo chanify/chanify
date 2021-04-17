@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/chanify/chanify/discussions
     about: Please ask and answer questions here.
   - name: Chanify Security Bug Bounty
-    url: mailto:wizjin@icloud.com?subject=%5BChanify%5D%20Security
+    url: https://github.com/chanify/chanify/discussions/new?category=security
     about: Please report security vulnerabilities here.
