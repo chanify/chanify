@@ -23,14 +23,10 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Server (please complete the following information. You can get them witch command `chanfiy version`):**
- - Version [e.g. 1.0.8-dev]
- - Go version: [e.g. go1.16.3]
- - Git commit: [e.g. 3ea13b1]
- - Built: [e.g. Wed Apr 14 14:32:42 2021]
- - OS/Arch: [e.g. Linux/WIndows]
+**Server info**
+You can run command `chanfiy version` and get version infomation.
 
-**iOS (please complete the following information):**
+**iOS info**
  - Device: [e.g. iPhone12]
  - OS: [e.g. iOS14.0]
  - Version [e.g. v1.0.0]
