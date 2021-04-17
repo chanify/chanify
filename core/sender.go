@@ -308,7 +308,7 @@ func (c *Core) MakeTextContent(msg *model.Message, text string, title string, co
 	if len(text) > 0 {
 		txts = append(txts, text)
 	}
-	data := []byte(strings.Join(txts, "\n"))
+	data := []byte(strings.Join(txts, "\n\n"))
 	path, err := c.logic.SaveFile("files", data)
 	if err != nil {
 		return nil, err
