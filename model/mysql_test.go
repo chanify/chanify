@@ -40,7 +40,7 @@ func TestMySQL(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
-	if err := db.BindDevice("123", "abc", []byte("key")); err != nil {
+	if err := db.BindDevice("123", "abc", []byte("key"), 0); err != nil {
 		t.Fatal("Bind device failed:", err)
 	}
 
@@ -73,29 +73,105 @@ func TestMySQL(t *testing.T) {
 	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `users`").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
-	if _, err := initDB(db.db, ""); err != nil {
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM INFORMATION_SCHEMA.COLUMNS").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectCommit()
+	if err := db.fixDB(); err != nil {
 		t.Fatal("Fix db failed:", err)
 	}
 
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `users`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM INFORMATION_SCHEMA.COLUMNS").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectExec("ALTER TABLE `devices` ADD COLUMN `type` ").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	if err := db.fixDB(); err != nil {
+		t.Fatal("Fix db failed:", err)
+	}
+}
+
+func TestMySQLFixDBFailed(t *testing.T) {
+	dbmock, mock, _ := sqlmock.New()
+	db := &mysql{db: dbmock}
+	defer db.Close()
+
 	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnError(sql.ErrConnDone)
-	if _, err := initDB(db.db, ""); err != sql.ErrConnDone {
+	if err := db.fixDB(); err != sql.ErrConnDone {
 		t.Fatal("Check fix db failed:", err)
 	}
 
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `users`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin().WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db begin failed:", err)
+	}
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `users`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM INFORMATION_SCHEMA.COLUMNS").WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db select column failed:", err)
+	}
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `users`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM INFORMATION_SCHEMA.COLUMNS").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectExec("ALTER TABLE `devices` ADD COLUMN `type` ").WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db add column failed:", err)
+	}
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `users`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM INFORMATION_SCHEMA.COLUMNS").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectCommit().WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db commit failed:", err)
+	}
 }
 
 func TestMySQLPingFailed(t *testing.T) {
-	db, mock, _ := sqlmock.New(sqlmock.MonitorPingsOption(true))
+	dbmock, mock, _ := sqlmock.New(sqlmock.MonitorPingsOption(true))
+	db := &mysql{db: dbmock}
 	defer db.Close()
 	mock.ExpectPing().WillReturnError(sql.ErrConnDone)
-	if _, err := initDB(db, ""); err != sql.ErrConnDone {
+	if err := db.fixDB(); err != sql.ErrConnDone {
 		t.Fatal("Check ping failed:", err)
 	}
-
 }
 
 func TestMySQLFailed(t *testing.T) {
 	if _, err := drivers["mysql"]("mysql://127.0.0.1:13306"); err == nil {
-		t.Fatal("Cehck open mysql failed")
+		t.Fatal("Check open mysql failed")
+	}
+}
+
+func TestMySQLOpenFailed(t *testing.T) {
+	open := drivers["mysql"]
+	dbmock, mock, _ := sqlmock.NewWithDSN("sqlmock")
+	defer dbmock.Close()
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnError(sql.ErrConnDone)
+	if _, err := open("sqlmock://sqlmock"); err != sql.ErrConnDone {
+		t.Error("Check open mysql failed:", err)
+	}
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `users`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM INFORMATION_SCHEMA.COLUMNS").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectCommit()
+	if _, err := open("sqlmock://sqlmock"); err != nil {
+		t.Error("Open mysql driver failed:", err)
 	}
 }

@@ -13,7 +13,7 @@ type DB interface {
 	SetOption(key string, value interface{}) error
 	GetUser(uid string) (*User, error)
 	UpsertUser(u *User) error
-	BindDevice(uid string, uuid string, key []byte) error
+	BindDevice(uid string, uuid string, key []byte, devType int) error
 	UnbindDevice(uid string, uuid string) error
 	UpdatePushToken(uid string, uuid string, token []byte, sandbox bool) error
 	GetDeviceKey(uuid string) ([]byte, error)

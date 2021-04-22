@@ -21,6 +21,7 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 			Key       string `json:"key"`
 			PushToken string `json:"push-token,omitempty"`
 			Sandbox   bool   `json:"sandbox,omitempty"`
+			Type      int    `json:"type,omitempty"`
 		} `json:"device,omitempty"`
 	}
 	if err := c.BindBodyJson(ctx, &params); err != nil {
@@ -48,7 +49,7 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 	if serverless {
 		log.Println("Bind user:", params.User.Uid)
 	} else {
-		if err := c.logic.BindDevice(params.User.Uid, params.Device.Uuid, params.Device.Key); err != nil {
+		if err := c.logic.BindDevice(params.User.Uid, params.Device.Uuid, params.Device.Key, params.Device.Type); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "bind user device failed"})
 			return
 		}

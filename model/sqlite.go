@@ -61,8 +61,8 @@ func (s *sqlite) UpsertUser(u *User) error {
 	return err
 }
 
-func (s *sqlite) BindDevice(uid string, uuid string, key []byte) error {
-	_, err := s.db.Exec("INSERT INTO `devices`(`uuid`,`uid`,`key`) VALUES(?,?,?) ON CONFLICT(`uuid`) DO UPDATE SET `uid`=excluded.`uid`,`lastupdate`=CURRENT_TIMESTAMP;", uuid, uid, key)
+func (s *sqlite) BindDevice(uid string, uuid string, key []byte, devType int) error {
+	_, err := s.db.Exec("INSERT INTO `devices`(`uuid`,`uid`,`key`,`type`) VALUES(?,?,?,?) ON CONFLICT(`uuid`) DO UPDATE SET `uid`=excluded.`uid`,`type`=excluded.`type`,`lastupdate`=CURRENT_TIMESTAMP;", uuid, uid, key, devType)
 	return err
 }
 
@@ -104,9 +104,28 @@ func (s *sqlite) fixDB() error {
 	sqls := []string{
 		"CREATE TABLE IF NOT EXISTS `options`(`key` TEXT PRIMARY KEY, `value` BLOB);",
 		"CREATE TABLE IF NOT EXISTS `users`(`uid` TEXT PRIMARY KEY, `pubkey` BLOB UNIQUE, `seckey` BLOB, `flags` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP);",
-		"CREATE TABLE IF NOT EXISTS `devices`(`uuid` TEXT PRIMARY KEY, `uid` TEXT, `key` BLOB, `token` BLOB, `sandbox` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP);",
+		"CREATE TABLE IF NOT EXISTS `devices`(`uuid` TEXT PRIMARY KEY, `uid` TEXT, `key` BLOB, `type` INTEGER DEFAULT 0, `token` BLOB, `sandbox` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP);",
 		"CREATE INDEX IF NOT EXISTS `idx_devices_uid` ON `devices`(`uid`);",
 	}
-	_, err := s.db.Exec(strings.Join(sqls, ""))
-	return err
+	if _, err := s.db.Exec(strings.Join(sqls, "")); err != nil {
+		return err
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	cnt := 0
+	row := tx.QueryRow("SELECT COUNT(*) FROM pragma_table_info('devices') WHERE `name`='type';")
+	if err := row.Scan(&cnt); err != nil {
+		tx.Rollback() // nolint: errcheck
+		return err
+	}
+	if cnt <= 0 {
+		if _, err := tx.Exec("ALTER TABLE `devices` ADD COLUMN `type` INTEGER DEFAULT 0;"); err != nil {
+			tx.Rollback() // nolint: errcheck
+			return err
+		}
+		log.Println("SQLite add column `type` into `devices`.")
+	}
+	return tx.Commit()
 }

@@ -60,7 +60,7 @@ func (s *nosql) UpsertUser(u *User) error {
 	return ErrNotImplemented
 }
 
-func (s *nosql) BindDevice(uid string, uuid string, key []byte) error {
+func (s *nosql) BindDevice(uid string, uuid string, key []byte, devType int) error {
 	return ErrNotImplemented
 }
 

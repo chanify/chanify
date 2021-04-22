@@ -34,7 +34,7 @@ func TestNoSQL(t *testing.T) {
 	if hex.EncodeToString(usr.SecretKey) != "93c4676a48dbb49dd101d5792b5e023b19abddc6fbbdfc573f8da761b3abd95fdfa1e23102bacfa6090fdc6a4032bb72e28a465890a82939ee088187ce01f594" {
 		t.Error("Get user key failed")
 	}
-	if err := db.BindDevice("", "", nil); err != ErrNotImplemented {
+	if err := db.BindDevice("", "", nil, 0); err != ErrNotImplemented {
 		t.Fatal("Check BindDevice failed:", err)
 	}
 	if err := db.UnbindDevice("", ""); err != ErrNotImplemented {

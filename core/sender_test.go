@@ -301,10 +301,10 @@ func TestSendDirect(t *testing.T) {
 	w = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false)                                      // nolint: errcheck                                  // nolint: errcheck
-	c.logic.BindDevice("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "BDuFNLkmxyK0-NN3H3oKzzOtISq1w17-JAibD7X4pljYl6IEaEglWkKD5Iw537h-DYxAooXkHtu6un078sm7IiQ") // nolint: errcheck
-	c.logic.UpdatePushToken("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "aGVsbG8", false)                                                                     // nolint: errcheck                                            // nolint: errcheck
-	c.logic.GetDevices("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY")                                                                                                                                        // nolint: errcheck
+	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false)                                         // nolint: errcheck                                  // nolint: errcheck
+	c.logic.BindDevice("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "BDuFNLkmxyK0-NN3H3oKzzOtISq1w17-JAibD7X4pljYl6IEaEglWkKD5Iw537h-DYxAooXkHtu6un078sm7IiQ", 0) // nolint: errcheck
+	c.logic.UpdatePushToken("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "aGVsbG8", false)                                                                        // nolint: errcheck                                            // nolint: errcheck
+	c.logic.GetDevices("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY")                                                                                                                                           // nolint: errcheck
 	logic.MockPusher = &MockAPNSPusher{}
 	c.SendDirect(ctx, tk, model.NewMessage(tk).SetPriority(5))
 	if w.Result().StatusCode != http.StatusOK {
@@ -490,11 +490,25 @@ func TestTooLargeTextFailed(t *testing.T) {
 	if _, err := c.MakeTextContent(model.NewMessage(tk), "", "", strings.Repeat("1", 1001), "1"); err != ErrTooLargeContent {
 		t.Error("Check too large copy text failed")
 	}
+}
 
-	w = httptest.NewRecorder()
-	ctx, _ = gin.CreateTestContext(w)
+func TestTooLargeSaveTextFailed(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+	os.MkdirAll(fpath, os.ModePerm) // nolint: errcheck
+	if f, err := os.Create(filepath.Join(fpath, "files")); err != nil {
+		f.Close()
+	}
+	logic.ApiEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
+
+	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQZZ_-_F4Oa-oQO0sLHXKqNSU8Qmw..c2lnbg") // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	if _, err := c.MakeTextContent(model.NewMessage(tk), strings.Repeat("1", 1001), strings.Repeat("2", 1001), "", "1"); err == nil {
+	if _, err := c.MakeTextContent(model.NewMessage(tk), strings.Repeat("1", 500), strings.Repeat("2", 1000), "", "1"); err == nil {
 		t.Error("Check save too large text failed")
 	}
 }

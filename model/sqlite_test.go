@@ -1,9 +1,12 @@
 package model
 
 import (
+	"database/sql"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
 
 func TestSqliteOpen(t *testing.T) {
@@ -52,7 +55,7 @@ func TestSqliteOpen(t *testing.T) {
 	if uu.Flags != usr.Flags {
 		t.Fatal("Overwrite user failed:", err)
 	}
-	if err := db.BindDevice("abc", "xyz", []byte("key")); err != nil {
+	if err := db.BindDevice("abc", "xyz", []byte("key"), 0); err != nil {
 		t.Fatal("Bind device failed:", err)
 	}
 	if err := db.UpdatePushToken("abc", "xyz", []byte("PushToken"), false); err != nil {
@@ -86,5 +89,60 @@ func TestSqliteOpenFailed(t *testing.T) {
 	}
 	if _, err := open("sqlite://?mode=ro&vfs=unix"); err == nil {
 		t.Fatal("Check sqlite fix failed")
+	}
+}
+
+func TestSQLiteFixDB(t *testing.T) {
+	dbmock, mock, _ := sqlmock.New()
+	db := &sqlite{db: dbmock}
+	defer db.Close()
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM pragma_table_info").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectExec("ALTER TABLE `devices` ADD COLUMN `type`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+	if err := db.fixDB(); err != nil {
+		t.Fatal("Fix db failed:", err)
+	}
+}
+
+func TestSQLiteFixDBFailed(t *testing.T) {
+	dbmock, mock, _ := sqlmock.New()
+	db := &sqlite{db: dbmock}
+	defer db.Close()
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db failed:", err)
+	}
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin().WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db begin failed:", err)
+	}
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM pragma_table_info").WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db select column failed:", err)
+	}
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM pragma_table_info").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectExec("ALTER TABLE `devices` ADD COLUMN `type`").WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db add column failed:", err)
+	}
+
+	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectBegin()
+	mock.ExpectQuery("SELECT COUNT(.+) FROM pragma_table_info").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectCommit().WillReturnError(sql.ErrConnDone)
+	if err := db.fixDB(); err != sql.ErrConnDone {
+		t.Fatal("Check fix db commit failed:", err)
 	}
 }

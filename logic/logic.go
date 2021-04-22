@@ -93,7 +93,7 @@ func NewLogic(opts *Options) (*Logic, error) {
 		Name:         opts.Name,
 		Version:      opts.Version,
 		Endpoint:     opts.Endpoint,
-		Features:     []string{"msg.text", "msg.link"},
+		Features:     []string{"platform.watchos", "msg.text", "msg.link"},
 	}
 	if l.registerable {
 		log.Println("Register user enabled")
@@ -191,12 +191,12 @@ func (l *Logic) UpsertUser(uid string, key string, serverless bool) (*model.User
 	return u, nil
 }
 
-func (l *Logic) BindDevice(uid string, uuid string, key string) error {
+func (l *Logic) BindDevice(uid string, uuid string, key string, devType int) error {
 	pk, err := model.CalcDeviceKey(uuid, key)
 	if err != nil {
 		return err
 	}
-	return l.db.BindDevice(uid, uuid, pk.MarshalPublicKey())
+	return l.db.BindDevice(uid, uuid, pk.MarshalPublicKey(), devType)
 }
 
 func (l *Logic) UnbindDevice(uid string, uuid string) error {

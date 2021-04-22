@@ -17,7 +17,15 @@ func init() {
 	drivers["mysql"] = func(dsn string) (DB, error) {
 		items := strings.Split(dsn, "://")
 		db, _ := sql.Open(items[0], items[1])
-		return initDB(db, dsn)
+		if db == nil {
+			return nil, ErrInvalidDSN
+		}
+		log.Println("Open mysql database:", dsn)
+		s := &mysql{db: db}
+		if err := s.fixDB(); err != nil {
+			return nil, err
+		}
+		return s, nil
 	}
 }
 
@@ -53,8 +61,8 @@ func (s *mysql) UpsertUser(u *User) error {
 	return err
 }
 
-func (s *mysql) BindDevice(uid string, uuid string, key []byte) error {
-	_, err := s.db.Exec("INSERT INTO `devices`(`uuid`,`uid`,`key`) VALUES(?,?,?) ON DUPLICATE KEY UPDATE `uid`=VALUES(`uid`);", uuid, uid, key)
+func (s *mysql) BindDevice(uid string, uuid string, key []byte, devType int) error {
+	_, err := s.db.Exec("INSERT INTO `devices`(`uuid`,`uid`,`key`,`type`) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE `uid`=VALUES(`uid`),`type`=VALUES(`type`);", uuid, uid, key, devType)
 	return err
 
 }
@@ -93,27 +101,42 @@ func (s *mysql) GetDevices(uid string) ([]*Device, error) {
 	return devs, nil
 }
 
-func initDB(db *sql.DB, dsn string) (DB, error) {
-	s := &mysql{db: db}
-	if s.db == nil {
-		return nil, ErrInvalidDSN
-	}
+func (s *mysql) fixDB() error {
 	s.db.SetConnMaxLifetime(time.Minute * 3)
 	s.db.SetMaxOpenConns(10)
 	s.db.SetMaxIdleConns(10)
 	if err := s.db.Ping(); err != nil {
-		return nil, err
+		return err
 	}
 	sqls := []string{
 		"CREATE TABLE IF NOT EXISTS `options`(`key` VARCHAR(255), `value` VARBINARY(255), PRIMARY KEY (`key`));",
 		"CREATE TABLE IF NOT EXISTS `users`(`uid` VARCHAR(255), `pubkey` VARBINARY(255) UNIQUE, `seckey` VARBINARY(255), `flags` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(`uid`));",
-		"CREATE TABLE IF NOT EXISTS `devices`(`uuid` VARCHAR(255), `uid` VARCHAR(255) , `key` VARBINARY(255), `token` VARBINARY(255), `sandbox` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(`uuid`), INDEX(`uid`));",
+		"CREATE TABLE IF NOT EXISTS `devices`(`uuid` VARCHAR(255), `uid` VARCHAR(255), `key` VARBINARY(255), `type` INTEGER DEFAULT 0, `token` VARBINARY(255), `sandbox` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(`uuid`), INDEX(`uid`));",
 	}
 	for _, str := range sqls {
 		if _, err := s.db.Exec(str); err != nil {
-			return nil, err
+			return err
 		}
 	}
-	log.Println("Open mysql database:", dsn)
-	return s, nil
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	cnt := 0
+	row := tx.QueryRow("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='devices' AND COLUMN_NAME='type';")
+	if err := row.Scan(&cnt); err != nil {
+		tx.Rollback() // nolint: errcheck
+		return err
+	}
+	if cnt <= 0 {
+		if _, err := tx.Exec("ALTER TABLE `devices` ADD COLUMN `type` INTEGER DEFAULT 0 AFTER `key`;"); err != nil {
+			tx.Rollback() // nolint: errcheck
+			return err
+		}
+		log.Println("MySQL add column `type` into `devices`.")
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
 }
