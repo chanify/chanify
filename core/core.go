@@ -11,27 +11,32 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// error define
 var (
 	ErrNoContent       = errors.New("NoContent")
 	ErrTooLargeContent = errors.New("TooLargeContent")
 	ErrInvalidContent  = errors.New("InvalidContent")
 )
 
+// Core instance
 type Core struct {
 	logic *logic.Logic
 }
 
+// New core instance
 func New() *Core {
 	gin.SetMode(gin.ReleaseMode)
 	return &Core{}
 }
 
+// Init core with option
 func (c *Core) Init(opts *logic.Options) error {
 	var err error
 	c.logic, err = logic.NewLogic(opts)
 	return err
 }
 
+// Close & cleaup for core
 func (c *Core) Close() {
 	if c.logic != nil {
 		c.logic.Close()
@@ -39,6 +44,7 @@ func (c *Core) Close() {
 	}
 }
 
+// APIHandler return handler for http
 func (c *Core) APIHandler() http.Handler {
 	r := gin.New()
 	r.Use(loggerMiddleware)

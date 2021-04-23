@@ -15,7 +15,7 @@ func (c *Core) handleUpdatePushToken(ctx *gin.Context) {
 		Token    string `json:"token"`
 		Sandbox  bool   `json:"sandbox,omitempty"`
 	}
-	if err := c.BindBodyJson(ctx, &params); err != nil {
+	if err := c.bindBodyJSON(ctx, &params); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid params"})
 		return
 	}
@@ -28,7 +28,7 @@ func (c *Core) handleUpdatePushToken(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user mode"})
 		return
 	}
-	if !VerifyUser(ctx, u.GetPublicKeyString()) {
+	if !verifyUser(ctx, u.GetPublicKeyString()) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid user sign"})
 		return
 	}
@@ -37,7 +37,7 @@ func (c *Core) handleUpdatePushToken(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid device id"})
 		return
 	}
-	if !VerifyDevice(ctx, crypto.Base64Encode.EncodeToString(dev)) {
+	if !verifyDevice(ctx, crypto.Base64Encode.EncodeToString(dev)) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid device sign"})
 		return
 	}

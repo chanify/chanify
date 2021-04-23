@@ -17,7 +17,7 @@ func TestImageFile(t *testing.T) {
 	defer os.RemoveAll(fpath)
 	os.MkdirAll(fpath+"/images/", os.ModePerm)                      // nolint: errcheck
 	os.WriteFile(fpath+"/images/1234567890", []byte("hello"), 0644) // nolint: errcheck
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
@@ -35,7 +35,7 @@ func TestImageFile(t *testing.T) {
 }
 
 func TestImageFileFailed(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
@@ -82,7 +82,7 @@ func TestFile(t *testing.T) {
 	defer os.RemoveAll(fpath)
 	os.MkdirAll(fpath+"/files/", os.ModePerm)                      // nolint: errcheck
 	os.WriteFile(fpath+"/files/1234567890", []byte("hello"), 0644) // nolint: errcheck
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
@@ -100,7 +100,7 @@ func TestFile(t *testing.T) {
 }
 
 func TestFileFailed(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck

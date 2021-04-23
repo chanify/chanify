@@ -18,7 +18,7 @@ const (
 	pngHeader = "\x89PNG\r\n\x1a\n"
 )
 
-func (c *Core) BindBodyJson(ctx *gin.Context, obj interface{}) error {
+func (c *Core) bindBodyJSON(ctx *gin.Context, obj interface{}) error {
 	body, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		return err
@@ -33,25 +33,25 @@ func (c *Core) BindBodyJson(ctx *gin.Context, obj interface{}) error {
 	return json.Unmarshal(body, obj)
 }
 
-func VerifyUser(ctx *gin.Context, key string) bool {
+func verifyUser(ctx *gin.Context, key string) bool {
 	sign, err := crypto.Base64Encode.DecodeString(ctx.GetHeader("CHUserSign"))
 	if err != nil {
 		return false
 	}
 	data, _ := ctx.Get(gin.BodyBytesKey)
-	return VerifySign(key, sign, data.([]byte))
+	return verifySign(key, sign, data.([]byte))
 }
 
-func VerifyDevice(ctx *gin.Context, key string) bool {
+func verifyDevice(ctx *gin.Context, key string) bool {
 	sign, err := crypto.Base64Encode.DecodeString(ctx.GetHeader("CHDevSign"))
 	if err != nil {
 		return false
 	}
 	data, _ := ctx.Get(gin.BodyBytesKey)
-	return VerifySign(key, sign, data.([]byte))
+	return verifySign(key, sign, data.([]byte))
 }
 
-func VerifySign(key string, sign []byte, data []byte) bool {
+func verifySign(key string, sign []byte, data []byte) bool {
 	kd, err := crypto.Base64Encode.DecodeString(key)
 	if err != nil {
 		return false
@@ -100,12 +100,11 @@ func parsePriority(priority string) int {
 func parseImageContentType(data []byte) string {
 	if len(data) > len(pngHeader) && string(data[:len(pngHeader)]) == pngHeader {
 		return "image/png"
-	} else {
-		return "image/jpeg"
 	}
+	return "image/jpeg"
 }
 
-func CreateThumbnail(data []byte) *model.Thumbnail {
+func createThumbnail(data []byte) *model.Thumbnail {
 	if parseImageContentType(data) == "image/png" {
 		if cfg, err := png.DecodeConfig(bytes.NewReader(data)); err == nil {
 			return model.NewThumbnail(cfg.Width, cfg.Height)
@@ -117,9 +116,11 @@ func CreateThumbnail(data []byte) *model.Thumbnail {
 	return nil
 }
 
-type JsonString string
+// JSONString define boolean string
+type JSONString string
 
-func (s *JsonString) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON for boolean string
+func (s *JSONString) UnmarshalJSON(data []byte) error {
 	asString := strings.Trim(string(data), "\"")
 	switch asString {
 	case "1", "true", "TRUE", "True", "On", "on":
@@ -127,7 +128,7 @@ func (s *JsonString) UnmarshalJSON(data []byte) error {
 	case "0", "false", "FALSE", "False", "Off", "off", "none", "NONE", "null", "NULL":
 		*s = ""
 	default:
-		*s = JsonString(asString)
+		*s = JSONString(asString)
 	}
 	return nil
 }

@@ -25,7 +25,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		return
 	}
 	msg := model.NewMessage(token)
-	msg, err = c.MakeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"))
+	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"))
 	if err != nil {
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
 		return
@@ -56,9 +56,9 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			Title    string     `json:"title,omitempty"`
 			Text     string     `json:"text,omitempty"`
 			Copy     string     `json:"copy,omitempty"`
-			AutoCopy JsonString `json:"autocopy,omitempty"`
+			AutoCopy JSONString `json:"autocopy,omitempty"`
 			Link     string     `json:"link,omitempty"`
-			Sound    JsonString `json:"sound,omitempty"`
+			Sound    JSONString `json:"sound,omitempty"`
 			Priority int        `json:"priority,omitempty"`
 		}
 		if err := ctx.BindJSON(&params); err == nil {
@@ -201,7 +201,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			return
 		}
 		var err error
-		msg, err = c.MakeTextContent(model.NewMessage(token), text, title, copytext, autocopy)
+		msg, err = c.makeTextContent(model.NewMessage(token), text, title, copytext, autocopy)
 		if err != nil {
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
 			return
@@ -210,7 +210,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	c.sendMsg(ctx, token, msg.SoundName(sound).SetPriority(priority))
 }
 
-func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
+func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
 	uid := token.GetUserID()
 	key, err := c.logic.GetUserKey(uid)
 	if err != nil {
@@ -234,7 +234,7 @@ func (c *Core) SendDirect(ctx *gin.Context, token *model.Token, msg *model.Messa
 	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid.New().String()})
 }
 
-func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg *model.Message) {
+func (c *Core) sendForward(ctx *gin.Context, token *model.Token, msg *model.Message) {
 	msg.DisableToken()
 	key, err := c.logic.GetUserKey(token.GetUserID())
 	if err != nil {
@@ -242,7 +242,7 @@ func (c *Core) SendForward(ctx *gin.Context, token *model.Token, msg *model.Mess
 		return
 	}
 	msg.EncryptContent(key)
-	resp, err := http.Post(logic.ApiEndpoint+"/rest/v1/push?token="+token.RawToken(), "application/x-protobuf", bytes.NewReader(msg.Marshal()))
+	resp, err := http.Post(logic.APIEndpoint+"/rest/v1/push?token="+token.RawToken(), "application/x-protobuf", bytes.NewReader(msg.Marshal()))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send message failed"})
 		return
@@ -259,10 +259,10 @@ func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg *model.Message)
 		return
 	}
 	if u.IsServerless() {
-		c.SendForward(ctx, token, msg)
+		c.sendForward(ctx, token, msg)
 		return
 	}
-	c.SendDirect(ctx, token, msg)
+	c.sendDirect(ctx, token, msg)
 }
 
 func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte) (*model.Message, error) {
@@ -275,7 +275,7 @@ func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid image content"})
 		return nil, ErrInvalidContent
 	}
-	return model.NewMessage(token).ImageContent(path, CreateThumbnail(data), len(data)), nil
+	return model.NewMessage(token).ImageContent(path, createThumbnail(data), len(data)), nil
 }
 
 func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string, desc string) (*model.Message, error) {
@@ -291,7 +291,7 @@ func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte,
 	return model.NewMessage(token).FileContent(path, filename, desc, len(data)), nil
 }
 
-func (c *Core) MakeTextContent(msg *model.Message, text string, title string, copytext string, autocopy string) (*model.Message, error) {
+func (c *Core) makeTextContent(msg *model.Message, text string, title string, copytext string, autocopy string) (*model.Message, error) {
 	if len(copytext) > 1000 {
 		return nil, ErrTooLargeContent
 	}

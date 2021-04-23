@@ -30,10 +30,15 @@ func TestSqliteOpen(t *testing.T) {
 	if err := db.GetOption("name", &ver); err == nil {
 		t.Fatal("Get option failed")
 	}
+}
+
+func TestSqliteUser(t *testing.T) {
+	db, _ := drivers["sqlite"]("sqlite://?mode=memory")
+	defer db.Close()
 	if _, err := db.GetUser("123"); err == nil {
 		t.Fatal("Check not found user failed")
 	}
-	usr := &User{Uid: "abc", Flags: 123}
+	usr := &User{UID: "abc", Flags: 123}
 	if err := db.UpsertUser(usr); err != nil {
 		t.Fatal("Upsert user failed:", err)
 	}
@@ -55,6 +60,11 @@ func TestSqliteOpen(t *testing.T) {
 	if uu.Flags != usr.Flags {
 		t.Fatal("Overwrite user failed:", err)
 	}
+}
+
+func TestSqliteDevice(t *testing.T) {
+	db, _ := drivers["sqlite"]("sqlite://?mode=memory")
+	defer db.Close()
 	if err := db.BindDevice("abc", "xyz", []byte("key"), 0); err != nil {
 		t.Fatal("Bind device failed:", err)
 	}

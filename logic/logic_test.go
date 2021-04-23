@@ -60,10 +60,10 @@ func TestSaveImageFileFailed(t *testing.T) {
 func TestGetAPNS(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
 	MockPusher = nil
-	if l.GetAPNS(false) != l.apnsPClient {
+	if l.getAPNS(false) != l.apnsPClient {
 		t.Error("Get product apns failed")
 	}
-	if l.GetAPNS(true) != l.apnsDClient {
+	if l.getAPNS(true) != l.apnsDClient {
 		t.Error("Get sandbox apns failed")
 	}
 }

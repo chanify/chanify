@@ -25,7 +25,7 @@ func TestBindBodyJson(t *testing.T) {
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
 	ctx.Request.Body = io.NopCloser(iotest.ErrReader(errors.New("no body")))
 	var x int
-	if err := c.BindBodyJson(ctx, &x); err == nil {
+	if err := c.bindBodyJSON(ctx, &x); err == nil {
 		t.Error("Check bind body failed")
 	}
 
@@ -33,7 +33,7 @@ func TestBindBodyJson(t *testing.T) {
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
 	ctx.Request.Header.Set("Content-Type", "application/x-chsec-json")
 	ctx.Request.Body = io.NopCloser(strings.NewReader("123"))
-	if err := c.BindBodyJson(ctx, &x); err == nil {
+	if err := c.bindBodyJSON(ctx, &x); err == nil {
 		t.Error("Check bind ecode body failed")
 	}
 }
@@ -43,7 +43,7 @@ func TestVerifyUser(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
 	ctx.Request.Header.Set("CHUserSign", "*****")
-	if VerifyUser(ctx, "") {
+	if verifyUser(ctx, "") {
 		t.Error("Check verify user failed")
 	}
 }
@@ -53,16 +53,16 @@ func TestVerifyDevice(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
 	ctx.Request.Header.Set("CHDevSign", "*****")
-	if VerifyDevice(ctx, "") {
+	if verifyDevice(ctx, "") {
 		t.Error("Check verify user failed")
 	}
 }
 
 func TestVerify(t *testing.T) {
-	if VerifySign("***", []byte{}, []byte{}) {
+	if verifySign("***", []byte{}, []byte{}) {
 		t.Fatal("Check verify empty sign failed")
 	}
-	if VerifySign("", []byte{}, []byte{}) {
+	if verifySign("", []byte{}, []byte{}) {
 		t.Fatal("Check verify invalid key sign failed")
 	}
 }
@@ -87,12 +87,12 @@ func TestParseImageContentType(t *testing.T) {
 
 func TestCreateThumbnail(t *testing.T) {
 	d1, _ := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACAQMAAACjTyRkAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEWZAAD///+fsNhWAAAAAWJLR0QB/wIt3gAAAAd0SU1FB+UDHRczLl5aCAkAAAAMSURBVAjXY2BgYAAAAAQAASc0JwoAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDMtMjlUMjM6NTE6NDYrMDA6MDCUDk5dAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAzLTI5VDIzOjUxOjQ2KzAwOjAw5VP24QAAAABJRU5ErkJggg==")
-	tb1 := CreateThumbnail(d1)
+	tb1 := createThumbnail(d1)
 	if tb1 == nil {
 		t.Error("Create png thumbnail failed")
 	}
 	d2, _ := base64.StdEncoding.DecodeString("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCAACAAEDAREAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAVAQEBAAAAAAAAAAAAAAAAAAAHCP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/ABIOllv/2Q==")
-	tb2 := CreateThumbnail(d2)
+	tb2 := createThumbnail(d2)
 	if tb2 == nil {
 		t.Error("Create jpeg thumbnail failed")
 	}
@@ -100,7 +100,7 @@ func TestCreateThumbnail(t *testing.T) {
 
 func TestJsonString(t *testing.T) {
 	var data struct {
-		A JsonString `json:"a"`
+		A JSONString `json:"a"`
 	}
 	if err := json.Unmarshal([]byte(`{"a":"false"}`), &data); err != nil {
 		t.Fatal("Unmarshal json failed", err)

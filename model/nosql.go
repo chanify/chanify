@@ -51,7 +51,7 @@ func (s *nosql) GetUser(uid string) (*User, error) {
 	h.Write(s.secret) // nolint: errcheck
 	h.Write(data)     // nolint: errcheck
 	return &User{
-		Uid:       uid,
+		UID:       uid,
 		SecretKey: h.Sum(nil),
 	}, nil
 }

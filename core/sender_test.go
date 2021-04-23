@@ -19,7 +19,7 @@ import (
 )
 
 func TestSender(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
@@ -79,7 +79,7 @@ func TestSenderNull(t *testing.T) {
 }
 
 func TestSenderPost(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
@@ -96,7 +96,7 @@ func TestSenderPost(t *testing.T) {
 }
 
 func TestSenderPostFailed(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
@@ -122,7 +122,7 @@ func TestSenderPostFailed(t *testing.T) {
 }
 
 func TestSenderPostForm(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
@@ -143,7 +143,7 @@ func TestSenderPostForm(t *testing.T) {
 }
 
 func TestSenderPostFormData(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
@@ -179,7 +179,7 @@ func TestSenderPostFormData(t *testing.T) {
 }
 
 func TestSenderPostJSON(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
@@ -205,7 +205,7 @@ func TestSenderPostJSON(t *testing.T) {
 func TestSenderPostImage(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
 	defer os.RemoveAll(fpath)
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123", FilePath: fpath}) // nolint: errcheck
@@ -225,7 +225,7 @@ func TestSenderPostFormImage(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
 	defer os.RemoveAll(fpath)
 
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123", FilePath: fpath}) // nolint: errcheck
@@ -253,7 +253,7 @@ func TestSenderPostFormFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
 	defer os.RemoveAll(fpath)
 
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "nosql://?secret=123", FilePath: fpath}) // nolint: errcheck
@@ -293,7 +293,7 @@ func TestSendDirect(t *testing.T) {
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	c.SendDirect(ctx, tk, model.NewMessage(tk))
+	c.sendDirect(ctx, tk, model.NewMessage(tk))
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check invalid user key failed")
 	}
@@ -306,7 +306,7 @@ func TestSendDirect(t *testing.T) {
 	c.logic.UpdatePushToken("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "aGVsbG8", false)                                                                        // nolint: errcheck                                            // nolint: errcheck
 	c.logic.GetDevices("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY")                                                                                                                                           // nolint: errcheck
 	logic.MockPusher = &MockAPNSPusher{}
-	c.SendDirect(ctx, tk, model.NewMessage(tk).SetPriority(5))
+	c.sendDirect(ctx, tk, model.NewMessage(tk).SetPriority(5))
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatal("Send direct failed")
 	}
@@ -315,7 +315,7 @@ func TestSendDirect(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	logic.MockPusher = &MockAPNSPusher{Error: errors.New("TestSendFailed")}
-	c.SendDirect(ctx, tk, model.NewMessage(tk))
+	c.sendDirect(ctx, tk, model.NewMessage(tk))
 	if w.Result().StatusCode != http.StatusNotFound {
 		t.Fatal("Check send direct failed")
 	}
@@ -324,14 +324,14 @@ func TestSendDirect(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	logic.MockPusher = &MockAPNSPusher{}
-	c.SendDirect(ctx, tk, model.NewMessage(tk).TextContent(strings.Repeat("A", 4000), "", "123", "1"))
+	c.sendDirect(ctx, tk, model.NewMessage(tk).TextContent(strings.Repeat("A", 4000), "", "123", "1"))
 	if w.Result().StatusCode != http.StatusRequestEntityTooLarge {
 		t.Fatal("Check send direct failed")
 	}
 }
 
 func TestSendForward(t *testing.T) {
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true}) // nolint: errcheck
@@ -341,7 +341,7 @@ func TestSendForward(t *testing.T) {
 
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	c.SendForward(ctx, tk, msg)
+	c.sendForward(ctx, tk, msg)
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check invalid user failed")
 	}
@@ -350,7 +350,7 @@ func TestSendForward(t *testing.T) {
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", true) // nolint: errcheck
-	c.SendForward(ctx, tk, msg)
+	c.sendForward(ctx, tk, msg)
 	if w.Result().StatusCode != http.StatusInternalServerError {
 		t.Fatal("Check invalid key failed")
 	}
@@ -359,13 +359,13 @@ func TestSendForward(t *testing.T) {
 		http.Error(w, "", http.StatusOK)
 	}))
 	defer ts.Close()
-	logic.ApiEndpoint = ts.URL
+	logic.APIEndpoint = ts.URL
 
 	w = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
 	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", true) // nolint: errcheck
-	c.SendForward(ctx, tk, msg)
+	c.sendForward(ctx, tk, msg)
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatal("Check invalid key failed")
 	}
@@ -384,7 +384,7 @@ func TestSendMsg(t *testing.T) {
 		t.Fatal("Check invalid user failed")
 	}
 
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	w = httptest.NewRecorder()
 	ctx, _ = gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "", nil)
@@ -465,7 +465,7 @@ func TestTooLargeText(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
 	defer os.RemoveAll(fpath)
 	os.MkdirAll(fpath+"/files/", os.ModePerm) // nolint: errcheck
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
@@ -474,7 +474,7 @@ func TestTooLargeText(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	if _, err := c.MakeTextContent(model.NewMessage(tk), strings.Repeat("1", 1001), strings.Repeat("2", 1001), "", "1"); err != nil {
+	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 1001), strings.Repeat("2", 1001), "", "1"); err != nil {
 		t.Error("Fix too large text failed", err)
 	}
 }
@@ -487,7 +487,7 @@ func TestTooLargeTextFailed(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	if _, err := c.MakeTextContent(model.NewMessage(tk), "", "", strings.Repeat("1", 1001), "1"); err != ErrTooLargeContent {
+	if _, err := c.makeTextContent(model.NewMessage(tk), "", "", strings.Repeat("1", 1001), "1"); err != ErrTooLargeContent {
 		t.Error("Check too large copy text failed")
 	}
 }
@@ -499,7 +499,7 @@ func TestTooLargeSaveTextFailed(t *testing.T) {
 	if f, err := os.Create(filepath.Join(fpath, "files")); err != nil {
 		f.Close()
 	}
-	logic.ApiEndpoint = "http://127.0.0.1"
+	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
@@ -508,7 +508,7 @@ func TestTooLargeSaveTextFailed(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	if _, err := c.MakeTextContent(model.NewMessage(tk), strings.Repeat("1", 500), strings.Repeat("2", 1000), "", "1"); err == nil {
+	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 500), strings.Repeat("2", 1000), "", "1"); err == nil {
 		t.Error("Check save too large text failed")
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	_ "modernc.org/sqlite"
+	_ "modernc.org/sqlite" // sqlite driver
 )
 
 type sqlite struct {
@@ -48,7 +48,7 @@ func (s *sqlite) GetOption(key string, value interface{}) error {
 }
 
 func (s *sqlite) GetUser(uid string) (*User, error) {
-	u := &User{Uid: uid}
+	u := &User{UID: uid}
 	row := s.db.QueryRow("SELECT `pubkey`, `seckey`, `flags` FROM `users` WHERE `uid`=? LIMIT 1;", uid)
 	if err := row.Scan(&u.PublicKey, &u.SecretKey, &u.Flags); err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (s *sqlite) GetUser(uid string) (*User, error) {
 }
 
 func (s *sqlite) UpsertUser(u *User) error {
-	_, err := s.db.Exec("INSERT INTO `users`(`uid`,`pubkey`,`seckey`,`flags`) VALUES(?,?,?,?) ON CONFLICT(`uid`) DO UPDATE SET `pubkey`=excluded.`pubkey`,`seckey`=excluded.`seckey`,`flags`=excluded.`flags`,`lastupdate`=CURRENT_TIMESTAMP;", u.Uid, u.PublicKey, u.SecretKey, u.Flags)
+	_, err := s.db.Exec("INSERT INTO `users`(`uid`,`pubkey`,`seckey`,`flags`) VALUES(?,?,?,?) ON CONFLICT(`uid`) DO UPDATE SET `pubkey`=excluded.`pubkey`,`seckey`=excluded.`seckey`,`flags`=excluded.`flags`,`lastupdate`=CURRENT_TIMESTAMP;", u.UID, u.PublicKey, u.SecretKey, u.Flags)
 	return err
 }
 

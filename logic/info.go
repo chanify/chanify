@@ -8,8 +8,9 @@ import (
 	"github.com/skip2/go-qrcode"
 )
 
+// Info for node server
 type Info struct {
-	NodeId    string   `json:"nodeid"`
+	NodeID    string   `json:"nodeid"`
 	Name      string   `json:"name,omitempty"`
 	Version   string   `json:"version"`
 	PublicKey string   `json:"pubkey"`
@@ -17,9 +18,10 @@ type Info struct {
 	Features  []string `json:"features,omitempty"`
 }
 
+// InitInfo calc all info data for node
 func (l *Logic) InitInfo() {
 	info := &Info{
-		NodeId:    l.NodeID,
+		NodeID:    l.NodeID,
 		Name:      l.Name,
 		Version:   l.Version,
 		PublicKey: l.secKey.EncodePublicKey(),
@@ -31,10 +33,12 @@ func (l *Logic) InitInfo() {
 	l.infoSign = crypto.Base64Encode.EncodeToString(sign)
 }
 
+// GetInfo return signed info data
 func (l *Logic) GetInfo() ([]byte, string) {
 	return l.infoData, l.infoSign
 }
 
+// GetQRCode return QRCode png data
 func (l *Logic) GetQRCode() []byte {
 	qrcode, _ := qrcode.Encode("chanify://node?endpoint="+url.QueryEscape(l.Endpoint), qrcode.Medium, 256)
 	return qrcode

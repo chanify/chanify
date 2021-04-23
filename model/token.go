@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// Token for sender
 type Token struct {
 	data     pb.Token
 	signSys  []byte
@@ -21,6 +22,7 @@ type Token struct {
 	raw      string
 }
 
+// ParseToken create token from base64 string
 func ParseToken(token string) (*Token, error) {
 	tks := strings.Split(token, ".")
 	if len(tks) < 3 {
@@ -43,10 +45,12 @@ func ParseToken(token string) (*Token, error) {
 	return tk, nil
 }
 
+// GetUserID return user id string
 func (tk *Token) GetUserID() string {
 	return tk.data.UserId
 }
 
+// GetNodeID return node id
 func (tk *Token) GetNodeID() []byte {
 	nid, err := crypto.Base32Encode.DecodeString(tk.data.NodeId)
 	if err != nil {
@@ -55,6 +59,7 @@ func (tk *Token) GetNodeID() []byte {
 	return nid
 }
 
+// GetChannel return channel code
 func (tk *Token) GetChannel() []byte {
 	if len(tk.data.Channel) <= 0 {
 		return defaultChannel
@@ -62,16 +67,19 @@ func (tk *Token) GetChannel() []byte {
 	return tk.data.Channel
 }
 
+// IsExpires check token expires timestamp(UTC)
 func (tk *Token) IsExpires() bool {
 	return time.Now().UTC().UnixNano()/1e9 >= int64(tk.data.Expires)
 }
 
+// VerifySign check token sign
 func (tk *Token) VerifySign(key []byte) bool {
 	mac := hmac.New(sha256.New, key[0:32])
 	mac.Write(tk.rawData) // nolint: errcheck
 	return hmac.Equal(mac.Sum(nil), tk.signNode)
 }
 
+// VerifyDataHash check the hash of uri limit
 func (tk *Token) VerifyDataHash(data []byte) bool {
 	if len(tk.data.DataHash) > 0 && len(data) > 0 {
 		h := sha1.Sum(data)
@@ -80,6 +88,7 @@ func (tk *Token) VerifyDataHash(data []byte) bool {
 	return false
 }
 
+// RawToken return raw value
 func (tk *Token) RawToken() string {
 	return tk.raw
 }

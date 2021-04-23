@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // mysql driver
 )
 
 type mysql struct {
@@ -48,7 +48,7 @@ func (s *mysql) SetOption(key string, value interface{}) error {
 }
 
 func (s *mysql) GetUser(uid string) (*User, error) {
-	u := &User{Uid: uid}
+	u := &User{UID: uid}
 	row := s.db.QueryRow("SELECT `pubkey`, `seckey`, `flags` FROM `users` WHERE `uid`=? LIMIT 1;", uid)
 	if err := row.Scan(&u.PublicKey, &u.SecretKey, &u.Flags); err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (s *mysql) GetUser(uid string) (*User, error) {
 }
 
 func (s *mysql) UpsertUser(u *User) error {
-	_, err := s.db.Exec("INSERT INTO `users`(`uid`,`pubkey`,`seckey`,`flags`) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE `pubkey`=VALUES(`pubkey`),`seckey`=VALUES(`seckey`),`flags`=VALUES(`flags`);", u.Uid, u.PublicKey, u.SecretKey, u.Flags)
+	_, err := s.db.Exec("INSERT INTO `users`(`uid`,`pubkey`,`seckey`,`flags`) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE `pubkey`=VALUES(`pubkey`),`seckey`=VALUES(`seckey`),`flags`=VALUES(`flags`);", u.UID, u.PublicKey, u.SecretKey, u.Flags)
 	return err
 }
 

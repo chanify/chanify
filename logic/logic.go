@@ -22,18 +22,20 @@ import (
 	"github.com/sideshow/apns2/token"
 )
 
+// variable define
 var (
-	ApiEndpoint            = "https://api.chanify.net"
+	APIEndpoint            = "https://api.chanify.net"
 	MockPusher  APNSPusher = nil
 
 	randReader = rand.Read
 
-	ErrNoSupportMethod = errors.New("No support method")
-	ErrNotFound        = errors.New("Not found")
-	ErrInvalidContent  = errors.New("Invalid content")
-	ErrSystemLimited   = errors.New("SystemLimited")
+	ErrNoSupportMethod = errors.New("no support method")
+	ErrNotFound        = errors.New("not found")
+	ErrInvalidContent  = errors.New("invalid content")
+	ErrSystemLimited   = errors.New("system limited")
 )
 
+// Options for init logic
 type Options struct {
 	Name         string
 	Version      string
@@ -46,6 +48,7 @@ type Options struct {
 	RegUsers     []string
 }
 
+// Logic instance
 type Logic struct {
 	srvless      bool
 	registerable bool
@@ -65,6 +68,7 @@ type Logic struct {
 	apnsDClient *apns2.Client
 }
 
+// APNSPusher is the interface of APNS2
 type APNSPusher interface {
 	Push(n *apns2.Notification) (*apns2.Response, error)
 }
@@ -85,6 +89,7 @@ func (opts *Options) fixOptions() {
 	}
 }
 
+// NewLogic with options
 func NewLogic(opts *Options) (*Logic, error) {
 	opts.fixOptions()
 	l := &Logic{
@@ -112,7 +117,7 @@ func NewLogic(opts *Options) (*Logic, error) {
 			opts.DBUrl = "nosql://?secret=" + url.QueryEscape(opts.Secret)
 			l.srvless = true
 		} else {
-			return nil, errors.New("In serverless mode, secret is required")
+			return nil, errors.New("in serverless mode, secret is required")
 		}
 	}
 	if err := l.loadDB(opts.DBUrl); err != nil {
@@ -133,8 +138,8 @@ func NewLogic(opts *Options) (*Logic, error) {
 		l.apnsDClient = apns2.NewTokenClient(tk).Development()
 		if len(l.filepath) > 0 {
 			l.Features = append(l.Features, "msg.image", "msg.file")
-			FixPath(filepath.Join(l.filepath, "images")) // nolint: errcheck
-			FixPath(filepath.Join(l.filepath, "files"))  // nolint: errcheck
+			fixPath(filepath.Join(l.filepath, "images")) // nolint: errcheck
+			fixPath(filepath.Join(l.filepath, "files"))  // nolint: errcheck
 			log.Println("Files path:", l.filepath)
 		}
 	}
@@ -143,6 +148,7 @@ func NewLogic(opts *Options) (*Logic, error) {
 	return l, nil
 }
 
+// Close and cleanup logic instance
 func (l *Logic) Close() {
 	if l.db != nil {
 		l.db.Close()
@@ -150,14 +156,17 @@ func (l *Logic) Close() {
 	}
 }
 
+// CanFileStore return file stroage is available
 func (l *Logic) CanFileStore() bool {
 	return len(l.filepath) > 0
 }
 
+// GetUser find user info with user id
 func (l *Logic) GetUser(uid string) (*model.User, error) {
 	return l.db.GetUser(uid)
 }
 
+// GetUserKey find user key with user id
 func (l *Logic) GetUserKey(uid string) ([]byte, error) {
 	u, err := l.db.GetUser(uid)
 	if err != nil {
@@ -166,6 +175,7 @@ func (l *Logic) GetUserKey(uid string) ([]byte, error) {
 	return u.SecretKey, nil
 }
 
+// UpsertUser insert or update user info
 func (l *Logic) UpsertUser(uid string, key string, serverless bool) (*model.User, error) {
 	pk, err := model.CalcUserKey(uid, key)
 	if err != nil {
@@ -191,6 +201,7 @@ func (l *Logic) UpsertUser(uid string, key string, serverless bool) (*model.User
 	return u, nil
 }
 
+// BindDevice to user
 func (l *Logic) BindDevice(uid string, uuid string, key string, devType int) error {
 	pk, err := model.CalcDeviceKey(uuid, key)
 	if err != nil {
@@ -199,10 +210,12 @@ func (l *Logic) BindDevice(uid string, uuid string, key string, devType int) err
 	return l.db.BindDevice(uid, uuid, pk.MarshalPublicKey(), devType)
 }
 
+// UnbindDevice from user
 func (l *Logic) UnbindDevice(uid string, uuid string) error {
 	return l.db.UnbindDevice(uid, uuid)
 }
 
+// UpdatePushToken for APNS
 func (l *Logic) UpdatePushToken(uid string, uuid string, token string, sandbox bool) error {
 	tk, err := model.DecodePushToken(token)
 	if err != nil {
@@ -211,18 +224,22 @@ func (l *Logic) UpdatePushToken(uid string, uuid string, token string, sandbox b
 	return l.db.UpdatePushToken(uid, uuid, tk, sandbox)
 }
 
+// GetDeviceKey return device key with device uuid
 func (l *Logic) GetDeviceKey(uuid string) ([]byte, error) {
 	return l.db.GetDeviceKey(uuid)
 }
 
+// GetDevices return all devices with user id
 func (l *Logic) GetDevices(uid string) ([]*model.Device, error) {
 	return l.db.GetDevices(uid)
 }
 
+// Decrypt data with node secret key
 func (l *Logic) Decrypt(data []byte) ([]byte, error) {
 	return l.secKey.Decrypt(data)
 }
 
+// VerifyToken chekc sender token
 func (l *Logic) VerifyToken(tk *model.Token) bool {
 	if tk.IsExpires() {
 		return false
@@ -234,6 +251,7 @@ func (l *Logic) VerifyToken(tk *model.Token) bool {
 	return tk.VerifySign(key)
 }
 
+// LoadFile read with file type & data
 func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 	if len(l.filepath) <= 0 {
 		return nil, ErrNoSupportMethod
@@ -251,6 +269,7 @@ func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 	return ioutil.ReadAll(f)
 }
 
+// SaveFile save with file type & data
 func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 	if len(l.filepath) <= 0 {
 		return "", ErrNoSupportMethod
@@ -261,22 +280,13 @@ func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 	key := sha1.Sum(data)
 	name := hex.EncodeToString(key[:])
 	path := filepath.Join(l.filepath, tname, name)
-	if err := SaveFile(path, data); err != nil {
+	if err := saveFile(path, data); err != nil {
 		return "", err
 	}
 	return filepath.Join("/files/"+tname, name), nil
 }
 
-func (l *Logic) GetAPNS(sandbox bool) APNSPusher {
-	if MockPusher != nil {
-		return MockPusher
-	}
-	if sandbox {
-		return l.apnsDClient
-	}
-	return l.apnsPClient
-}
-
+// SendAPNS send message to APNS
 func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, priority int) int {
 	notification := &apns2.Notification{
 		Topic:      "net.chanify.ios",
@@ -292,13 +302,23 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 	n := len(devices)
 	for _, dev := range devices {
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
-		res, err := l.GetAPNS(dev.Sandbox).Push(notification)
+		res, err := l.getAPNS(dev.Sandbox).Push(notification)
 		if err != nil {
 			log.Println("Send apns failed:", res.StatusCode, res.Reason)
-			n -= 1
+			n--
 		}
 	}
 	return n
+}
+
+func (l *Logic) getAPNS(sandbox bool) APNSPusher {
+	if MockPusher != nil {
+		return MockPusher
+	}
+	if sandbox {
+		return l.apnsDClient
+	}
+	return l.apnsPClient
 }
 
 func (l *Logic) loadDB(dburl string) error {
@@ -332,7 +352,7 @@ func (l *Logic) createUser(uid string, pk *crypto.PublicKey, serverless bool) (*
 		return nil, ErrSystemLimited
 	}
 	u := &model.User{
-		Uid:       uid,
+		UID:       uid,
 		PublicKey: pk.MarshalPublicKey(),
 		SecretKey: make([]byte, 64),
 	}

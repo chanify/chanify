@@ -8,10 +8,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// Message for notification
 type Message struct {
 	pb.Message
 }
 
+// NewMessage with sender token
 func NewMessage(tk *Token) *Message {
 	m := &Message{}
 	m.From = tk.GetNodeID()
@@ -19,12 +21,14 @@ func NewMessage(tk *Token) *Message {
 	return m
 }
 
+// DisableToken clear token
 func (m *Message) DisableToken() *Message {
 	m.From = nil
 	m.Channel = nil
 	return m
 }
 
+// LinkContent set link notification
 func (m *Message) LinkContent(link string) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Link,
@@ -34,6 +38,7 @@ func (m *Message) LinkContent(link string) *Message {
 	return m
 }
 
+// TextContent set text notification
 func (m *Message) TextContent(text string, title string, copytext string, autocopy string) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Text,
@@ -52,6 +57,7 @@ func (m *Message) TextContent(text string, title string, copytext string, autoco
 	return m
 }
 
+// FileContent set file notification
 func (m *Message) FileContent(path string, filename string, desc string, size int) *Message {
 	ctx := &pb.MsgContent{
 		Type:     pb.MsgType_File,
@@ -66,6 +72,7 @@ func (m *Message) FileContent(path string, filename string, desc string, size in
 	return m
 }
 
+// TextFileContent set text file notification
 func (m *Message) TextFileContent(path string, filename string, title string, desc string, size int) *Message {
 	ctx := &pb.MsgContent{
 		Type:     pb.MsgType_File,
@@ -83,6 +90,7 @@ func (m *Message) TextFileContent(path string, filename string, title string, de
 	return m
 }
 
+// ImageContent set image notification
 func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Image,
@@ -100,6 +108,7 @@ func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 	return m
 }
 
+// SoundName set notification sound
 func (m *Message) SoundName(sound string) *Message {
 	if len(sound) > 0 {
 		m.Sound = &pb.Sound{Name: sound}
@@ -107,6 +116,7 @@ func (m *Message) SoundName(sound string) *Message {
 	return m
 }
 
+// SetPriority set notification priority
 func (m *Message) SetPriority(priority int) *Message {
 	if priority > 0 && priority < 0x7fffffff {
 		m.Priority = int32(priority)
@@ -114,6 +124,7 @@ func (m *Message) SetPriority(priority int) *Message {
 	return m
 }
 
+// EncryptContent return encrypted content with key
 func (m *Message) EncryptContent(key []byte) {
 	if m.Content != nil {
 		aesgcm, _ := NewAESGCM(key)
@@ -125,6 +136,7 @@ func (m *Message) EncryptContent(key []byte) {
 	}
 }
 
+// EncryptData return encrypted body with key & timestamp
 func (m *Message) EncryptData(key []byte, ts uint64) []byte {
 	aesgcm, _ := NewAESGCM(key)
 	nonce := make([]byte, 12)
@@ -139,6 +151,7 @@ func (m *Message) EncryptData(key []byte, ts uint64) []byte {
 	return append(nonce, out...)
 }
 
+// Marshal return binary data
 func (m *Message) Marshal() []byte {
 	data, _ := proto.Marshal(&m.Message)
 	return data

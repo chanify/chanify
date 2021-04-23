@@ -12,6 +12,7 @@ import (
 	"github.com/chanify/chanify/crypto"
 )
 
+// NewAESGCM for aes-gcm chiper
 func NewAESGCM(key []byte) (cipher.AEAD, error) {
 	if len(key) < 32 {
 		return nil, errors.New("invalid key")
@@ -20,10 +21,12 @@ func NewAESGCM(key []byte) (cipher.AEAD, error) {
 	return cipher.NewGCM(block)
 }
 
+// DecodePushToken for APNS
 func DecodePushToken(token string) ([]byte, error) {
 	return crypto.Base64Encode.DecodeString(token)
 }
 
+// CalcDeviceKey from device public key
 func CalcDeviceKey(uuid string, key string) (*crypto.PublicKey, error) {
 	data, err := crypto.Base64Encode.DecodeString(key)
 	if err != nil {
@@ -40,6 +43,7 @@ func CalcDeviceKey(uuid string, key string) (*crypto.PublicKey, error) {
 	return pk, nil
 }
 
+// CalcUserKey from user public key
 func CalcUserKey(uid string, key string) (*crypto.PublicKey, error) {
 	data, err := crypto.Base64Encode.DecodeString(key)
 	if err != nil {

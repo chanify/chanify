@@ -38,6 +38,12 @@ func TestMySQL(t *testing.T) {
 	if err := db.UpsertUser(&User{}); err != nil {
 		t.Fatal("Upsert user failed:", err)
 	}
+}
+
+func TestMySQLDevice(t *testing.T) {
+	dbmock, mock, _ := sqlmock.New()
+	db := &mysql{db: dbmock}
+	defer db.Close()
 
 	mock.ExpectExec("INSERT INTO `devices`").WillReturnResult(sqlmock.NewResult(1, 1))
 	if err := db.BindDevice("123", "abc", []byte("key"), 0); err != nil {
@@ -69,6 +75,12 @@ func TestMySQL(t *testing.T) {
 	if _, err := db.GetDevices("1"); err != sql.ErrNoRows {
 		t.Fatal("Check get devices failed")
 	}
+}
+
+func TestMySQLFixDB(t *testing.T) {
+	dbmock, mock, _ := sqlmock.New()
+	db := &mysql{db: dbmock}
+	defer db.Close()
 
 	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `users`").WillReturnResult(sqlmock.NewResult(1, 1))

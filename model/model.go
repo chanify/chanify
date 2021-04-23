@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// DB base interface
 type DB interface {
 	GetOption(key string, value interface{}) error
 	SetOption(key string, value interface{}) error
@@ -21,8 +22,10 @@ type DB interface {
 	Close()
 }
 
+// OpenDB is the function of creating DB instance
 type OpenDB func(dsn string) (DB, error)
 
+// variable define
 var (
 	drivers        = map[string]OpenDB{}
 	defaultChannel []byte
@@ -43,6 +46,7 @@ func init() {
 	})
 }
 
+// InitDB with DSN
 func InitDB(dsn string) (DB, error) {
 	dsnItems := strings.Split(dsn, "://")
 	if len(dsnItems) <= 1 {

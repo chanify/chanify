@@ -40,17 +40,17 @@ func init() {
 					return
 				}
 				defer c.Close()
-				endpoint := GetEndpoint()
+				endpoint := getEndpoint()
 				opts := &logic.Options{
-					Name:     GetName(),
+					Name:     getName(),
 					Version:  Version,
 					Endpoint: endpoint,
-					DataPath: GetDataPath(),
+					DataPath: getDataPath(),
 					FilePath: viper.GetString("server.filepath"),
 					DBUrl:    viper.GetString("server.dburl"),
 					Secret:   viper.GetString("server.secret"),
 				}
-				opts.Registerable, opts.RegUsers = GetUserWhitlist(cmd)
+				opts.Registerable, opts.RegUsers = getUserWhitlist(cmd)
 				if err := c.Init(opts); err != nil {
 					log.Fatalln("Init service failed:", err)
 					return
@@ -96,7 +96,7 @@ func init() {
 	viper.BindPFlag("server.register.enable", serveCmd.Flags().Lookup("registerable")) // nolint: errcheck
 }
 
-func GetName() string {
+func getName() string {
 	name := viper.GetString("server.name")
 	if len(name) <= 0 {
 		name = viper.GetString("server.hostname")
@@ -107,7 +107,7 @@ func GetName() string {
 	return name
 }
 
-func GetDataPath() string {
+func getDataPath() string {
 	path := viper.GetString("server.datapath")
 	if len(path) > 0 {
 		if p, err := homedir.Expand(path); err == nil {
@@ -117,7 +117,7 @@ func GetDataPath() string {
 	return path
 }
 
-func GetEndpoint() string {
+func getEndpoint() string {
 	endpoint := viper.GetString("server.endpoint")
 	if len(endpoint) <= 0 {
 		hostname := viper.GetString("server.hostname")
@@ -138,7 +138,7 @@ func GetEndpoint() string {
 	return endpoint
 }
 
-func GetUserWhitlist(cmd *cobra.Command) (bool, []string) {
+func getUserWhitlist(cmd *cobra.Command) (bool, []string) {
 	if viper.GetBool("server.register.enable") {
 		return true, nil
 	}
