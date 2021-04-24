@@ -66,12 +66,12 @@ func TestMySQLDevice(t *testing.T) {
 		t.Fatal("Get device key failed:", err)
 	}
 
-	mock.ExpectQuery("SELECT `token`,`sandbox` FROM `devices`").WillReturnRows(sqlmock.NewRows([]string{"token", "sandbox"}).AddRow("123", true))
+	mock.ExpectQuery("SELECT `token`,`sandbox`,`type` FROM `devices`").WillReturnRows(sqlmock.NewRows([]string{"token", "sandbox", "type"}).AddRow("123", true, 2))
 	if _, err := db.GetDevices("1"); err != nil {
 		t.Fatal("Get devices failed:", err)
 	}
 
-	mock.ExpectQuery("SELECT `token`,`sandbox` FROM `devices`").WillReturnError(sql.ErrNoRows)
+	mock.ExpectQuery("SELECT `token`,`sandbox`,`type` FROM `devices`").WillReturnError(sql.ErrNoRows)
 	if _, err := db.GetDevices("1"); err != sql.ErrNoRows {
 		t.Fatal("Check get devices failed")
 	}

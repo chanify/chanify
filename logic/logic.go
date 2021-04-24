@@ -17,6 +17,7 @@ import (
 
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
+	"github.com/google/uuid"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/payload"
 	"github.com/sideshow/apns2/token"
@@ -287,9 +288,10 @@ func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 }
 
 // SendAPNS send message to APNS
-func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, priority int) int {
+func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, priority int) (string, int) {
+	uuid := uuid.New().String()
 	notification := &apns2.Notification{
-		Topic:      "net.chanify.ios",
+		ApnsID:     uuid,
 		Expiration: time.Now().Add(24 * time.Hour),
 		Payload: payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
 			Custom("uid", uid).
@@ -301,6 +303,11 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 	}
 	n := len(devices)
 	for _, dev := range devices {
+		if dev.Type < 2 {
+			notification.Topic = "net.chanify.ios"
+		} else {
+			notification.Topic = "net.chanify.ios.watchkitapp"
+		}
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
 		res, err := l.getAPNS(dev.Sandbox).Push(notification)
 		if err != nil {
@@ -308,7 +315,7 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 			n--
 		}
 	}
-	return n
+	return uuid, n
 }
 
 func (l *Logic) getAPNS(sandbox bool) APNSPusher {

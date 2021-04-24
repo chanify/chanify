@@ -10,7 +10,6 @@ import (
 	"github.com/chanify/chanify/logic"
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 func (c *Core) handleSender(ctx *gin.Context) {
@@ -227,11 +226,12 @@ func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Messa
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "message body too large"})
 		return
 	}
-	if n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority)); n <= 0 {
+	uuid, n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority))
+	if n <= 0 {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices send success"})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid.New().String()})
+	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid})
 }
 
 func (c *Core) sendForward(ctx *gin.Context, token *model.Token, msg *model.Message) {

@@ -85,14 +85,14 @@ func (s *sqlite) GetDeviceKey(uuid string) ([]byte, error) {
 
 func (s *sqlite) GetDevices(uid string) ([]*Device, error) {
 	devs := []*Device{}
-	rows, err := s.db.Query("SELECT `token`,`sandbox` FROM `devices` WHERE `uid`=? ORDER BY `lastupdate` DESC LIMIT 4;", uid)
+	rows, err := s.db.Query("SELECT `token`,`sandbox`,`type` FROM `devices` WHERE `uid`=? ORDER BY `lastupdate` DESC LIMIT 4;", uid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		d := &Device{}
-		rows.Scan(&d.Token, &d.Sandbox) // nolint: errcheck
+		rows.Scan(&d.Token, &d.Sandbox, &d.Type) // nolint: errcheck
 		if len(d.Token) > 0 {
 			devs = append(devs, d)
 		}
