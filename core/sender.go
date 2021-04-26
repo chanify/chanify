@@ -2,7 +2,6 @@ package core
 
 import (
 	"bytes"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -33,180 +32,55 @@ func (c *Core) handleSender(ctx *gin.Context) {
 }
 
 func (c *Core) handlePostSender(ctx *gin.Context) {
-	token, _ := c.getToken(ctx)
-	var text string
-	link := ctx.Query("link")
-	title := ctx.Query("title")
-	sound := ctx.Query("sound")
-	autocopy := ctx.Query("autocopy")
-	copytext := ctx.Query("copy")
-	priority := parsePriority(ctx.Query("priority"))
+	params := &MsgParam{}
+	params.Token, _ = c.getToken(ctx)
+	params.Link = ctx.Query("link")
+	params.Title = ctx.Query("title")
+	params.Sound = ctx.Query("sound")
+	params.AutoCopy = ctx.Query("autocopy")
+	params.CopyText = ctx.Query("copy")
+	params.Priority = parsePriority(ctx.Query("priority"))
+
+	var err error
 	var msg *model.Message = nil
 	switch ctx.ContentType() {
 	case "text/plain":
-		defer ctx.Request.Body.Close()
-		if d, err := ioutil.ReadAll(ctx.Request.Body); err == nil {
-			text = string(d)
-		}
+		params.ParsePlainText(ctx)
 	case "application/json":
-		defer ctx.Request.Body.Close()
-		var params struct {
-			Token    string     `json:"token,omitempty"`
-			Title    string     `json:"title,omitempty"`
-			Text     string     `json:"text,omitempty"`
-			Copy     string     `json:"copy,omitempty"`
-			AutoCopy JSONString `json:"autocopy,omitempty"`
-			Link     string     `json:"link,omitempty"`
-			Sound    JSONString `json:"sound,omitempty"`
-			Priority int        `json:"priority,omitempty"`
-		}
-		if err := ctx.BindJSON(&params); err == nil {
-			if token == nil && len(params.Token) > 0 {
-				token, _ = c.parseToken(params.Token)
-			}
-			if len(link) <= 0 && len(params.Link) > 0 {
-				link = params.Link
-			}
-			if len(title) <= 0 && len(params.Title) > 0 {
-				title = params.Title
-			}
-			if len(sound) <= 0 && len(params.Sound) > 0 {
-				sound = string(params.Sound)
-			}
-			if len(copytext) <= 0 && len(params.Copy) > 0 {
-				copytext = params.Copy
-			}
-			if len(autocopy) <= 0 && len(params.AutoCopy) > 0 {
-				autocopy = string(params.AutoCopy)
-			}
-			if priority <= 0 {
-				priority = params.Priority
-			}
-			text = params.Text
-		}
+		params.ParseJSON(c, ctx)
 	case "multipart/form-data":
-		if form, err := ctx.MultipartForm(); err == nil {
-			ts := form.Value["text"]
-			if len(ts) > 0 {
-				text = ts[0]
-			}
-			if token == nil {
-				tks := form.Value["token"]
-				if len(tks) > 0 {
-					token, _ = c.parseToken(tks[0])
-				}
-			}
-			if len(title) <= 0 {
-				ts := form.Value["title"]
-				if len(ts) > 0 {
-					title = ts[0]
-				}
-			}
-			if len(link) <= 0 {
-				ls := form.Value["link"]
-				if len(ls) > 0 {
-					link = ls[0]
-				}
-			}
-			if len(copytext) <= 0 {
-				cs := form.Value["copy"]
-				if len(cs) > 0 {
-					copytext = cs[0]
-				}
-			}
-			if len(autocopy) <= 0 {
-				as := form.Value["autocopy"]
-				if len(as) > 0 {
-					autocopy = as[0]
-				}
-			}
-			if len(sound) <= 0 {
-				ss := form.Value["sound"]
-				if len(ss) > 0 {
-					sound = ss[0]
-				}
-			}
-			if priority <= 0 {
-				ps := form.Value["priority"]
-				if len(ps) > 0 {
-					priority = parsePriority(ps[0])
-				}
-			}
-			if token != nil && c.logic.CanFileStore() {
-				fs := form.File["image"]
-				if len(fs) > 0 {
-					if fp, err := fs[0].Open(); err == nil {
-						defer fp.Close()
-						data, _ := ioutil.ReadAll(fp)
-						msg, err = c.saveUploadImage(ctx, token, data)
-						if err != nil {
-							return
-						}
-					}
-				}
-				fs = form.File["file"]
-				if len(fs) > 0 {
-					if fp, err := fs[0].Open(); err == nil {
-						defer fp.Close()
-						data, _ := ioutil.ReadAll(fp)
-						msg, err = c.saveUploadFile(ctx, token, data, fs[0].Filename, text)
-						if err != nil {
-							return
-						}
-					}
-				}
-			}
+		msg, err = params.ParseFormData(c, ctx)
+		if err != nil {
+			return
 		}
 	case "image/png", "image/jpeg":
-		if token != nil && c.logic.CanFileStore() {
-			var err error
-			data, _ := ctx.GetRawData()
-			msg, err = c.saveUploadImage(ctx, token, data)
-			if err != nil {
-				return
-			}
+		msg, err = params.ParseImage(c, ctx)
+		if err != nil {
+			return
 		}
 	default:
-		text = ctx.PostForm("text")
-		if token == nil {
-			token, _ = c.parseToken(ctx.PostForm("token"))
-		}
-		if len(link) <= 0 {
-			link = ctx.PostForm("link")
-		}
-		if len(copytext) <= 0 {
-			copytext = ctx.PostForm("copy")
-		}
-		if len(autocopy) <= 0 {
-			autocopy = ctx.PostForm("autocopy")
-		}
-		if len(sound) <= 0 {
-			sound = ctx.PostForm("sound")
-		}
-		if priority <= 0 {
-			priority = parsePriority(ctx.PostForm("priority"))
-		}
+		params.ParseForm(c, ctx)
 	}
-	if token == nil {
+	if params.Token == nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
 	}
-	if msg == nil && len(link) > 0 {
-		msg = model.NewMessage(token).LinkContent(link)
+	if msg == nil && len(params.Link) > 0 {
+		msg = model.NewMessage(params.Token).LinkContent(params.Link)
 	}
 	if msg == nil {
-		if len(text) <= 0 {
+		if len(params.Text) <= 0 {
 			ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 			return
 		}
 		var err error
-		msg, err = c.makeTextContent(model.NewMessage(token), text, title, copytext, autocopy)
+		msg, err = c.makeTextContent(model.NewMessage(params.Token), params.Text, params.Text, params.CopyText, params.AutoCopy)
 		if err != nil {
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
 			return
 		}
 	}
-	c.sendMsg(ctx, token, msg.SoundName(sound).SetPriority(priority))
+	c.sendMsg(ctx, params.Token, msg.SoundName(params.Sound).SetPriority(params.Priority))
 }
 
 func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {

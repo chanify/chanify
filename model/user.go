@@ -2,7 +2,7 @@ package model
 
 import "github.com/chanify/chanify/crypto"
 
-// User infomation
+// User information
 type User struct {
 	UID       string
 	PublicKey []byte
