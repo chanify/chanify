@@ -74,7 +74,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			return
 		}
 		var err error
-		msg, err = c.makeTextContent(model.NewMessage(params.Token), params.Text, params.Text, params.CopyText, params.AutoCopy)
+		msg, err = c.makeTextContent(model.NewMessage(params.Token), params.Text, params.Title, params.CopyText, params.AutoCopy)
 		if err != nil {
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
 			return
