@@ -75,6 +75,7 @@ Chanify is include these features:
 - Deploy your own node server.
 - Distributed architecture design.
 - Design for privacy protection.
+- Support text/image/file message format.
 
 ## Getting Started
 
