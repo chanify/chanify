@@ -16,7 +16,7 @@
 
 [English](README.md) | 简体中文
 
-Chanify是一个简单的消息推送工具。每一个人都可以利用提供的API来发送消息推送到自己的iOS设备上。
+Chanify 是一个简单的消息推送工具。每一个人都可以利用提供的 API 来发送消息推送到自己的 iOS 设备上。
 
 <details open="open">
   <summary><h2 style="display: inline-block">目录</h2></summary>
@@ -61,7 +61,7 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
     </li>
     <li><a href="#配置文件">配置文件</a></li>
     <li><a href="#安全">安全</a></li>
-    <li><a href="#chrome插件">Chrome插件</a></li>
+    <li><a href="#chrome 插件">Chrome 插件</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
@@ -69,7 +69,7 @@ Chanify是一个简单的消息推送工具。每一个人都可以利用提供�
 
 ## 功能
 
-Chanify包括这些功能：
+Chanify 包括这些功能：
 
 - 支持自定义频道分类消息
 - 支持部署自己的节点服务器
@@ -79,9 +79,9 @@ Chanify包括这些功能：
 
 ## 入门
 
-1. 从AppStore安装[iOS应用](https://itunes.apple.com/cn/app/id1531546573)（1.0.0或以上版本）。
+1. 从 AppStore 安装[iOS 应用](https://itunes.apple.com/cn/app/id1531546573)（1.0.0 或以上版本）。
 2. 获取发送使用的令牌`token`，[更多细节](https://github.com/chanify/chanify-ios)。
-3. 使用API来发送消息。
+3. 使用 API 来发送消息。
 
 ## 安装
 
@@ -122,19 +122,19 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<文件
 ```
 
 `endpoint` 默认值是 `https://api.chanify.net`，并且会使用默认服务器发送消息。
-如果使用的是自建的节点服务器，请在讲`endpoint`设置成自建服务器的URL。
+如果使用的是自建的节点服务器，请在讲`endpoint`设置成自建服务器的 URL。
 
 ### 作为无状态服务器
 
-Chanify可以作为无状态服务器运行，在这种模式下节点服务器不会保存设备信息（APNS令牌）。
+Chanify 可以作为无状态服务器运行，在这种模式下节点服务器不会保存设备信息（APNS 令牌）。
 
 所有的设备信息会被存储在 api.chanify.net。
 
-消息会在节点服务器加密之后由 api.chanify.net 代理发送给苹果的APNS服务器。
+消息会在节点服务器加密之后由 api.chanify.net 代理发送给苹果的 APNS 服务器。
 
 消息的流动如下:
 
-```
+```text
 开始 => 自建节点服务器 => api.chanify.net => 苹果APNS服务器 => iOS客户端
 ```
 
@@ -148,13 +148,13 @@ $ docker run -it wizjin/chanify:latest serve --secret=<secret key> --name=<node 
 
 ### 作为有状态服务器
 
-Chanify可以作为有状态服务器运行，在这种模式下节点服务器会保存用户的设备信息（APNS令牌）。
+Chanify 可以作为有状态服务器运行，在这种模式下节点服务器会保存用户的设备信息（APNS 令牌）。
 
-消息会直接由节点服务器加密之后发送给苹果的APNS服务器。
+消息会直接由节点服务器加密之后发送给苹果的 APNS 服务器。
 
 消息的流动如下:
 
-```
+```text
 开始 => 自建节点服务器 => Apple server => iOS客户端
 ```
 
@@ -168,19 +168,19 @@ $ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=
 $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
 
-默认会使用sqlite保存数据，如果要使用MySQL作为数据库存储信息可以添加如下参数：
+默认会使用 sqlite 保存数据，如果要使用 MySQL 作为数据库存储信息可以添加如下参数：
 
 ```bash
 --dburl=mysql://<user>:<password>@tcp(<ip address>:<port>)/<database name>?charset=utf8mb4&parseTime=true&loc=Local
 ```
 
-注意：Chanify不会创建数据库，只会创建表格，所以使用前请先自行建立数据库。
+注意：Chanify 不会创建数据库，只会创建表格，所以使用前请先自行建立数据库。
 
 ### 添加节点服务器
 
 - 启动节点服务器
 - 获取服务器二维码（`http://<address>:<port>/`）
-- 打开iOS的客户端扫描二维码添加节点
+- 打开 iOS 的客户端扫描二维码添加节点
 
 ### 发送消息
 
@@ -262,12 +262,12 @@ echo $response;
 ### 发送文本
 
 - __GET__
-```
+```url
 http://<address>:<port>/v1/sender/<token>/<message>
 ```
 
 - __POST__
-```
+```url
 http://<address>:<port>/v1/sender/<token>
 ```
 
@@ -301,7 +301,7 @@ Content-Type:
 
 例如：
 
-```
+```url
 http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello&copy=123&autocopy=1
 ```
 
@@ -347,7 +347,7 @@ $ curl --form "file=@<文件路径>" "http://<address>:<port>/v1/sender/<token>"
 
 ## 配置文件
 
-可以通过yml文件来配置Chanify，默认路径`~/.chanify.yml`。
+可以通过 yml 文件来配置 Chanify，默认路径`~/.chanify.yml`。
 
 ```yml
 server:
@@ -372,7 +372,7 @@ client: # 作为客户端发送消息时使用
 
 ## 安全
 
-可以通过禁用节点服务器的用户注册功能，来使Node服务器成为私有服务器，防止非授权用户使用。
+可以通过禁用节点服务器的用户注册功能，来使 Node 服务器成为私有服务器，防止非授权用户使用。
 
 ```bash
 chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
@@ -381,14 +381,14 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 - `--registerable=false`: 这个参数用来禁用用户注册
 - `whitelist`: 服务器禁用用户注册后，仍然可以添加使用的用户
 
-## Chrome插件
+## Chrome 插件
 
 可以从[Chrome web store](https://chrome.google.com/webstore/detail/chanify/llpdpmhkemkjeeigibdamadahmhoebdg)下载插件.
 
 插件有以下功能:
 
-- 发送选中的`文本/图片/链接`消息到Chanify
-- 发送网页链接到Chanify
+- 发送选中的`文本/图片/链接`消息到 Chanify
+- 发送网页链接到 Chanify
 
 ## 贡献
 
@@ -403,4 +403,4 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 ## 许可证
 
-根据MIT许可证分发，详情查看[`LICENSE`](LICENSE)。
+根据 MIT 许可证分发，详情查看[`LICENSE`](LICENSE)。

@@ -39,6 +39,7 @@ enum MsgType {
     Audio                   = 4;
     Link                    = 5;
     File                    = 6;
+    Action                  = 7;
 }
 
 message Thumbnail {

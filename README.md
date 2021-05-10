@@ -134,7 +134,7 @@ Message will send to apple apns server by api.chanify.net.
 
 Send message workflow:
 
-```
+```text
 Start => node server => api.chanify.net => Apple server => iOS client
 ```
 
@@ -154,7 +154,7 @@ Message will send to apple apns server direct.
 
 Send message workflow:
 
-```
+```text
 Start => node server => Apple server => iOS client
 ```
 
@@ -261,12 +261,12 @@ echo $response;
 ### Send Text
 
 - __GET__
-```
+```url
 http://<address>:<port>/v1/sender/<token>/<message>
 ```
 
 - __POST__
-```
+```url
 http://<address>:<port>/v1/sender/<token>
 ```
 
@@ -300,7 +300,7 @@ Additional params
 
 E.g.
 
-```
+```url
 http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello&copy=123&autocopy=1
 ```
 

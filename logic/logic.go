@@ -99,7 +99,7 @@ func NewLogic(opts *Options) (*Logic, error) {
 		Name:         opts.Name,
 		Version:      opts.Version,
 		Endpoint:     opts.Endpoint,
-		Features:     []string{"platform.watchos", "msg.text", "msg.link"},
+		Features:     []string{"platform.watchos", "msg.text", "msg.link", "msg.action"},
 	}
 	if l.registerable {
 		log.Println("Register user enabled")
