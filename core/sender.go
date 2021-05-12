@@ -23,7 +23,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		return
 	}
 	msg := model.NewMessage(token)
-	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"))
+	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"), ctx.QueryArray("actions"))
 	if err != nil {
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
 		return
@@ -74,7 +74,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			return
 		}
 		var err error
-		msg, err = c.makeTextContent(model.NewMessage(params.Token), params.Text, params.Title, params.CopyText, params.AutoCopy)
+		msg, err = c.makeTextContent(model.NewMessage(params.Token), params.Text, params.Title, params.CopyText, params.AutoCopy, params.Actions)
 		if err != nil {
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
 			return
@@ -165,7 +165,10 @@ func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte,
 	return model.NewMessage(token).FileContent(path, filename, desc, len(data)), nil
 }
 
-func (c *Core) makeTextContent(msg *model.Message, text string, title string, copytext string, autocopy string) (*model.Message, error) {
+func (c *Core) makeTextContent(msg *model.Message, text string, title string, copytext string, autocopy string, actions []string) (*model.Message, error) {
+	if len(actions) > 0 {
+		return c.makeActionContent(msg, text, title, actions)
+	}
 	if len(copytext) > 1000 {
 		return nil, ErrTooLargeContent
 	}
@@ -191,4 +194,18 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 		title = string([]rune(title)[:100]) + "⋯"
 	}
 	return msg.TextFileContent(path, "text.txt", title, string([]rune(text)[:100])+"⋯", len(data)), nil
+}
+
+func (c *Core) makeActionContent(msg *model.Message, text string, title string, actions []string) (*model.Message, error) {
+	if len(actions) > 4 {
+		actions = actions[:4]
+	}
+	l := len(title) + len(text)
+	for _, act := range actions {
+		l += len(act)
+	}
+	if l > 2000 {
+		return nil, ErrTooLargeContent
+	}
+	return msg.ActionContent(text, title, actions), nil
 }

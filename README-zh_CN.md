@@ -57,6 +57,7 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
             <li><a href="#发送链接">发送链接</a></li>
             <li><a href="#发送图片">发送图片</a></li>
             <li><a href="#发送文件">发送文件</a></li>
+            <li><a href="#发送动作">发送动作</a></li>
         </ul>
     </li>
     <li><a href="#配置文件">配置文件</a></li>
@@ -286,6 +287,10 @@ Content-Type:
     "autocopy": 1,
     "sound": 1,
     "priority": 10,
+    "actions": [
+        "动作名称1|http://<action host>/<action1>",
+        "动作名称2|http://<action host>/<action2>",
+    ]
 }
 ```
 
@@ -297,7 +302,8 @@ Content-Type:
 | copy     | 无    | 可选的复制文本（仅文本消息有效）       |
 | autocopy | `0`   | 是否自动复制文本（仅文本消息有效）     |
 | sound    | `0`   | `1` 启用声音提示, 其他情况会静音推送  |
-| priority | `10`  | `10` 正常优先级, `5` 较低优先级     ｜
+| priority | `10`  | `10` 正常优先级, `5` 较低优先级     |
+| actions  | 无    | 动作列表                           |
 
 例如：
 
@@ -343,6 +349,16 @@ $ curl --form "image=@<jpeg文件路径>" "http://<address>:<port>/v1/sender/<to
 
 ```bash
 $ curl --form "file=@<文件路径>" "http://<address>:<port>/v1/sender/<token>"
+```
+
+### 发送动作
+
+发送动作消息（最多 4 个动作）。
+
+- Content-Type: `multipart/form-data`
+
+```bash
+$ curl --form "action=动作名称1|http://<action host>/<action1>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ## 配置文件

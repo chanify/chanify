@@ -15,6 +15,27 @@ enum ChanCode {
     Device                  = 1;
 }
 
+enum MsgType {
+    System                  = 0;
+    Text                    = 1;
+    Image                   = 2;
+    Video                   = 3;
+    Audio                   = 4;
+    Link                    = 5;
+    File                    = 6;
+    Action                  = 7;
+}
+
+enum SoundType {
+    NormalSound             = 0;
+    CriticalSound           = 1;
+}
+
+enum ActType {
+    ActSys                  = 0;
+    ActURL                  = 1;
+}
+
 message Channel {
     ChanType    type        = 1;
     ChanCode    code        = 2;
@@ -31,22 +52,17 @@ message Token {
     bytes       data_hash   = 6;
 }
 
-enum MsgType {
-    System                  = 0;
-    Text                    = 1;
-    Image                   = 2;
-    Video                   = 3;
-    Audio                   = 4;
-    Link                    = 5;
-    File                    = 6;
-    Action                  = 7;
-}
-
 message Thumbnail {
     uint32      type        = 1;
     int32       width       = 2;
     int32       height      = 3;
     bytes       data        = 4;
+}
+
+message ActionItem {
+    ActType     type        = 1;
+    string      name        = 2;
+    string      link        = 3;
 }
 
 message MsgContent {
@@ -62,11 +78,7 @@ message MsgContent {
     // actions
     uint64      flags       = 15; // 1: autocopy
     string      copytext    = 16;
-}
-
-enum SoundType {
-    NormalSound             = 0;
-    CriticalSound           = 1;
+    repeated ActionItem actions = 17;
 }
 
 message Sound {

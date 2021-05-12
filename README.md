@@ -57,6 +57,7 @@ Chanify is a safe and simple notification tools. For developers, system administ
             <li><a href="#send-link">Send Link</a></li>
             <li><a href="#send-image">Send Image</a></li>
             <li><a href="#send-file">Send File</a></li>
+            <li><a href="#send-actions">Send Actions</a></li>
         </ul>
     </li>
     <li><a href="#configuration">Configuration</a></li>
@@ -285,6 +286,10 @@ Content-Type:
     "autocopy": 1,
     "sound": 1,
     "priority": 10,
+    "actions": [
+        "ActionName1|http://<action host>/<action1>",
+        "ActionName2|http://<action host>/<action2>",
+    ]
 }
 ```
 
@@ -297,6 +302,7 @@ Additional params
 | autocopy | `0`     | Enable autocopy text for text notification. |
 | sound    | `0`     | `1` enable sound, otherwise disable sound.  |
 | priority | `10`    | `10` normal, `5` lower level.               |
+| actions  | None    | Actions list.                               |
 
 E.g.
 
@@ -342,6 +348,16 @@ Send file only support **POST** method used serverful node.
 
 ```bash
 $ curl --form "file=@<file path>" "http://<address>:<port>/v1/sender/<token>"
+```
+
+### Send Actions
+
+Send Actions (Up to 4 actions).
+
+- Content-Type: `multipart/form-data`
+
+```bash
+$ curl --form "action=ActionName1|http://<action host>/<action1>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ## Configuration

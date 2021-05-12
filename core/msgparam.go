@@ -18,6 +18,7 @@ type MsgParam struct {
 	AutoCopy string
 	CopyText string
 	Priority int
+	Actions  []string
 }
 
 // ParsePlainText process text/plain
@@ -40,25 +41,23 @@ func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 		Link     string     `json:"link,omitempty"`
 		Sound    JSONString `json:"sound,omitempty"`
 		Priority int        `json:"priority,omitempty"`
+		Actions  []string   `json:"actions,omitempty"`
 	}
 	if err := ctx.BindJSON(&params); err == nil {
 		if m.Token == nil && len(params.Token) > 0 {
 			m.Token, _ = c.parseToken(params.Token)
 		}
-		if len(m.Link) <= 0 && len(params.Link) > 0 {
-			m.Link = params.Link
-		}
-		if len(m.Title) <= 0 && len(params.Title) > 0 {
-			m.Title = params.Title
-		}
+		m.Link = tryStringValue(m.Link, params.Link)
+		m.Title = tryStringValue(m.Title, params.Title)
 		if len(m.Sound) <= 0 && len(params.Sound) > 0 {
 			m.Sound = string(params.Sound)
 		}
-		if len(m.CopyText) <= 0 && len(params.Copy) > 0 {
-			m.CopyText = params.Copy
-		}
+		m.CopyText = tryStringValue(m.CopyText, params.Copy)
 		if len(m.AutoCopy) <= 0 && len(params.AutoCopy) > 0 {
 			m.AutoCopy = string(params.AutoCopy)
+		}
+		if len(m.Actions) <= 0 {
+			m.Actions = params.Actions
 		}
 		if m.Priority <= 0 {
 			m.Priority = params.Priority
@@ -85,6 +84,9 @@ func (m *MsgParam) ParseForm(c *Core, ctx *gin.Context) {
 	if len(m.Sound) <= 0 {
 		m.Sound = ctx.PostForm("sound")
 	}
+	if len(m.Actions) <= 0 {
+		m.Actions = ctx.PostFormArray("actions")
+	}
 	if m.Priority <= 0 {
 		m.Priority = parsePriority(ctx.PostForm("priority"))
 	}
@@ -109,6 +111,7 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 		m.CopyText = tryFormValue(form, "copy", m.CopyText)
 		m.AutoCopy = tryFormValue(form, "autocopy", m.AutoCopy)
 		m.Sound = tryFormValue(form, "sound", m.Sound)
+		m.Actions = tryFormValues(form, "actions", m.Actions)
 		if m.Priority <= 0 {
 			ps := form.Value["priority"]
 			if len(ps) > 0 {
@@ -157,12 +160,26 @@ func (m *MsgParam) ParseImage(c *Core, ctx *gin.Context) (*model.Message, error)
 	return msg, nil
 }
 
+func tryStringValue(value string, newValue string) string {
+	if len(value) <= 0 && len(newValue) > 0 {
+		value = newValue
+	}
+	return value
+}
+
 func tryFormValue(form *multipart.Form, name string, value string) string {
 	if len(value) <= 0 {
 		vs := form.Value[name]
 		if len(vs) > 0 {
 			return vs[0]
 		}
+	}
+	return value
+}
+
+func tryFormValues(form *multipart.Form, name string, value []string) []string {
+	if len(value) <= 0 {
+		value = form.Value[name]
 	}
 	return value
 }

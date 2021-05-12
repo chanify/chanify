@@ -493,7 +493,7 @@ func TestTooLargeText(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 1001), strings.Repeat("2", 1001), "", "1"); err != nil {
+	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 1001), strings.Repeat("2", 1001), "", "1", nil); err != nil {
 		t.Error("Fix too large text failed", err)
 	}
 }
@@ -506,7 +506,7 @@ func TestTooLargeTextFailed(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	if _, err := c.makeTextContent(model.NewMessage(tk), "", "", strings.Repeat("1", 1001), "1"); err != ErrTooLargeContent {
+	if _, err := c.makeTextContent(model.NewMessage(tk), "", "", strings.Repeat("1", 1001), "1", nil); err != ErrTooLargeContent {
 		t.Error("Check too large copy text failed")
 	}
 }
@@ -527,7 +527,45 @@ func TestTooLargeSaveTextFailed(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 500), strings.Repeat("2", 1000), "", "1"); err == nil {
+	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 500), strings.Repeat("2", 1000), "", "1", nil); err == nil {
 		t.Error("Check save too large text failed")
+	}
+}
+
+func TestSendAction(t *testing.T) {
+	logic.APIEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+
+	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQZZ_-_F4Oa-oQO0sLHXKqNSU8Qmw..c2lnbg") // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/", nil)
+	if _, err := c.makeTextContent(model.NewMessage(tk), "123", "abc", "", "1", []string{
+		"1|http://127.0.0.1/action1",
+		"2|http://127.0.0.1/action2",
+		"3|http://127.0.0.1/action3",
+		"4|http://127.0.0.1/action4",
+		"5|http://127.0.0.1/action5",
+	}); err != nil {
+		t.Error("Send action failed", err)
+	}
+}
+
+func TestSendActionFailed(t *testing.T) {
+	logic.APIEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+
+	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQZZ_-_F4Oa-oQO0sLHXKqNSU8Qmw..c2lnbg") // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/", nil)
+	if _, err := c.makeTextContent(model.NewMessage(tk), "123", "abc", "", "1", []string{
+		strings.Repeat("1", 2000) + "|http://127.0.0.1/action1",
+	}); err != ErrTooLargeContent {
+		t.Error("Check send action failed", err)
 	}
 }

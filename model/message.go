@@ -3,6 +3,7 @@ package model
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"strings"
 
 	"github.com/chanify/chanify/pb"
 	"google.golang.org/protobuf/proto"
@@ -52,6 +53,36 @@ func (m *Message) TextContent(text string, title string, copytext string, autoco
 	}
 	if len(autocopy) > 0 {
 		ctx.Flags = 1
+	}
+	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
+// ActionContent set custom action notification
+func (m *Message) ActionContent(text string, title string, actions []string) *Message {
+	ctx := &pb.MsgContent{
+		Type: pb.MsgType_Action,
+	}
+	if len(title) > 0 {
+		ctx.Title = title
+	}
+	if len(text) > 0 {
+		ctx.Text = text
+	}
+	if len(actions) > 4 {
+		actions = actions[:4]
+	}
+	ctx.Actions = []*pb.ActionItem{}
+	for _, act := range actions {
+		ss := strings.SplitN(act, "|", 2)
+		if len(ss) > 1 {
+			item := &pb.ActionItem{
+				Type: pb.ActType_ActURL,
+				Name: ss[0],
+				Link: ss[1],
+			}
+			ctx.Actions = append(ctx.Actions, item)
+		}
 	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m
