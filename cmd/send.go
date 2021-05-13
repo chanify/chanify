@@ -36,7 +36,7 @@ func init() {
 	sendCmd.Flags().String("title", "", "Message title.")
 	sendCmd.Flags().String("copy", "", "Copy test for text message.")
 	sendCmd.Flags().String("autocopy", "", "Auto copy text for text message.")
-	sendCmd.Flags().String("action", "", "Action item for action message.")
+	sendCmd.Flags().StringArray("action", []string{}, "Action item for action message.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")
 	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
 	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))       // nolint: errcheck
