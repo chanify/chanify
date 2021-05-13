@@ -23,7 +23,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		return
 	}
 	msg := model.NewMessage(token)
-	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"), ctx.QueryArray("actions"))
+	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"), ctx.QueryArray("action"))
 	if err != nil {
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
 		return

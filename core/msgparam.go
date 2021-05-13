@@ -85,7 +85,7 @@ func (m *MsgParam) ParseForm(c *Core, ctx *gin.Context) {
 		m.Sound = ctx.PostForm("sound")
 	}
 	if len(m.Actions) <= 0 {
-		m.Actions = ctx.PostFormArray("actions")
+		m.Actions = ctx.PostFormArray("action")
 	}
 	if m.Priority <= 0 {
 		m.Priority = parsePriority(ctx.PostForm("priority"))
@@ -111,7 +111,7 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 		m.CopyText = tryFormValue(form, "copy", m.CopyText)
 		m.AutoCopy = tryFormValue(form, "autocopy", m.AutoCopy)
 		m.Sound = tryFormValue(form, "sound", m.Sound)
-		m.Actions = tryFormValues(form, "actions", m.Actions)
+		m.Actions = tryFormValues(form, "action", m.Actions)
 		if m.Priority <= 0 {
 			ps := form.Value["priority"]
 			if len(ps) > 0 {

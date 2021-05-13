@@ -36,6 +36,7 @@ func init() {
 	sendCmd.Flags().String("title", "", "Message title.")
 	sendCmd.Flags().String("copy", "", "Copy test for text message.")
 	sendCmd.Flags().String("autocopy", "", "Auto copy text for text message.")
+	sendCmd.Flags().String("action", "", "Action item for action message.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")
 	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
 	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))       // nolint: errcheck
@@ -93,6 +94,8 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	setFieldValue(w, "autocopy", []byte(autocopy))
 	setFieldValue(w, "sound", []byte(sound))
 	setFieldValueInt(w, "priority", priority)
+	actions, _ := cmd.Flags().GetStringArray("action")
+	setFieldValues(w, "action", actions)
 	w.Close()
 	return sendMessage(&data, w.FormDataContentType())
 }
@@ -158,6 +161,15 @@ func setFieldValue(w *multipart.Writer, name string, value []byte) {
 	if len(value) > 0 {
 		fw, _ := w.CreateFormField(name)
 		fw.Write(value) // nolint: errcheck
+	}
+}
+
+func setFieldValues(w *multipart.Writer, name string, value []string) {
+	for _, v := range value {
+		if len(v) > 0 {
+			fw, _ := w.CreateFormField(name)
+			fw.Write([]byte(v)) // nolint: errcheck
+		}
 	}
 }
 
