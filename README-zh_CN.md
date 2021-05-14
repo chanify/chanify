@@ -99,7 +99,9 @@ $ docker pull wizjin/chanify:latest
 ### 从源代码
 
 ```bash
-$ go install github.com/chanify/chanify
+$ git clone https://github.com/chanify/chanify.git
+$ cd chanify
+$ make install
 ```
 
 ## 用法

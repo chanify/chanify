@@ -44,4 +44,8 @@ build:
 	@echo Build ${PACKAGE}
 	@go build ${LDFLAGS} ${PACKAGE}
 
-.PHONY: lint test cover build
+install:
+	@echo Build ${PACKAGE}
+	@go install ${LDFLAGS} ${PACKAGE}
+
+.PHONY: lint test cover build install
