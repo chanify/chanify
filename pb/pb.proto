@@ -24,6 +24,7 @@ enum MsgType {
     Link                    = 5;
     File                    = 6;
     Action                  = 7;
+    Timeline                = 8;
 }
 
 enum SoundType {
