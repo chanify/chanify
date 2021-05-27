@@ -139,6 +139,16 @@ func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 	return m
 }
 
+// AudioContent set audio notification
+func (m *Message) AudioContent(path string, duration uint64) *Message {
+	ctx := &pb.MsgContent{
+		Type: pb.MsgType_Audio,
+		File: path,
+	}
+	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
 // SoundName set notification sound
 func (m *Message) SoundName(sound string) *Message {
 	if len(sound) > 0 {

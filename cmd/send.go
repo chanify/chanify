@@ -32,6 +32,7 @@ func init() {
 	sendCmd.Flags().String("text", "", "Text message content.")
 	sendCmd.Flags().String("link", "", "Link message content.")
 	sendCmd.Flags().String("image", "", "Image file path.")
+	sendCmd.Flags().String("audio", "", "Audio file path.")
 	sendCmd.Flags().String("file", "", "File path.")
 	sendCmd.Flags().String("title", "", "Message title.")
 	sendCmd.Flags().String("copy", "", "Copy test for text message.")
@@ -66,6 +67,8 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	}
 	imagePath, _ := cmd.Flags().GetString("image")
 	image, _ := readInputFile(imagePath)
+	audioPath, _ := cmd.Flags().GetString("audio")
+	audio, _ := readInputFile(audioPath)
 	filePath, err := cmd.Flags().GetString("file")
 	if err != nil {
 		return err
@@ -86,6 +89,7 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	setFieldValue(w, "text", []byte(text))
 	setFieldValue(w, "link", []byte(link))
 	setFieldFile(w, "image", "image", image)
+	setFieldFile(w, "audio", "audio", audio)
 	setFieldFile(w, "file", filename, file)
 	title, _ := cmd.Flags().GetString("title")
 	setFieldValue(w, "title", []byte(title))

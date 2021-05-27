@@ -138,8 +138,9 @@ func NewLogic(opts *Options) (*Logic, error) {
 		l.apnsPClient = apns2.NewTokenClient(tk).Production()
 		l.apnsDClient = apns2.NewTokenClient(tk).Development()
 		if len(l.filepath) > 0 {
-			l.Features = append(l.Features, "msg.image", "msg.file")
+			l.Features = append(l.Features, "msg.image", "msg.audio", "msg.file")
 			fixPath(filepath.Join(l.filepath, "images")) // nolint: errcheck
+			fixPath(filepath.Join(l.filepath, "audios")) // nolint: errcheck
 			fixPath(filepath.Join(l.filepath, "files"))  // nolint: errcheck
 			log.Println("Files path:", l.filepath)
 		}

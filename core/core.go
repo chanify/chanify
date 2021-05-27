@@ -72,6 +72,7 @@ func (c *Core) APIHandler() http.Handler {
 
 	file := r.Group("/files")
 	file.GET("/images/:fname", c.handleImageDownload)
+	file.GET("/audios/:fname", c.handleAudioDownload)
 	file.GET("/files/:fname", c.handleFileDownload)
 	return r
 }

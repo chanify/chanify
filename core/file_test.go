@@ -77,6 +77,71 @@ func TestImageFileFailed(t *testing.T) {
 	}
 }
 
+func TestAudioFile(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+	os.MkdirAll(fpath+"/audios/", os.ModePerm)                      // nolint: errcheck
+	os.WriteFile(fpath+"/audios/1234567890", []byte("hello"), 0644) // nolint: errcheck
+	logic.APIEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
+
+	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQjsZtRpstpjjQk2uohRBJn8SpeRA..c2lnbg") // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/files/audios/1234567890", nil)
+	ctx.Request.URL.Path = "/files/audios/1234567890"
+	ctx.Params = []gin.Param{{Key: "fname", Value: "1234567890"}}
+	c.downloadAudioFile(ctx, tk)
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatal("Download audio hash failed", w.Result().StatusCode)
+	}
+}
+
+func TestAudioFileFailed(t *testing.T) {
+	logic.APIEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/files/audios/1234567890", nil)
+	c.handleAudioDownload(ctx)
+	if w.Result().StatusCode != http.StatusUnauthorized {
+		t.Fatal("Check download token failed")
+	}
+
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg") // nolint: errcheck
+	w = httptest.NewRecorder()
+	ctx, _ = gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/files/audios/1234567890", nil)
+	c.downloadAudioFile(ctx, tk)
+	if w.Result().StatusCode != http.StatusUnauthorized {
+		t.Fatal("Check download url hash failed")
+	}
+
+	tk, _ = model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQjsZtRpstpjjQk2uohRBJn8SpeRA..c2lnbg") // nolint: errcheck
+	w = httptest.NewRecorder()
+	ctx, _ = gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/files/audios/1234567890", nil)
+	ctx.Request.URL.Path = "/files/audios/1234567890"
+	c.downloadAudioFile(ctx, tk)
+	if w.Result().StatusCode != http.StatusBadRequest {
+		t.Fatal("Check download audio url hash failed")
+	}
+
+	w = httptest.NewRecorder()
+	ctx, _ = gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/files/audios/1234567890", nil)
+	ctx.Request.URL.Path = "/files/audios/1234567890"
+	ctx.Params = []gin.Param{{Key: "fname", Value: "1234567890"}}
+	c.downloadAudioFile(ctx, tk)
+	if w.Result().StatusCode != http.StatusNotFound {
+		t.Fatal("Check download audio name failed")
+	}
+}
+
 func TestFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
 	defer os.RemoveAll(fpath)

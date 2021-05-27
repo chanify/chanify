@@ -112,33 +112,24 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 		m.AutoCopy = tryFormValue(form, "autocopy", m.AutoCopy)
 		m.Sound = tryFormValue(form, "sound", m.Sound)
 		m.Actions = tryFormValues(form, "action", m.Actions)
-		if m.Priority <= 0 {
-			ps := form.Value["priority"]
-			if len(ps) > 0 {
-				m.Priority = parsePriority(ps[0])
-			}
-		}
+		m.parsePriorityFromForm(form)
 		if m.Token != nil && c.logic.CanFileStore() {
-			fs := form.File["image"]
-			if len(fs) > 0 {
-				if fp, err := fs[0].Open(); err == nil {
-					defer fp.Close()
-					data, _ := ioutil.ReadAll(fp)
-					msg, err = c.saveUploadImage(ctx, m.Token, data)
-					if err != nil {
-						return nil, err
-					}
+			if data, _, err := readFileFromForm(form, "image"); err == nil {
+				msg, err = c.saveUploadImage(ctx, m.Token, data)
+				if err != nil {
+					return nil, err
 				}
 			}
-			fs = form.File["file"]
-			if len(fs) > 0 {
-				if fp, err := fs[0].Open(); err == nil {
-					defer fp.Close()
-					data, _ := ioutil.ReadAll(fp)
-					msg, err = c.saveUploadFile(ctx, m.Token, data, fs[0].Filename, m.Text)
-					if err != nil {
-						return nil, err
-					}
+			if data, _, err := readFileFromForm(form, "audio"); err == nil {
+				msg, err = c.saveUploadAudio(ctx, m.Token, data)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if data, fname, err := readFileFromForm(form, "file"); err == nil {
+				msg, err = c.saveUploadFile(ctx, m.Token, data, fname, m.Text)
+				if err != nil {
+					return nil, err
 				}
 			}
 		}
@@ -158,6 +149,41 @@ func (m *MsgParam) ParseImage(c *Core, ctx *gin.Context) (*model.Message, error)
 		}
 	}
 	return msg, nil
+}
+
+// ParseAudio process audio
+func (m *MsgParam) ParseAudio(c *Core, ctx *gin.Context) (*model.Message, error) {
+	var msg *model.Message = nil
+	if m.Token != nil && c.logic.CanFileStore() {
+		var err error
+		data, _ := ctx.GetRawData()
+		msg, err = c.saveUploadAudio(ctx, m.Token, data)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return msg, nil
+}
+
+func (m *MsgParam) parsePriorityFromForm(form *multipart.Form) {
+	if m.Priority <= 0 {
+		ps := form.Value["priority"]
+		if len(ps) > 0 {
+			m.Priority = parsePriority(ps[0])
+		}
+	}
+}
+
+func readFileFromForm(form *multipart.Form, name string) ([]byte, string, error) {
+	fs := form.File[name]
+	if len(fs) > 0 {
+		if fp, err := fs[0].Open(); err == nil {
+			defer fp.Close()
+			data, err := ioutil.ReadAll(fp)
+			return data, fs[0].Filename, err
+		}
+	}
+	return nil, "", ErrNoContent
 }
 
 func tryStringValue(value string, newValue string) string {

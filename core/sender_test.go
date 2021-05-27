@@ -249,6 +249,53 @@ func TestSenderPostFormImage(t *testing.T) {
 	}
 }
 
+func TestSenderPostFormAudio(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+
+	logic.APIEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123", FilePath: fpath}) // nolint: errcheck
+	handler := c.APIHandler()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)                                                                                                // nolint: errcheck                                                                                           // nolint: errcheck
+	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
+	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
+	partAudio, _ := writer.CreateFormFile("audio", "audio")
+	partAudio.Write([]byte("")) // nolint: errcheck
+	writer.Close()
+
+	req := httptest.NewRequest("POST", "/v1/sender", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatal("Check send post audio failed", resp.StatusCode)
+	}
+}
+
+func TestSenderPostAudio(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+	logic.APIEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123", FilePath: fpath}) // nolint: errcheck
+	handler := c.APIHandler()
+	req := httptest.NewRequest("POST", "/v1/sender", nil)
+	req.Header.Set("Token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
+	req.Header.Set("Content-Type", "audio/mpeg")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	resp := w.Result()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatal("Check send post audio failed", resp.StatusCode)
+	}
+}
+
 func TestSenderPostFormFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
 	defer os.RemoveAll(fpath)
@@ -449,6 +496,34 @@ func TestSaveImageFileFailed(t *testing.T) {
 	c.saveUploadImage(ctx, nil, []byte("123")) // nolint: errcheck
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check save image failed")
+	}
+}
+
+func TestSaveAudioFile(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+	os.MkdirAll(fpath+"/audios/", os.ModePerm) // nolint: errcheck
+
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg") // nolint: errcheck
+	if _, err := c.saveUploadAudio(ctx, tk, []byte("123")); err != nil {
+		t.Error("Save audio failed", err)
+	}
+}
+
+func TestSaveIAudioFileFailed(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	c.saveUploadAudio(ctx, nil, []byte("123")) // nolint: errcheck
+	if w.Result().StatusCode != http.StatusBadRequest {
+		t.Fatal("Check save audio failed")
 	}
 }
 

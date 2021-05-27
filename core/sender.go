@@ -43,23 +43,26 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 
 	var err error
 	var msg *model.Message = nil
+	var parser func(c *Core, ctx *gin.Context) (*model.Message, error) = nil
 	switch ctx.ContentType() {
 	case "text/plain":
 		params.ParsePlainText(ctx)
 	case "application/json":
 		params.ParseJSON(c, ctx)
 	case "multipart/form-data":
-		msg, err = params.ParseFormData(c, ctx)
-		if err != nil {
-			return
-		}
+		parser = params.ParseFormData
 	case "image/png", "image/jpeg":
-		msg, err = params.ParseImage(c, ctx)
-		if err != nil {
-			return
-		}
+		parser = params.ParseImage
+	case "audio/mpeg":
+		parser = params.ParseAudio
 	default:
 		params.ParseForm(c, ctx)
+	}
+	if parser != nil {
+		msg, err = parser(c, ctx)
+		if err != nil {
+			return
+		}
 	}
 	if params.Token == nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
@@ -150,6 +153,19 @@ func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte
 		return nil, ErrInvalidContent
 	}
 	return model.NewMessage(token).ImageContent(path, createThumbnail(data), len(data)), nil
+}
+
+func (c *Core) saveUploadAudio(ctx *gin.Context, token *model.Token, data []byte) (*model.Message, error) {
+	if len(data) <= 0 {
+		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no audio content"})
+		return nil, ErrNoContent
+	}
+	path, err := c.logic.SaveFile("audios", data)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid audio content"})
+		return nil, ErrInvalidContent
+	}
+	return model.NewMessage(token).AudioContent(path, 0), nil
 }
 
 func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string, desc string) (*model.Message, error) {

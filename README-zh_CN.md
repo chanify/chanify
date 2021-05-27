@@ -56,6 +56,7 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
             <li><a href="#发送文本">发送文本</a></li>
             <li><a href="#发送链接">发送链接</a></li>
             <li><a href="#发送图片">发送图片</a></li>
+            <li><a href="#发送音频">发送音频</a></li>
             <li><a href="#发送文件">发送文件</a></li>
             <li><a href="#发送动作">发送动作</a></li>
         </ul>
@@ -76,7 +77,7 @@ Chanify 包括这些功能：
 - 支持部署自己的节点服务器
 - 依照去中心化设计的系统架构
 - 随机账号生成保护隐私
-- 支持文本/图片/文件等多种消息格式
+- 支持文本/图片/音频/文件等多种消息格式
 
 ## 入门
 
@@ -119,6 +120,9 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<网页
 
 # 图片消息
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<图片文件路径>
+
+# 音频消息
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --audio=<音频文件路径>
 
 # 文件消息
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<文件路径> --text=<文件描述>
@@ -337,13 +341,29 @@ $ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
 - Content-Type: `image/png` 或者 `image/jpeg`
 
 ```bash
-cat <jpeg文件路径> | curl -H "Content-Type: image/jpeg" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
+cat <jpeg 文件路径> | curl -H "Content-Type: image/jpeg" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
 ```
 
 - Content-Type: `multipart/form-data`
 
 ```bash
-$ curl --form "image=@<jpeg文件路径>" "http://<address>:<port>/v1/sender/<token>"
+$ curl --form "image=@<jpeg 文件路径>" "http://<address>:<port>/v1/sender/<token>"
+```
+
+### 发送音频
+
+目前仅支持使用 **POST** 方法通过自建的有状态服务器才能发送 mp3 音频。
+
+- Content-Type: `audio/mpeg`
+
+```bash
+cat <mp3 音频文件路径> | curl -H "Content-Type: audio/mpeg" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
+```
+
+- Content-Type: `multipart/form-data`
+
+```bash
+$ curl --form "audio=@<mp3 音频文件路径>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ### 发送文件
@@ -408,7 +428,7 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 插件有以下功能:
 
-- 发送选中的`文本/图片/链接`消息到 Chanify
+- 发送选中的`文本/图片/音频/链接`消息到 Chanify
 - 发送网页链接到 Chanify
 
 ## 贡献

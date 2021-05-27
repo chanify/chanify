@@ -56,6 +56,7 @@ Chanify is a safe and simple notification tools. For developers, system administ
             <li><a href="#send-text">Send Text</a></li>
             <li><a href="#send-link">Send Link</a></li>
             <li><a href="#send-image">Send Image</a></li>
+            <li><a href="#send-audio">Send Audio</a></li>
             <li><a href="#send-file">Send File</a></li>
             <li><a href="#send-actions">Send Actions</a></li>
         </ul>
@@ -76,7 +77,7 @@ Chanify is include these features:
 - Deploy your own node server.
 - Distributed architecture design.
 - Design for privacy protection.
-- Support text/image/file message format.
+- Support text/image/audio/file message format.
 
 ## Getting Started
 
@@ -119,6 +120,9 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --link=<web ur
 
 # Image message
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --image=<image file path>
+
+# Audio message
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --audio=<audio file path>
 
 # File message
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<file path> --text=<file description>
@@ -345,6 +349,22 @@ cat <jpeg image path> | curl -H "Content-Type: image/jpeg" --data-binary @- "htt
 $ curl --form "image=@<jpeg image path>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
+### Send Audio
+
+Send mp3 audio only support **POST** method used serverful node.
+
+- Content-Type: `audio/mpeg`
+
+```bash
+cat <mp3 audio path> | curl -H "Content-Type: audio/mpeg" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
+```
+
+- Content-Type: `multipart/form-data`
+
+```bash
+$ curl --form "audio=@<mp3 audio path>" "http://<address>:<port>/v1/sender/<token>"
+```
+
 ### Send File
 
 Send file only support **POST** method used serverful node.
@@ -407,7 +427,7 @@ Download the extension for [Chrome web store](https://chrome.google.com/webstore
 
 Extension features:
 
-- Send select `text/image/url` message to Chanify
+- Send select `text/image/audio/url` message to Chanify
 - Send page url to Chanify
 
 ## Contributing
