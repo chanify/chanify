@@ -103,24 +103,6 @@ func (m *Message) FileContent(path string, filename string, desc string, size in
 	return m
 }
 
-// TextFileContent set text file notification
-func (m *Message) TextFileContent(path string, filename string, title string, desc string, size int) *Message {
-	ctx := &pb.MsgContent{
-		Type:     pb.MsgType_File,
-		File:     path,
-		Filename: filename,
-		Size:     uint64(size),
-	}
-	if len(title) > 0 {
-		ctx.Title = title
-	}
-	if len(desc) > 0 {
-		ctx.Text = desc
-	}
-	m.Content, _ = proto.Marshal(ctx)
-	return m
-}
-
 // ImageContent set image notification
 func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 	ctx := &pb.MsgContent{
@@ -140,10 +122,29 @@ func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 }
 
 // AudioContent set audio notification
-func (m *Message) AudioContent(path string, duration uint64) *Message {
+func (m *Message) AudioContent(path string, duration uint64, size int) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Audio,
 		File: path,
+		Size: uint64(size),
+	}
+	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
+// TextFileContent set text file notification
+func (m *Message) TextFileContent(path string, filename string, title string, desc string, size int) *Message {
+	ctx := &pb.MsgContent{
+		Type:     pb.MsgType_File,
+		File:     path,
+		Filename: filename,
+		Size:     uint64(size),
+	}
+	if len(title) > 0 {
+		ctx.Title = title
+	}
+	if len(desc) > 0 {
+		ctx.Text = desc
 	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m

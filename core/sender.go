@@ -165,7 +165,7 @@ func (c *Core) saveUploadAudio(ctx *gin.Context, token *model.Token, data []byte
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid audio content"})
 		return nil, ErrInvalidContent
 	}
-	return model.NewMessage(token).AudioContent(path, 0), nil
+	return model.NewMessage(token).AudioContent(path, 0, len(data)), nil
 }
 
 func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string, desc string) (*model.Message, error) {
