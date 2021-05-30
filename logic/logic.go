@@ -304,10 +304,10 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 	}
 	n := len(devices)
 	for _, dev := range devices {
-		if dev.Type != 2 { // 1: iOS, 2: watchOS, 3: macOS
-			notification.Topic = "net.chanify.ios"
-		} else {
+		if dev.Type == 2 { // 1: iOS, 2: watchOS, 3: macOS
 			notification.Topic = "net.chanify.ios.watchkitapp"
+		} else {
+			notification.Topic = "net.chanify.ios"
 		}
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
 		res, err := l.getAPNS(dev.Sandbox).Push(notification)
