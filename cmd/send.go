@@ -77,7 +77,7 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(text) <= 0 && len(image) <= 0 && len(link) <= 0 && len(file) <= 0 {
+	if len(text) <= 0 && len(image) <= 0 && len(link) <= 0 && len(file) <= 0 && len(audio) <= 0 {
 		return errors.New("no message content")
 	}
 	var data bytes.Buffer
