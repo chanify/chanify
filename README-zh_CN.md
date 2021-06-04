@@ -62,7 +62,13 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
         </ul>
     </li>
     <li><a href="#配置文件">配置文件</a></li>
-    <li><a href="#安全">安全</a></li>
+    <li>
+        <a href="#安全">安全</a>
+        <ul>
+            <li><a href="#设置可注册">设置可注册</a></li>
+            <li><a href="#令牌生命周期">令牌生命周期</a></li>
+        </ul>
+    </li>
     <li><a href="#chrome 插件">Chrome 插件</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
@@ -413,6 +419,8 @@ client: # 作为客户端发送消息时使用
 
 ## 安全
 
+### 设置可注册
+
 可以通过禁用节点服务器的用户注册功能，来使 Node 服务器成为私有服务器，防止非授权用户使用。
 
 ```bash
@@ -421,6 +429,13 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 - `--registerable=false`: 这个参数用来禁用用户注册
 - `whitelist`: 服务器禁用用户注册后，仍然可以添加使用的用户
+
+### 令牌生命周期
+
+- 令牌默认寿命约 90 天左右
+- 可以在频道详情页面配置令牌寿命 (1 天 ~ 5 年)
+
+*注意: 请保护您的令牌不被泄露。*
 
 ## Chrome 插件
 

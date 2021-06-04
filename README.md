@@ -62,7 +62,13 @@ Chanify is a safe and simple notification tools. For developers, system administ
         </ul>
     </li>
     <li><a href="#configuration">Configuration</a></li>
-    <li><a href="#security">Security</a></li>
+    <li>
+        <a href="#security">Security</a>
+        <ul>
+            <li><a href="#setting-registrable">Setting Registrable</a></li>
+            <li><a href="#token-lifetime">Token Lifetime</a></li>
+        </ul>
+    </li>
     <li><a href="#chrome-extension">Chrome Extension</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -412,6 +418,8 @@ client: # configuration for sender client
 
 ## Security
 
+### Setting Registrable
+
 Node server can be disabled user registration and become a private server.
 
 ```bash
@@ -420,6 +428,13 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 - `--registerable=false`: used to disable user registration
 - `whitelist`: list users can be add into node server
+
+### Token Lifetime
+
+- Token lifetime is about 90 days (default).
+- Can configurable token lifetime (1 day ~ 5 years) in channel detail page.
+
+*Note: Please protect your token from leakage.*
 
 ## Chrome Extension
 
