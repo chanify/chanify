@@ -92,3 +92,9 @@ func (tk *Token) VerifyDataHash(data []byte) bool {
 func (tk *Token) RawToken() string {
 	return tk.raw
 }
+
+// HashValue return sha1 with token raw value
+func (tk *Token) HashValue() []byte {
+	h := sha1.Sum([]byte(tk.raw))
+	return h[:]
+}

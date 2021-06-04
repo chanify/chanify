@@ -19,6 +19,7 @@ func NewMessage(tk *Token) *Message {
 	m := &Message{}
 	m.From = tk.GetNodeID()
 	m.Channel = tk.GetChannel()
+	m.TokenHash = tk.HashValue()
 	return m
 }
 

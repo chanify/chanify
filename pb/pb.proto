@@ -95,4 +95,5 @@ message Message {
     bytes       ciphertext  = 4; // Encrypt MsgContent
     int32       priority    = 5;
     Sound       sound       = 6;
+    bytes       token_hash  = 7;
 }
