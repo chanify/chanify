@@ -434,9 +434,7 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 - Token lifetime is about 90 days (default).
 - Can configurable token lifetime (1 day ~ 5 years) in channel detail page.
 
-If your token is leaked, add leaked token into the blocklist (iOS client settings).
-
-*Note: Please protect your token from leakage. This feature need trusted node server.*
+*Note: Please protect your token from leakage.*
 
 ## Chrome Extension
 
