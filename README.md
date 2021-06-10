@@ -9,6 +9,7 @@
 [![Codecov](https://img.shields.io/codecov/c/github/chanify/chanify?logo=codecov&style=flat-square)](https://codecov.io/gh/chanify/chanify)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/chanify/chanify.svg?logo=lgtm&logoWidth=18&style=flat-square)](https://lgtm.com/projects/g/chanify/chanify/alerts/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chanify/chanify?style=flat-square)](https://goreportcard.com/report/github.com/chanify/chanify)
+[![Go Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/chanify/chanify)
 [![GitHub](https://img.shields.io/github/license/chanify/chanify?style=flat-square)](LICENSE)
 [![Docker pull](https://img.shields.io/docker/pulls/wizjin/chanify?style=flat-square)](https://hub.docker.com/r/wizjin/chanify)
 [![Downloads](https://img.shields.io/github/downloads/chanify/chanify/total?style=flat-square)](https://github.com/chanify/chanify/releases/latest)
@@ -436,7 +437,7 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 If your token is leaked, add leaked token into the blocklist (iOS client settings).
 
-*Note: Please protect your token from leakage. The blockist need trusted node server (1.1.8 version and above).*
+*Note: Please protect your token from leakage. The blockist need trusted node server (1.2.0 version and above).*
 
 ## Chrome Extension
 

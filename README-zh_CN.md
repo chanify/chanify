@@ -9,6 +9,7 @@
 [![Codecov](https://img.shields.io/codecov/c/github/chanify/chanify?logo=codecov&style=flat-square)](https://codecov.io/gh/chanify/chanify)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/chanify/chanify.svg?logo=lgtm&logoWidth=18&style=flat-square)](https://lgtm.com/projects/g/chanify/chanify/alerts/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/chanify/chanify?style=flat-square)](https://goreportcard.com/report/github.com/chanify/chanify)
+[![Go Reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/chanify/chanify)
 [![GitHub](https://img.shields.io/github/license/chanify/chanify?style=flat-square)](LICENSE)
 [![Docker pull](https://img.shields.io/docker/pulls/wizjin/chanify?style=flat-square)](https://hub.docker.com/r/wizjin/chanify)
 [![Downloads](https://img.shields.io/github/downloads/chanify/chanify/total?style=flat-square)](https://github.com/chanify/chanify/releases/latest)
@@ -437,7 +438,7 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 如果令牌被泄露，请将泄露的令牌添加到禁用列表（在 iOS 客户端设置页面）。
 
-*注意: 请保护您的令牌不被泄露，禁用列表需要受信任的节点服务器（1.1.8 或以上版本）。*
+*注意: 请保护您的令牌不被泄露，禁用列表需要受信任的节点服务器（1.2.0 或以上版本）。*
 
 ## Chrome 插件
 
