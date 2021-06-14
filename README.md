@@ -437,7 +437,7 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 If your token is leaked, add leaked token into the blocklist (iOS client settings).
 
-*Note: Please protect your token from leakage. The blockist need trusted node server (1.2.0 version and above).*
+*Note: Please protect your token from leakage. The blockist need trusted node server (1.1.9 version and above).*
 
 ## Chrome Extension
 
