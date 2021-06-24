@@ -13,6 +13,7 @@ enum ChanType {
 enum ChanCode {
     Uncategorized           = 0;
     Device                  = 1;
+    TimeSets                = 2;
 }
 
 enum MsgType {
