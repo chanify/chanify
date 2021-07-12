@@ -129,8 +129,12 @@ func TestSenderPostForm(t *testing.T) {
 	handler := c.APIHandler()
 
 	data := url.Values{
-		"text":  {"123"},
-		"token": {"CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg"},
+		"text":                 {"123"},
+		"timeline-code":        {"test-code"},
+		"timeline-items[key1]": {"123"},
+		"timeline-items[key2]": {"123.456"},
+		"timeline-items[key3]": {"abc"},
+		"token":                {"CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg"},
 	}
 	req := httptest.NewRequest("POST", "/v1/sender", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -150,22 +154,17 @@ func TestSenderPostFormData(t *testing.T) {
 	handler := c.APIHandler()
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	partText, _ := writer.CreateFormField("text")                                                                                      // nolint: errcheck
-	partText.Write([]byte("hello"))                                                                                                    // nolint: errcheck
-	partTitle, _ := writer.CreateFormField("title")                                                                                    // nolint: errcheck
-	partTitle.Write([]byte("MyTitle"))                                                                                                 // nolint: errcheck
-	partCopy, _ := writer.CreateFormField("copy")                                                                                      // nolint: errcheck
-	partCopy.Write([]byte("copy text"))                                                                                                // nolint: errcheck
-	partAutoCopy, _ := writer.CreateFormField("autocopy")                                                                              // nolint: errcheck
-	partAutoCopy.Write([]byte("1"))                                                                                                    // nolint: errcheck
-	partLink, _ := writer.CreateFormField("link")                                                                                      // nolint: errcheck
-	partLink.Write([]byte("https://api.chanify.net"))                                                                                  // nolint: errcheck
-	partSound, _ := writer.CreateFormField("sound")                                                                                    // nolint: errcheck
-	partSound.Write([]byte("false"))                                                                                                   // nolint: errcheck
-	partPriority, _ := writer.CreateFormField("priority")                                                                              // nolint: errcheck
-	partPriority.Write([]byte("5"))                                                                                                    // nolint: errcheck
-	partToken, _ := writer.CreateFormField("token")                                                                                    // nolint: errcheck
-	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
+	writer.WriteField("text", "hello")                                                                                                    // nolint: errcheck
+	writer.WriteField("title", "MyTitle")                                                                                                 // nolint: errcheck
+	writer.WriteField("copy", "copy text")                                                                                                // nolint: errcheck
+	writer.WriteField("autocopy", "1")                                                                                                    // nolint: errcheck
+	writer.WriteField("link", "https://api.chanify.net")                                                                                  // nolint: errcheck
+	writer.WriteField("sound", "false")                                                                                                   // nolint: errcheck
+	writer.WriteField("priority", "5")                                                                                                    // nolint: errcheck
+	writer.WriteField("token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg") // nolint: errcheck
+	writer.WriteField("timeline-code", "test")                                                                                            // nolint: errcheck
+	writer.WriteField("timeline-items[key1]", "123")                                                                                      // nolint: errcheck
+	writer.WriteField("timeline-items[key2]", "123.45")                                                                                   // nolint: errcheck
 	writer.Close()
 
 	req := httptest.NewRequest("POST", "/v1/sender", body)
@@ -191,7 +190,18 @@ func TestSenderPostJSON(t *testing.T) {
 		"copy": "abc",
 		"autocopy": 1,
 		"link": "https://api.chanify.net",
-		"token": "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg"
+		"token": "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg",
+		"timeline": {
+			"code": "test-code",
+			"items": {
+				"key1": 123,
+				"key2": "123",
+				"key3": 123.45,
+				"key4": "123.45",
+				"key5": true,
+				"key6": ""
+			}
+		}
 	}`))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()

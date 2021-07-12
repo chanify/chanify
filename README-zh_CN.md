@@ -306,7 +306,16 @@ Content-Type:
     "actions": [
         "动作名称1|http://<action host>/<action1>",
         "动作名称2|http://<action host>/<action2>",
-    ]
+        ...
+    ],
+    "timeline": {
+        "code": "<标识 code>",
+        "items": {
+            "key1": "value1",
+            "key2": "value2",
+            ...
+        }
+    }
 }
 ```
 
@@ -320,6 +329,7 @@ Content-Type:
 | sound    | `0`   | `1` 启用声音提示, 其他情况会静音推送  |
 | priority | `10`  | `10` 正常优先级, `5` 较低优先级     |
 | actions  | 无    | 动作列表                           |
+| timeline | 无    | Timeline 对象                     |
 
 例如：
 

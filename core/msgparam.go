@@ -3,22 +3,31 @@ package core
 import (
 	"io/ioutil"
 	"mime/multipart"
+	"strconv"
+	"strings"
 
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
 )
 
+// TimeContent define timeline content
+type TimeContent struct {
+	Code  string
+	Items []*model.MsgTimeItem
+}
+
 // MsgParam parse message parameters
 type MsgParam struct {
-	Token    *model.Token
-	Text     string
-	Link     string
-	Title    string
-	Sound    string
-	AutoCopy string
-	CopyText string
-	Priority int
-	Actions  []string
+	Token       *model.Token
+	Text        string
+	Link        string
+	Title       string
+	Sound       string
+	AutoCopy    string
+	CopyText    string
+	Priority    int
+	Actions     []string
+	TimeContent TimeContent
 }
 
 // ParsePlainText process text/plain
@@ -42,6 +51,10 @@ func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 		Sound    JSONString `json:"sound,omitempty"`
 		Priority int        `json:"priority,omitempty"`
 		Actions  []string   `json:"actions,omitempty"`
+		Timeline struct {
+			Code  string                 `json:"code"`
+			Items map[string]interface{} `json:"items"`
+		} `json:"timeline,omitempty"`
 	}
 	if err := ctx.BindJSON(&params); err == nil {
 		if m.Token == nil && len(params.Token) > 0 {
@@ -61,6 +74,10 @@ func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 		}
 		if m.Priority <= 0 {
 			m.Priority = params.Priority
+		}
+		if len(m.TimeContent.Code) <= 0 {
+			m.TimeContent.Code = params.Timeline.Code
+			m.TimeContent.Items = parseTimeContentItems(params.Timeline.Items)
 		}
 		m.Text = params.Text
 	}
@@ -90,6 +107,10 @@ func (m *MsgParam) ParseForm(c *Core, ctx *gin.Context) {
 	if m.Priority <= 0 {
 		m.Priority = parsePriority(ctx.PostForm("priority"))
 	}
+	if len(m.TimeContent.Code) <= 0 {
+		m.TimeContent.Code = ctx.PostForm("timeline-code")
+		m.TimeContent.Items = parseTimeContentStringItems(ctx.PostFormMap("timeline-items"))
+	}
 }
 
 // ParseFormData process multipart/form-data
@@ -113,6 +134,10 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 		m.Sound = tryFormValue(form, "sound", m.Sound)
 		m.Actions = tryFormValues(form, "action", m.Actions)
 		m.parsePriorityFromForm(form)
+		m.TimeContent.Code = tryFormValue(form, "timeline-code", m.TimeContent.Code)
+		if len(m.TimeContent.Code) > 0 {
+			m.TimeContent.Items = tryFormMap(form, "timeline-items", m.TimeContent.Items)
+		}
 		if m.Token != nil && c.logic.CanFileStore() {
 			if data, _, err := readFileFromForm(form, "image"); err == nil {
 				msg, err = c.saveUploadImage(ctx, m.Token, data)
@@ -174,6 +199,90 @@ func (m *MsgParam) parsePriorityFromForm(form *multipart.Form) {
 	}
 }
 
+func parseTimeContentItems(items map[string]interface{}) []*model.MsgTimeItem {
+	lst := []*model.MsgTimeItem{}
+	for k, v := range items {
+		switch val := v.(type) {
+		case int:
+			lst = append(lst, &model.MsgTimeItem{
+				Name:  k,
+				Value: int64(val),
+			})
+		case int64:
+			lst = append(lst, &model.MsgTimeItem{
+				Name:  k,
+				Value: val,
+			})
+		case float32:
+			lst = append(lst, &model.MsgTimeItem{
+				Name:  k,
+				Value: float64(val),
+			})
+		case float64:
+			lst = append(lst, &model.MsgTimeItem{
+				Name:  k,
+				Value: val,
+			})
+		case string:
+			if strings.ContainsRune(val, '.') {
+				if vv, err := strconv.ParseFloat(val, 64); err == nil {
+					lst = append(lst, &model.MsgTimeItem{
+						Name:  k,
+						Value: vv,
+					})
+					continue
+				}
+			} else {
+				if vv, err := strconv.ParseInt(val, 10, 64); err == nil {
+					lst = append(lst, &model.MsgTimeItem{
+						Name:  k,
+						Value: vv,
+					})
+					continue
+				}
+			}
+			lst = append(lst, &model.MsgTimeItem{
+				Name:  k,
+				Value: 0,
+			})
+		default:
+			lst = append(lst, &model.MsgTimeItem{
+				Name:  k,
+				Value: 0,
+			})
+		}
+	}
+	return lst
+}
+
+func parseTimeContentStringItems(items map[string]string) []*model.MsgTimeItem {
+	lst := []*model.MsgTimeItem{}
+	for k, v := range items {
+		if strings.ContainsRune(v, '.') {
+			if vv, err := strconv.ParseFloat(v, 64); err == nil {
+				lst = append(lst, &model.MsgTimeItem{
+					Name:  k,
+					Value: vv,
+				})
+				continue
+			}
+		} else {
+			if vv, err := strconv.ParseInt(v, 10, 64); err == nil {
+				lst = append(lst, &model.MsgTimeItem{
+					Name:  k,
+					Value: vv,
+				})
+				continue
+			}
+		}
+		lst = append(lst, &model.MsgTimeItem{
+			Name:  k,
+			Value: 0,
+		})
+	}
+	return lst
+}
+
 func readFileFromForm(form *multipart.Form, name string) ([]byte, string, error) {
 	fs := form.File[name]
 	if len(fs) > 0 {
@@ -208,4 +317,18 @@ func tryFormValues(form *multipart.Form, name string, value []string) []string {
 		value = form.Value[name]
 	}
 	return value
+}
+
+func tryFormMap(form *multipart.Form, name string, items []*model.MsgTimeItem) []*model.MsgTimeItem {
+	if len(items) <= 0 {
+		l := len(name)
+		values := map[string]string{}
+		for k, v := range form.Value {
+			if strings.HasPrefix(k, name) && len(k) > l+2 && k[l] == '[' && k[len(k)-1] == ']' && len(v) > 0 {
+				values[strings.TrimSpace(k[l+1:len(k)-1])] = v[0]
+			}
+		}
+		return parseTimeContentStringItems(values)
+	}
+	return items
 }

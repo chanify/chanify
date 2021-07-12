@@ -9,6 +9,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// MsgTimeItem define data for timeline
+type MsgTimeItem struct {
+	Name  string
+	Value interface{}
+}
+
 // Message for notification
 type Message struct {
 	pb.Message
@@ -35,6 +41,34 @@ func (m *Message) LinkContent(link string) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Link,
 		Link: link,
+	}
+	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
+// TimelineContent set timeline notification
+func (m *Message) TimelineContent(code string, items []*MsgTimeItem) *Message {
+	tis := []*pb.TimeItem{}
+	for _, item := range items {
+		ti := &pb.TimeItem{Name: item.Name}
+		switch v := item.Value.(type) {
+		case int:
+			ti.IntegerValue = int64(v)
+		case int64:
+			ti.IntegerValue = v
+		case float64:
+			ti.FloatValue = v
+		default:
+			continue
+		}
+		tis = append(tis, ti)
+	}
+	ctx := &pb.MsgContent{
+		Type: pb.MsgType_Timeline,
+		TimeContent: &pb.TimeContent{
+			Code:      code,
+			TimeItems: tis,
+		},
 	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m

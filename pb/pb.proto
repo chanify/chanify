@@ -5,96 +5,108 @@ option objc_class_prefix="CHTP";
 option optimize_for = LITE_RUNTIME;
 
 enum ChanType {
-    None                    = 0;
-    Sys                     = 1;
-    User                    = 2;
+    None                            = 0;
+    Sys                             = 1;
+    User                            = 2;
 }
 
 enum ChanCode {
-    Uncategorized           = 0;
-    Device                  = 1;
-    TimeSets                = 2;
+    Uncategorized                   = 0;
+    Device                          = 1;
+    TimeSets                        = 2;
 }
 
 enum MsgType {
-    System                  = 0;
-    Text                    = 1;
-    Image                   = 2;
-    Video                   = 3;
-    Audio                   = 4;
-    Link                    = 5;
-    File                    = 6;
-    Action                  = 7;
-    Timeline                = 8;
+    System                          = 0;
+    Text                            = 1;
+    Image                           = 2;
+    Video                           = 3;
+    Audio                           = 4;
+    Link                            = 5;
+    File                            = 6;
+    Action                          = 7;
+    Timeline                        = 8;
 }
 
 enum SoundType {
-    NormalSound             = 0;
-    CriticalSound           = 1;
+    NormalSound                     = 0;
+    CriticalSound                   = 1;
 }
 
 enum ActType {
-    ActSys                  = 0;
-    ActURL                  = 1;
+    ActSys                          = 0;
+    ActURL                          = 1;
 }
 
 message Channel {
-    ChanType    type        = 1;
-    ChanCode    code        = 2;
-    string      name        = 3;
-    string      icon        = 4;
+    ChanType    type                = 1;
+    ChanCode    code                = 2;
+    string      name                = 3;
+    string      icon                = 4;
 }
 
 message Token {
-    uint64      expires     = 1;
-    string      user_id     = 2;
-    bytes       device_id   = 3;
-    bytes       channel     = 4;
-    string      node_id     = 5;
-    bytes       data_hash   = 6;
+    uint64      expires             = 1;
+    string      user_id             = 2;
+    bytes       device_id           = 3;
+    bytes       channel             = 4;
+    string      node_id             = 5;
+    bytes       data_hash           = 6;
 }
 
 message Thumbnail {
-    uint32      type        = 1;
-    int32       width       = 2;
-    int32       height      = 3;
-    bytes       data        = 4;
+    uint32      type                = 1;
+    int32       width               = 2;
+    int32       height              = 3;
+    bytes       data                = 4;
 }
 
 message ActionItem {
-    ActType     type        = 1;
-    string      name        = 2;
-    string      link        = 3;
+    ActType     type                = 1;
+    string      name                = 2;
+    string      link                = 3;
+}
+
+message TimeItem {
+    string      name                = 1;
+    int64       integer_value       = 2;
+    double      float_value         = 3;
+}
+
+message TimeContent {
+    string      code                = 1;
+    repeated TimeItem time_items    = 2;
 }
 
 message MsgContent {
-    MsgType     type        = 1;
-    string      text        = 2;
-    string      file        = 3;
-    string      title       = 4;
-    Thumbnail   thumbnail   = 5;
-    uint64      duration    = 6;
-    uint64      size        = 7;
-    string      link        = 8;
-    string      filename    = 9;
+    MsgType     type                = 1;
+    string      text                = 2;
+    string      file                = 3;
+    string      title               = 4;
+    Thumbnail   thumbnail           = 5;
+    uint64      duration            = 6;
+    uint64      size                = 7;
+    string      link                = 8;
+    string      filename            = 9;
+    TimeContent time_content        = 10;
     // actions
-    uint64      flags       = 15; // 1: autocopy
-    string      copytext    = 16;
-    repeated ActionItem actions = 17;
+    uint64      flags               = 15; // 1: autocopy
+    string      copytext            = 16;
+    repeated ActionItem actions     = 17;
 }
 
 message Sound {
-    SoundType   type        = 1;
-    string      name        = 2;
-    float       volume      = 3;
+    SoundType   type                = 1;
+    string      name                = 2;
+    float       volume              = 3;
 }
 
 message Message {
-    bytes       from        = 1;
-    bytes       channel     = 2; // Channel
-    bytes       content     = 3; // MsgContent
-    bytes       ciphertext  = 4; // Encrypt MsgContent
-    int32       priority    = 5;
-    Sound       sound       = 6;
-    bytes       token_hash  = 7;
+    bytes       from                = 1;
+    bytes       channel             = 2; // Channel
+    bytes       content             = 3; // MsgContent
+    bytes       ciphertext          = 4; // Encrypt MsgContent
+    int32       priority            = 5;
+    Sound       sound               = 6;
+    bytes       token_hash          = 7;
 }

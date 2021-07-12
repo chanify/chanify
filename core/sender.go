@@ -40,6 +40,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	params.AutoCopy = ctx.Query("autocopy")
 	params.CopyText = ctx.Query("copy")
 	params.Priority = parsePriority(ctx.Query("priority"))
+	params.TimeContent.Code = ctx.Query("timeline-code")
 
 	var err error
 	var msg *model.Message = nil
@@ -68,19 +69,21 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
 	}
-	if msg == nil && len(params.Link) > 0 {
-		msg = model.NewMessage(params.Token).LinkContent(params.Link)
-	}
 	if msg == nil {
-		if len(params.Text) <= 0 {
+		if len(params.Link) > 0 {
+			msg = model.NewMessage(params.Token).LinkContent(params.Link)
+		} else if len(params.TimeContent.Code) > 0 {
+			msg = model.NewMessage(params.Token).TimelineContent(params.TimeContent.Code, params.TimeContent.Items)
+		} else if len(params.Text) <= 0 {
 			ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 			return
-		}
-		var err error
-		msg, err = c.makeTextContent(model.NewMessage(params.Token), params.Text, params.Title, params.CopyText, params.AutoCopy, params.Actions)
-		if err != nil {
-			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
-			return
+		} else {
+			var err error
+			msg, err = c.makeTextContent(model.NewMessage(params.Token), params.Text, params.Title, params.CopyText, params.AutoCopy, params.Actions)
+			if err != nil {
+				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
+				return
+			}
 		}
 	}
 	c.sendMsg(ctx, params.Token, msg.SoundName(params.Sound).SetPriority(params.Priority))

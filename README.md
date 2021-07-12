@@ -305,7 +305,16 @@ Content-Type:
     "actions": [
         "ActionName1|http://<action host>/<action1>",
         "ActionName2|http://<action host>/<action2>",
-    ]
+        ...
+    ],
+    "timeline": {
+        "code": "<timeline code>",
+        "items": {
+            "key1": "value1",
+            "key2": "value2",
+            ...
+        }
+    }
 }
 ```
 
@@ -319,6 +328,7 @@ Additional params
 | sound    | `0`     | `1` enable sound, otherwise disable sound.  |
 | priority | `10`    | `10` normal, `5` lower level.               |
 | actions  | None    | Actions list.                               |
+| timeline | None    | Timeline object.                            |
 
 E.g.
 
