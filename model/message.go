@@ -19,6 +19,7 @@ type MsgTimeItem struct {
 // Message for notification
 type Message struct {
 	pb.Message
+	isTimeline bool
 }
 
 // NewMessage with sender token
@@ -27,6 +28,7 @@ func NewMessage(tk *Token) *Message {
 	m.From = tk.GetNodeID()
 	m.Channel = tk.GetChannel()
 	m.TokenHash = tk.HashValue()
+	m.isTimeline = false
 	return m
 }
 
@@ -77,6 +79,7 @@ func (m *Message) TimelineContent(code string, ts *time.Time, items []*MsgTimeIt
 		},
 	}
 	m.Content, _ = proto.Marshal(ctx)
+	m.isTimeline = true
 	return m
 }
 
@@ -188,6 +191,17 @@ func (m *Message) TextFileContent(path string, filename string, title string, de
 		ctx.Text = desc
 	}
 	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
+// IsTimeline return is timeline notification
+func (m *Message) IsTimeline() bool {
+	return m.isTimeline
+}
+
+// SetTimeline set timeline notification
+func (m *Message) SetTimeline(timeline bool) *Message {
+	m.isTimeline = timeline
 	return m
 }
 

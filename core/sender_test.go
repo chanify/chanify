@@ -407,6 +407,10 @@ func TestSendDirectWatch(t *testing.T) {
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatal("Send direct failed")
 	}
+	c.sendDirect(ctx, tk, model.NewMessage(tk).SetPriority(5).SetTimeline(true))
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatal("Send timeline direct failed")
+	}
 }
 
 func TestSendForward(t *testing.T) {

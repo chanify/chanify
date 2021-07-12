@@ -289,7 +289,7 @@ func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 }
 
 // SendAPNS send message to APNS
-func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, priority int) (string, int) {
+func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, priority int, isTimeline bool) (string, int) {
 	uuid := uuid.New().String()
 	notification := &apns2.Notification{
 		ApnsID:     uuid,
@@ -305,6 +305,9 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 	n := len(devices)
 	for _, dev := range devices {
 		if dev.Type == 2 { // 1: iOS, 2: watchOS, 3: macOS
+			if isTimeline {
+				continue
+			}
 			notification.Topic = "net.chanify.ios.watchkitapp"
 		} else {
 			notification.Topic = "net.chanify.ios"

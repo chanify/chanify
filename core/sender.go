@@ -106,7 +106,7 @@ func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Messa
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "message body too large"})
 		return
 	}
-	uuid, n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority))
+	uuid, n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority), msg.IsTimeline())
 	if n <= 0 {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices send success"})
 		return
