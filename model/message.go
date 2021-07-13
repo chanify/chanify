@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"strings"
+	"time"
 
 	"github.com/chanify/chanify/pb"
 	"google.golang.org/protobuf/proto"
@@ -47,7 +48,7 @@ func (m *Message) LinkContent(link string) *Message {
 }
 
 // TimelineContent set timeline notification
-func (m *Message) TimelineContent(code string, items []*MsgTimeItem) *Message {
+func (m *Message) TimelineContent(code string, ts *time.Time, items []*MsgTimeItem) *Message {
 	tis := []*pb.TimeItem{}
 	for _, item := range items {
 		ti := &pb.TimeItem{Name: item.Name}
@@ -63,10 +64,15 @@ func (m *Message) TimelineContent(code string, items []*MsgTimeItem) *Message {
 		}
 		tis = append(tis, ti)
 	}
+	if ts == nil {
+		var t = time.Now()
+		ts = &t
+	}
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Timeline,
 		TimeContent: &pb.TimeContent{
 			Code:      code,
+			Timestamp: uint64(ts.UTC().UnixNano() / 1e6),
 			TimeItems: tis,
 		},
 	}

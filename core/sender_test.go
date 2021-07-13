@@ -131,6 +131,7 @@ func TestSenderPostForm(t *testing.T) {
 	data := url.Values{
 		"text":                 {"123"},
 		"timeline-code":        {"test-code"},
+		"timeline-timestamp":   {"1620000000000"},
 		"timeline-items[key1]": {"123"},
 		"timeline-items[key2]": {"123.456"},
 		"timeline-items[key3]": {"abc"},
@@ -163,6 +164,7 @@ func TestSenderPostFormData(t *testing.T) {
 	writer.WriteField("priority", "5")                                                                                                    // nolint: errcheck
 	writer.WriteField("token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg") // nolint: errcheck
 	writer.WriteField("timeline-code", "test")                                                                                            // nolint: errcheck
+	writer.WriteField("timeline-timestamp", "2006-01-02T15:04:05Z07:00")                                                                  // nolint: errcheck
 	writer.WriteField("timeline-items[key1]", "123")                                                                                      // nolint: errcheck
 	writer.WriteField("timeline-items[key2]", "123.45")                                                                                   // nolint: errcheck
 	writer.Close()
@@ -193,6 +195,7 @@ func TestSenderPostJSON(t *testing.T) {
 		"token": "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg",
 		"timeline": {
 			"code": "test-code",
+			"timestamp": 1620000000000,
 			"items": {
 				"key1": 123,
 				"key2": "123",

@@ -75,7 +75,8 @@ message TimeItem {
 
 message TimeContent {
     string      code                = 1;
-    repeated TimeItem time_items    = 2;
+    uint64      timestamp           = 2;
+    repeated TimeItem time_items    = 3;
 }
 
 message MsgContent {

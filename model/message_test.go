@@ -42,7 +42,7 @@ func TestActionContent(t *testing.T) {
 func TestTimeContent(t *testing.T) {
 	tk, _ := ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg")
 	m := NewMessage(tk)
-	m.TimelineContent("test", []*MsgTimeItem{{Name: "123", Value: "123"}})
+	m.TimelineContent("test", nil, []*MsgTimeItem{{Name: "123", Value: "123"}})
 	var ctx pb.MsgContent
 	if err := proto.Unmarshal(m.Content, &ctx); err != nil {
 		t.Fatal("Unmarshal timeline content failed")

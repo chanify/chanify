@@ -3,6 +3,7 @@ package core
 import (
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/chanify/chanify/logic"
 	"github.com/chanify/chanify/model"
@@ -49,5 +50,31 @@ func TestTryFormMap(t *testing.T) {
 	}
 	if len(tryFormMap(nil, "test", items)) != len(items) {
 		t.Error("Try form map failed!")
+	}
+}
+
+func TestParseTimestamp(t *testing.T) {
+	tm := time.Unix(1620000000, 123000000)
+	if !tm.Equal(*parseTimestamp("1620000000123")) {
+		t.Error("Parse unix time failed")
+	}
+	if !tm.Equal(*parseTimestamp(tm.Format(time.RFC3339Nano))) {
+		t.Error("Parse string time nano failed")
+	}
+	tm2 := time.Unix(1620000000, 0)
+	if !tm2.Equal(*parseTimestamp(tm.Format(time.RFC3339))) {
+		t.Error("Parse string time failed")
+	}
+	if !tm.Equal(*parseTimestamp(1620000000123)) {
+		t.Error("Parse int time failed")
+	}
+	if !tm.Equal(*parseTimestamp(uint(1620000000123))) {
+		t.Error("Parse uint time failed")
+	}
+	if !tm.Equal(*parseTimestamp(int64(1620000000123))) {
+		t.Error("Parse int64 time failed")
+	}
+	if !tm.Equal(*parseTimestamp(uint64(1620000000123))) {
+		t.Error("Parse uint64 failed")
 	}
 }

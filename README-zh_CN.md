@@ -310,6 +310,7 @@ Content-Type:
     ],
     "timeline": {
         "code": "<标识 code>",
+        "timestamp": 1620000000000,
         "items": {
             "key1": "value1",
             "key2": "value2",
@@ -330,6 +331,8 @@ Content-Type:
 | priority | `10`  | `10` 正常优先级, `5` 较低优先级     |
 | actions  | 无    | 动作列表                           |
 | timeline | 无    | Timeline 对象                     |
+
+`timestamp` 单位为毫秒 (时区 - UTC)
 
 例如：
 

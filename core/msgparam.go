@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
@@ -12,8 +13,9 @@ import (
 
 // TimeContent define timeline content
 type TimeContent struct {
-	Code  string
-	Items []*model.MsgTimeItem
+	Code      string
+	Timestamp *time.Time
+	Items     []*model.MsgTimeItem
 }
 
 // MsgParam parse message parameters
@@ -52,8 +54,9 @@ func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 		Priority int        `json:"priority,omitempty"`
 		Actions  []string   `json:"actions,omitempty"`
 		Timeline struct {
-			Code  string                 `json:"code"`
-			Items map[string]interface{} `json:"items"`
+			Code     string                 `json:"code"`
+			Timstamp interface{}            `json:"timestamp,omitempty"`
+			Items    map[string]interface{} `json:"items"`
 		} `json:"timeline,omitempty"`
 	}
 	if err := ctx.BindJSON(&params); err == nil {
@@ -77,6 +80,7 @@ func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 		}
 		if len(m.TimeContent.Code) <= 0 {
 			m.TimeContent.Code = params.Timeline.Code
+			m.TimeContent.Timestamp = parseTimestamp(params.Timeline.Timstamp)
 			m.TimeContent.Items = parseTimeContentItems(params.Timeline.Items)
 		}
 		m.Text = params.Text
@@ -109,6 +113,7 @@ func (m *MsgParam) ParseForm(c *Core, ctx *gin.Context) {
 	}
 	if len(m.TimeContent.Code) <= 0 {
 		m.TimeContent.Code = ctx.PostForm("timeline-code")
+		m.TimeContent.Timestamp = parseTimestamp(ctx.PostForm("timeline-timestamp"))
 		m.TimeContent.Items = parseTimeContentStringItems(ctx.PostFormMap("timeline-items"))
 	}
 }
@@ -136,6 +141,7 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 		m.parsePriorityFromForm(form)
 		m.TimeContent.Code = tryFormValue(form, "timeline-code", m.TimeContent.Code)
 		if len(m.TimeContent.Code) > 0 {
+			m.TimeContent.Timestamp = tryFormTimestamp(form, "timeline-timestamp", m.TimeContent.Timestamp)
 			m.TimeContent.Items = tryFormMap(form, "timeline-items", m.TimeContent.Items)
 		}
 		if m.Token != nil && c.logic.CanFileStore() {
@@ -283,6 +289,31 @@ func parseTimeContentStringItems(items map[string]string) []*model.MsgTimeItem {
 	return lst
 }
 
+func parseTimestamp(t interface{}) *time.Time {
+	switch val := t.(type) {
+	case int:
+		v := time.Unix(int64(val)/1000, int64(val)%1000*1e6)
+		return &v
+	case uint:
+		v := time.Unix(int64(val)/1000, int64(val)%1000*1e6)
+		return &v
+	case int64:
+		v := time.Unix(val/1000, val%1000*1e6)
+		return &v
+	case uint64:
+		v := time.Unix(int64(val)/1000, int64(val)%1000*1e6)
+		return &v
+	case string:
+		if v, err := time.Parse(time.RFC3339Nano, val); err == nil {
+			return &v
+		} else if v, err := strconv.ParseUint(val, 10, 64); err == nil {
+			vv := time.Unix(int64(v)/1000, int64(v)%1000*1e6)
+			return &vv
+		}
+	}
+	return nil
+}
+
 func readFileFromForm(form *multipart.Form, name string) ([]byte, string, error) {
 	fs := form.File[name]
 	if len(fs) > 0 {
@@ -331,4 +362,11 @@ func tryFormMap(form *multipart.Form, name string, items []*model.MsgTimeItem) [
 		return parseTimeContentStringItems(values)
 	}
 	return items
+}
+
+func tryFormTimestamp(form *multipart.Form, name string, ts *time.Time) *time.Time {
+	if ts == nil {
+		ts = parseTimestamp(form.Value[name])
+	}
+	return ts
 }

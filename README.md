@@ -309,6 +309,7 @@ Content-Type:
     ],
     "timeline": {
         "code": "<timeline code>",
+        "timestamp": 1620000000000,
         "items": {
             "key1": "value1",
             "key2": "value2",
@@ -329,6 +330,8 @@ Additional params
 | priority | `10`    | `10` normal, `5` lower level.               |
 | actions  | None    | Actions list.                               |
 | timeline | None    | Timeline object.                            |
+
+`timestamp` in milliseconds (timezone - UTC)
 
 E.g.
 

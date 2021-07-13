@@ -73,7 +73,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		if len(params.Link) > 0 {
 			msg = model.NewMessage(params.Token).LinkContent(params.Link)
 		} else if len(params.TimeContent.Code) > 0 {
-			msg = model.NewMessage(params.Token).TimelineContent(params.TimeContent.Code, params.TimeContent.Items)
+			msg = model.NewMessage(params.Token).TimelineContent(params.TimeContent.Code, params.TimeContent.Timestamp, params.TimeContent.Items)
 		} else if len(params.Text) <= 0 {
 			ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 			return
