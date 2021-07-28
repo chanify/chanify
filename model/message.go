@@ -233,6 +233,17 @@ func (m *Message) EncryptContent(key []byte) {
 	}
 }
 
+// FixChannel set default channel
+func (m *Message) FixChannel() {
+	if len(m.Channel) <= 0 {
+		if m.isTimeline {
+			m.Channel = timelineChannel
+		} else {
+			m.Channel = defaultChannel
+		}
+	}
+}
+
 // EncryptData return encrypted body with key & timestamp
 func (m *Message) EncryptData(key []byte, ts uint64) []byte {
 	aesgcm, _ := NewAESGCM(key)

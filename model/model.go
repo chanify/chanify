@@ -27,8 +27,9 @@ type OpenDB func(dsn string) (DB, error)
 
 // variable define
 var (
-	drivers        = map[string]OpenDB{}
-	defaultChannel []byte
+	drivers         = map[string]OpenDB{}
+	defaultChannel  []byte
+	timelineChannel []byte
 
 	ErrDriverNotFound   = errors.New("driver not found")
 	ErrNotImplemented   = errors.New("not implemented")
@@ -43,6 +44,10 @@ func init() {
 	defaultChannel, _ = proto.Marshal(&pb.Channel{
 		Type: pb.ChanType_Sys,
 		Code: pb.ChanCode_Uncategorized,
+	})
+	timelineChannel, _ = proto.Marshal(&pb.Channel{
+		Type: pb.ChanType_Sys,
+		Code: pb.ChanCode_TimeSets,
 	})
 }
 

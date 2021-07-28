@@ -1,7 +1,6 @@
 package model
 
 import (
-	"bytes"
 	"testing"
 )
 
@@ -36,7 +35,7 @@ func TestParseTokenFailed(t *testing.T) {
 	if len(tk.GetNodeID()) > 0 {
 		t.Fatal("Check token get node id failed")
 	}
-	if !bytes.Equal(tk.GetChannel(), defaultChannel) {
+	if tk.GetChannel() != nil {
 		t.Fatal("Check token get node id failed")
 	}
 }

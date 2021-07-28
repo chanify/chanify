@@ -61,9 +61,6 @@ func (tk *Token) GetNodeID() []byte {
 
 // GetChannel return channel code
 func (tk *Token) GetChannel() []byte {
-	if len(tk.data.Channel) <= 0 {
-		return defaultChannel
-	}
 	return tk.data.Channel
 }
 

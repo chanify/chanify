@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/chanify/chanify/pb"
@@ -49,5 +50,26 @@ func TestTimeContent(t *testing.T) {
 	}
 	if len(ctx.TimeContent.TimeItems) != 0 {
 		t.Fatal("Check time content failed")
+	}
+}
+
+func TestMessageChannel(t *testing.T) {
+	tk := &Token{}
+	m := NewMessage(tk)
+	if len(m.Channel) > 0 {
+		t.Fatal("Check channel failed")
+	}
+	m.FixChannel()
+	if bytes.Compare(m.Channel, defaultChannel) != 0 {
+		t.Fatal("Check default channel failed")
+	}
+	m = NewMessage(tk)
+	m.TimelineContent("test", nil, []*MsgTimeItem{{Name: "123", Value: "123"}})
+	if len(m.Channel) > 0 {
+		t.Fatal("Check timeline channel failed")
+	}
+	m.FixChannel()
+	if bytes.Compare(m.Channel, timelineChannel) != 0 {
+		t.Fatal("Check default timeline channel failed")
 	}
 }
