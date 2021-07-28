@@ -103,10 +103,9 @@ func loggerMiddleware(c *gin.Context) {
 	if len(path) > 64 {
 		path = path[:64]
 	}
-	real := fixClientIP(c)
 	log.Printf("%3d | %15s | %s %s %10v \"%s\"%s\n",
 		c.Writer.Status(),
-		real,
+		fixClientIP(c),
 		c.Request.Method,
 		path,
 		latency,
@@ -117,19 +116,13 @@ func loggerMiddleware(c *gin.Context) {
 
 func fixClientIP(c *gin.Context) string {
 	// ref: https://github.com/gin-gonic/gin/issues/2697
-	realIP, valid := validateHeader(requestHeader(c, "X-Forwarded-For"))
-	if valid {
-		return realIP
-	}
-	realIP, valid = validateHeader(requestHeader(c, "X-Real-IP"))
-	if valid {
-		return realIP
+	for _, key := range []string{"X-Forwarded-For", "X-Real-IP"} {
+		realIP, valid := validateHeader(c.Request.Header.Get(key))
+		if valid {
+			return realIP
+		}
 	}
 	return c.ClientIP()
-}
-
-func requestHeader(c *gin.Context, key string) string {
-	return c.Request.Header.Get(key)
 }
 
 func validateHeader(header string) (clientIP string, valid bool) {
