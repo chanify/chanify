@@ -103,10 +103,10 @@ func loggerMiddleware(c *gin.Context) {
 	if len(path) > 64 {
 		path = path[:64]
 	}
-	c.ClientIP()
+	real := fixClientIP(c)
 	log.Printf("%3d | %15s | %s %s %10v \"%s\"%s\n",
 		c.Writer.Status(),
-		fixClientIP(c),
+		real,
 		c.Request.Method,
 		path,
 		latency,
