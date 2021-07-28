@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/gin-gonic/gin v1.7.2
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang/protobuf v1.5.2
@@ -18,3 +17,5 @@ require (
 	google.golang.org/protobuf v1.27.1
 	modernc.org/sqlite v1.12.0
 )
+
+replace github.com/sideshow/apns2 => github.com/wizjin/apns2 v0.20.1
