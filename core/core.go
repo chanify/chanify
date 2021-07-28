@@ -114,10 +114,12 @@ func loggerMiddleware(c *gin.Context) {
 	)
 }
 
+var remoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}
+
 func fixClientIP(c *gin.Context) string {
 	// ref: https://github.com/gin-gonic/gin/issues/2697
-	for _, key := range []string{"X-Forwarded-For", "X-Real-IP"} {
-		realIP, valid := validateHeader(c.Request.Header.Get(key))
+	for _, key := range remoteIPHeaders {
+		realIP, valid := validateHeader(c.GetHeader(key))
 		if valid {
 			return realIP
 		}
