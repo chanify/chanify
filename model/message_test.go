@@ -69,7 +69,7 @@ func TestMessageChannel(t *testing.T) {
 		t.Fatal("Check timeline channel failed")
 	}
 	m.FixChannel()
-	if bytes.Compare(m.Channel, timelineChannel) != 0 {
+	if !bytes.Equal(m.Channel, timelineChannel) {
 		t.Fatal("Check default timeline channel failed")
 	}
 }
