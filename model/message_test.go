@@ -60,7 +60,7 @@ func TestMessageChannel(t *testing.T) {
 		t.Fatal("Check channel failed")
 	}
 	m.FixChannel()
-	if bytes.Compare(m.Channel, defaultChannel) != 0 {
+	if !bytes.Equal(m.Channel, defaultChannel) {
 		t.Fatal("Check default channel failed")
 	}
 	m = NewMessage(tk)
