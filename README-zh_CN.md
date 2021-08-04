@@ -136,6 +136,9 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<文件
 
 # 动作消息
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --text=<文本消息> --title=<文本标题> --action="<动作名字>|<动作链接 url>"
+
+# 时间线消息
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --timeline.code=<代号> <键值 1>=<数值 1> <键值 2>=<数值 2> ...
 ```
 
 `endpoint` 默认值是 `https://api.chanify.net`，并且会使用默认服务器发送消息。

@@ -38,6 +38,12 @@ enum ActType {
     ActURL                          = 1;
 }
 
+enum ValueType {
+    ValueTypeUnknown                = 0;
+    ValueTypeInteger                = 1;
+    ValueTypeDouble                 = 2;
+}
+
 message Channel {
     ChanType    type                = 1;
     ChanCode    code                = 2;
@@ -69,8 +75,9 @@ message ActionItem {
 
 message TimeItem {
     string      name                = 1;
-    int64       integer_value       = 2;
-    double      float_value         = 3;
+    ValueType   value_type          = 2;
+    int64       integer_value       = 3;
+    double      double_value        = 4;
 }
 
 message TimeContent {

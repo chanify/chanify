@@ -136,6 +136,9 @@ $ chanify send --endpoint=http://<address>:<port> --token=<token> --file=<file p
 
 # Action  message
 $ chanify send --endpoint=http://<address>:<port> --token=<token> --text=<message> --title=<title> --action="<action name>|<action url>"
+
+# Timeline message
+$ chanify send --endpoint=http://<address>:<port> --token=<token> --timeline.code=<code> <item1>=<value1> <item2>=<value2> ...
 ```
 
 `endpoint` default value is `https://api.chanify.net`, and notification will send by default server.

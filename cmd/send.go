@@ -13,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -39,6 +41,8 @@ func init() {
 	sendCmd.Flags().String("autocopy", "", "Auto copy text for text message.")
 	sendCmd.Flags().StringArray("action", []string{}, "Action item for action message.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")
+	sendCmd.Flags().String("timeline.code", "", "Code for timeline message.")
+	sendCmd.Flags().String("timeline.timestamp", "", "Timestamp for timeline message.")
 	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
 	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))       // nolint: errcheck
 	viper.BindPFlag("client.autocopy", sendCmd.Flags().Lookup("autocopy")) // nolint: errcheck
@@ -50,14 +54,66 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 	sound := viper.GetString("client.sound")
-	autocopy := viper.GetString("client.autocopy")
 	priority := viper.GetInt("client.priority")
 	token := viper.GetString("client.token")
 	if len(token) <= 0 {
 		return errors.New("send token not found")
 	}
-	text, _ := cmd.Flags().GetString("text")
-	link, _ := cmd.Flags().GetString("link")
+	var data bytes.Buffer
+	w := multipart.NewWriter(&data)
+	code, _ := cmd.Flags().GetString("timeline.code")
+	if len(code) > 0 {
+		if err := parseTimelineMessage(cmd, code, w); err != nil {
+			return err
+		}
+	} else {
+		if err := parseOtherMessage(cmd, w); err != nil {
+			return err
+		}
+	}
+	setFieldValue(w, "token", []byte(token))
+	setFieldValue(w, "sound", []byte(sound))
+	setFieldValueInt(w, "priority", priority)
+	w.Close()
+	return sendMessage(&data, w.FormDataContentType())
+}
+
+func parseTimelineMessage(cmd *cobra.Command, code string, w *multipart.Writer) error {
+	flags := cmd.Flags()
+	title, _ := flags.GetString("title")
+	setFieldValue(w, "title", []byte(title))
+	setFieldValue(w, "timeline-code", []byte(code))
+	timestamp, _ := flags.GetString("timeline.timestamp")
+	if len(timestamp) > 0 {
+		ts, err := time.Parse(time.RFC3339Nano, timestamp)
+		if err != nil {
+			return err
+		}
+		setFieldValue(w, "timeline-timestamp", []byte(ts.Format(time.RFC3339Nano)))
+	}
+	for _, arg := range cmd.Flags().Args() {
+		parts := strings.SplitN(arg, "=", 2)
+		if len(parts) > 1 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+			if len(value) <= 0 {
+				value = "0"
+			}
+			if len(key) > 0 {
+				setFieldValue(w, fmt.Sprintf("timeline-items[%s]", key), []byte(value))
+				continue
+			}
+		}
+		return fmt.Errorf("Invalid key or value: %s", arg)
+	}
+	return nil
+}
+
+func parseOtherMessage(cmd *cobra.Command, w *multipart.Writer) error {
+	flags := cmd.Flags()
+	text, _ := flags.GetString("text")
+	link, _ := flags.GetString("link")
+	autocopy := viper.GetString("client.autocopy")
 	if len(text) > 1 && text[0] == '@' {
 		txt, err := readInputFile(text[1:])
 		if err != nil {
@@ -65,11 +121,11 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 		}
 		text = string(txt)
 	}
-	imagePath, _ := cmd.Flags().GetString("image")
+	imagePath, _ := flags.GetString("image")
 	image, _ := readInputFile(imagePath)
-	audioPath, _ := cmd.Flags().GetString("audio")
+	audioPath, _ := flags.GetString("audio")
 	audio, _ := readInputFile(audioPath)
-	filePath, err := cmd.Flags().GetString("file")
+	filePath, err := flags.GetString("file")
 	if err != nil {
 		return err
 	}
@@ -80,28 +136,19 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	if len(text) <= 0 && len(image) <= 0 && len(link) <= 0 && len(file) <= 0 && len(audio) <= 0 {
 		return errors.New("no message content")
 	}
-	var data bytes.Buffer
-	w := multipart.NewWriter(&data)
-	if len(token) <= 0 {
-		return errors.New("no token")
-	}
-	setFieldValue(w, "token", []byte(token))
 	setFieldValue(w, "text", []byte(text))
 	setFieldValue(w, "link", []byte(link))
 	setFieldFile(w, "image", "image", image)
 	setFieldFile(w, "audio", "audio", audio)
 	setFieldFile(w, "file", filename, file)
-	title, _ := cmd.Flags().GetString("title")
+	title, _ := flags.GetString("title")
 	setFieldValue(w, "title", []byte(title))
-	copytext, _ := cmd.Flags().GetString("copy")
+	copytext, _ := flags.GetString("copy")
 	setFieldValue(w, "copy", []byte(copytext))
 	setFieldValue(w, "autocopy", []byte(autocopy))
-	setFieldValue(w, "sound", []byte(sound))
-	setFieldValueInt(w, "priority", priority)
-	actions, _ := cmd.Flags().GetStringArray("action")
+	actions, _ := flags.GetStringArray("action")
 	setFieldValues(w, "action", actions)
-	w.Close()
-	return sendMessage(&data, w.FormDataContentType())
+	return nil
 }
 
 func sendMessage(in *bytes.Buffer, content string) error {

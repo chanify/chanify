@@ -50,17 +50,20 @@ func (m *Message) LinkContent(link string) *Message {
 }
 
 // TimelineContent set timeline notification
-func (m *Message) TimelineContent(code string, ts *time.Time, items []*MsgTimeItem) *Message {
+func (m *Message) TimelineContent(code string, title string, ts *time.Time, items []*MsgTimeItem) *Message {
 	tis := []*pb.TimeItem{}
 	for _, item := range items {
 		ti := &pb.TimeItem{Name: item.Name}
 		switch v := item.Value.(type) {
 		case int:
+			ti.ValueType = pb.ValueType_ValueTypeInteger
 			ti.IntegerValue = int64(v)
 		case int64:
+			ti.ValueType = pb.ValueType_ValueTypeInteger
 			ti.IntegerValue = v
 		case float64:
-			ti.FloatValue = v
+			ti.ValueType = pb.ValueType_ValueTypeDouble
+			ti.DoubleValue = v
 		default:
 			continue
 		}
@@ -71,7 +74,8 @@ func (m *Message) TimelineContent(code string, ts *time.Time, items []*MsgTimeIt
 		ts = &t
 	}
 	ctx := &pb.MsgContent{
-		Type: pb.MsgType_Timeline,
+		Type:  pb.MsgType_Timeline,
+		Title: title,
 		TimeContent: &pb.TimeContent{
 			Code:      code,
 			Timestamp: uint64(ts.UTC().UnixNano() / 1e6),
