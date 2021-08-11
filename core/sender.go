@@ -31,6 +31,26 @@ func (c *Core) handleSender(ctx *gin.Context) {
 	c.sendMsg(ctx, token, msg.SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority"))))
 }
 
+func (c *Core) handleUserSender(ctx *gin.Context) {
+	uid, err := c.getUid(ctx)
+	if len(uid) == 0 {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid user id"})
+		return
+	}
+	text := ctx.Param("msg")
+	if len(text) <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
+		return
+	}
+	msg := &model.Message{}
+	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"), ctx.QueryArray("action"))
+	if err != nil {
+		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
+		return
+	}
+	c.sendUidMsg(ctx, uid, msg.SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority"))))
+}
+
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	params := &MsgParam{}
 	params.Token, _ = c.getToken(ctx)
@@ -86,6 +106,30 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	c.sendMsg(ctx, params.Token, msg.SoundName(params.Sound).SetPriority(params.Priority))
 }
 
+func (c *Core) sendUidDirect(ctx *gin.Context, uid string, msg *model.Message) {
+	key, err := c.logic.GetUserKey(uid)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
+		return
+	}
+	devs, err := c.logic.GetDevices(uid)
+	if err != nil || len(devs) <= 0 {
+		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices found"})
+		return
+	}
+	out := msg.EncryptData(key, uint64(time.Now().UTC().UnixNano()))
+	if len(out) > 4000 {
+		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "message body too large"})
+		return
+	}
+	uuid, n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority))
+	if n <= 0 {
+		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices send success"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid})
+}
+
 func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
 	uid := token.GetUserID()
 	key, err := c.logic.GetUserKey(uid)
@@ -127,6 +171,18 @@ func (c *Core) sendForward(ctx *gin.Context, token *model.Token, msg *model.Mess
 	reader := resp.Body
 	defer reader.Close()
 	ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), reader, map[string]string{})
+}
+
+func (c *Core) sendUidMsg(ctx *gin.Context, uid string, msg *model.Message) {
+	u, err := c.logic.GetUser(uid)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
+		return
+	}
+	if u.IsServerless() {
+		return
+	}
+	c.sendUidDirect(ctx, uid, msg)
 }
 
 func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg *model.Message) {

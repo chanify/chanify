@@ -65,6 +65,9 @@ func (c *Core) APIHandler() http.Handler {
 	s.POST("/sender/*token", c.handlePostSender)
 	s.POST("/sender", c.handlePostSender)
 
+	s = r.Group("/v2")
+	s.GET("/sender/:uid/:msg", c.handleUserSender)
+
 	api := r.Group("/rest/v1")
 	api.GET("/info", c.handleInfo)
 	api.GET("/qrcode", c.handleQRCode)

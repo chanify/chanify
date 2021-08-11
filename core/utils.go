@@ -63,6 +63,20 @@ func verifySign(key string, sign []byte, data []byte) bool {
 	return pk.Verify(data, sign)
 }
 
+func (c *Core) getUid(ctx *gin.Context) (string, error) {
+	token := ctx.GetHeader("uid")
+	if len(token) <= 0 {
+		token = ctx.Query("uid")
+		if len(token) <= 0 {
+			token = ctx.Param("uid")
+			if len(token) > 0 && token[0] == '/' {
+				token = token[1:]
+			}
+		}
+	}
+	return token, nil
+}
+
 func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {
 	token := ctx.GetHeader("token")
 	if len(token) <= 0 {
