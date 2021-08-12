@@ -46,6 +46,19 @@ func init() {
 	})
 }
 
+func GetChannel(name string, code int) []byte {
+	if name == "" {
+		return defaultChannel
+	}
+
+	channel, _ := proto.Marshal(&pb.Channel{
+		Type: pb.ChanType_User,
+		Code: pb.ChanCode(code),
+		Name: name,
+	})
+	return channel
+}
+
 // InitDB with DSN
 func InitDB(dsn string) (DB, error) {
 	dsnItems := strings.Split(dsn, "://")

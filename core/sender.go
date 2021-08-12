@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -42,7 +43,10 @@ func (c *Core) handleUserSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
 		return
 	}
+
 	msg := &model.Message{}
+	code, err := strconv.Atoi(ctx.Query("code"))
+	msg.Channel = model.GetChannel(ctx.Query("chan"), code)
 	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"), ctx.QueryArray("action"))
 	if err != nil {
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
