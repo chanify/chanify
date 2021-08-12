@@ -66,8 +66,8 @@ func (c *Core) APIHandler() http.Handler {
 	s.POST("/sender", c.handlePostSender)
 
 	s = r.Group("/v2")
-	s.GET("/sender/:uid/:msg", c.handleUserSender)
-	s.GET("/sender/:group/:msg", c.handleGroupSender)
+	s.GET("/sender/u/:uid/:msg", c.handleUserSender)
+	s.GET("/sender/g/:group/:msg", c.handleGroupSender)
 
 	api := r.Group("/rest/v1")
 	api.GET("/info", c.handleInfo)
