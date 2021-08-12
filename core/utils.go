@@ -77,6 +77,20 @@ func (c *Core) getUid(ctx *gin.Context) (string, error) {
 	return token, nil
 }
 
+func (c *Core) getGroup(ctx *gin.Context) (string, error) {
+	group := ctx.GetHeader("group")
+	if len(group) <= 0 {
+		group = ctx.Query("group")
+		if len(group) <= 0 {
+			group = ctx.Param("group")
+			if len(group) > 0 && group[0] == '/' {
+				group = group[1:]
+			}
+		}
+	}
+	return group, nil
+}
+
 func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {
 	token := ctx.GetHeader("token")
 	if len(token) <= 0 {

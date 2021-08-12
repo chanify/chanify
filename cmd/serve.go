@@ -49,6 +49,7 @@ func init() {
 					FilePath: viper.GetString("server.filepath"),
 					DBUrl:    viper.GetString("server.dburl"),
 					Secret:   viper.GetString("server.secret"),
+					Groups:   viper.GetStringMapStringSlice("server.groups"),
 				}
 				opts.Registerable, opts.RegUsers = getUserWhitlist(cmd)
 				if err := c.Init(opts); err != nil {

@@ -47,6 +47,7 @@ type Options struct {
 	Secret       string
 	Registerable bool
 	RegUsers     []string
+	Groups       map[string][]string
 }
 
 // Logic instance
@@ -64,6 +65,7 @@ type Logic struct {
 	infoData    []byte
 	infoSign    string
 	whitelist   map[string]bool
+	groups      map[string][]string
 	filepath    string
 	apnsPClient *apns2.Client
 	apnsDClient *apns2.Client
@@ -100,6 +102,7 @@ func NewLogic(opts *Options) (*Logic, error) {
 		Version:      opts.Version,
 		Endpoint:     opts.Endpoint,
 		Features:     []string{"platform.watchos", "msg.text", "msg.link", "msg.action"},
+		groups:       opts.Groups,
 	}
 	if l.registerable {
 		log.Println("Register user enabled")
@@ -112,6 +115,11 @@ func NewLogic(opts *Options) (*Logic, error) {
 		l.whitelist = whitelist
 		log.Println("Find", len(whitelist), "user(s) in whitelist")
 		l.Features = append([]string{"register.limit"}, l.Features...)
+	}
+	if len(opts.Groups) > 0 {
+		for name, value := range opts.Groups {
+			log.Println("Find", len(value), "user(s) in gourp", name)
+		}
 	}
 	if len(opts.DBUrl) <= 0 {
 		if len(opts.Secret) > 0 {
@@ -380,4 +388,14 @@ func (l *Logic) canRegisterUser(uid string) bool {
 	}
 	_, ok := l.whitelist[uid]
 	return ok
+}
+
+func (l *Logic) GetGroupUsers(name string) []string {
+	var users []string
+	for group, value := range l.groups {
+		if group == name {
+			users = value
+		}
+	}
+	return users
 }
