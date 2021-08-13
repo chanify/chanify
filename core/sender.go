@@ -101,7 +101,6 @@ func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Messa
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices found"})
 		return
 	}
-	msg.FixChannel()
 	out := msg.EncryptData(key, uint64(time.Now().UTC().UnixNano()))
 	if len(out) > 4000 {
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "message body too large"})

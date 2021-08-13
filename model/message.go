@@ -237,19 +237,10 @@ func (m *Message) EncryptContent(key []byte) {
 	}
 }
 
-// FixChannel set default channel
-func (m *Message) FixChannel() {
-	if len(m.Channel) <= 0 {
-		if m.isTimeline {
-			m.Channel = timelineChannel
-		} else {
-			m.Channel = defaultChannel
-		}
-	}
-}
-
 // EncryptData return encrypted body with key & timestamp
 func (m *Message) EncryptData(key []byte, ts uint64) []byte {
+	m.fixChannel()
+
 	aesgcm, _ := NewAESGCM(key)
 	nonce := make([]byte, 12)
 	nonce[0] = 0x01
@@ -267,4 +258,14 @@ func (m *Message) EncryptData(key []byte, ts uint64) []byte {
 func (m *Message) Marshal() []byte {
 	data, _ := proto.Marshal(&m.Message)
 	return data
+}
+
+func (m *Message) fixChannel() {
+	if len(m.Channel) <= 0 {
+		if m.isTimeline {
+			m.Channel = timelineChannel
+		} else {
+			m.Channel = defaultChannel
+		}
+	}
 }

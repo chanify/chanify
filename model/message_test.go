@@ -59,7 +59,7 @@ func TestMessageChannel(t *testing.T) {
 	if len(m.Channel) > 0 {
 		t.Fatal("Check channel failed")
 	}
-	m.FixChannel()
+	m.fixChannel()
 	if !bytes.Equal(m.Channel, defaultChannel) {
 		t.Fatal("Check default channel failed")
 	}
@@ -68,7 +68,7 @@ func TestMessageChannel(t *testing.T) {
 	if len(m.Channel) > 0 {
 		t.Fatal("Check timeline channel failed")
 	}
-	m.FixChannel()
+	m.fixChannel()
 	if !bytes.Equal(m.Channel, timelineChannel) {
 		t.Fatal("Check default timeline channel failed")
 	}
