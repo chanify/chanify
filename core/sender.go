@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -185,6 +186,7 @@ func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte,
 }
 
 func (c *Core) makeTextContent(msg *model.Message, text string, title string, copytext string, autocopy string, actions []string) (*model.Message, error) {
+	var fname string
 	if len(actions) > 0 {
 		return c.makeActionContent(msg, text, title, actions)
 	}
@@ -200,6 +202,7 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 	txts := []string{}
 	if len(title) > 0 {
 		txts = append(txts, title)
+		fname = title
 	}
 	if len(text) > 0 {
 		txts = append(txts, text)
@@ -210,9 +213,16 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 		return nil, err
 	}
 	if len(title) > 100 {
-		title = string([]rune(title)[:100]) + "⋯"
+		fname = string([]rune(title)[:100])
+		title = fname + "⋯"
 	}
-	return msg.TextFileContent(path, "text.txt", title, string([]rune(text)[:100])+"⋯", len(data)), nil
+	if len(fname) > 0 {
+		fname = strings.ReplaceAll(filepath.Base(fname), ".", "")
+	}
+	if len(fname) > 0 {
+		fname = "text"
+	}
+	return msg.TextFileContent(path, fname+".txt", title, string([]rune(text)[:100])+"⋯", len(data)), nil
 }
 
 func (c *Core) makeActionContent(msg *model.Message, text string, title string, actions []string) (*model.Message, error) {
