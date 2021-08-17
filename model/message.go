@@ -211,7 +211,7 @@ func (m *Message) SetTimeline(timeline bool) *Message {
 
 // SoundName set notification sound
 func (m *Message) SoundName(sound string) *Message {
-	if len(sound) > 0 {
+	if len(sound) > 0 && sound != "0" {
 		m.Sound = &pb.Sound{Name: sound}
 	}
 	return m
