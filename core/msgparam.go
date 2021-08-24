@@ -158,7 +158,7 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 				}
 			}
 			if data, fname, err := readFileFromForm(form, "file"); err == nil {
-				msg, err = c.saveUploadFile(ctx, m.Token, data, fname, m.Text)
+				msg, err = c.saveUploadFile(ctx, m.Token, data, fname, m.Text, m.Actions)
 				if err != nil {
 					return nil, err
 				}

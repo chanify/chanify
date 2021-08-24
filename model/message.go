@@ -109,7 +109,8 @@ func (m *Message) TextContent(text string, title string, copytext string, autoco
 // ActionContent set custom action notification
 func (m *Message) ActionContent(text string, title string, actions []string) *Message {
 	ctx := &pb.MsgContent{
-		Type: pb.MsgType_Action,
+		Type:    pb.MsgType_Action,
+		Actions: parseActions(actions),
 	}
 	if len(title) > 0 {
 		ctx.Title = title
@@ -117,32 +118,18 @@ func (m *Message) ActionContent(text string, title string, actions []string) *Me
 	if len(text) > 0 {
 		ctx.Text = text
 	}
-	if len(actions) > 4 {
-		actions = actions[:4]
-	}
-	ctx.Actions = []*pb.ActionItem{}
-	for _, act := range actions {
-		ss := strings.SplitN(act, "|", 2)
-		if len(ss) > 1 {
-			item := &pb.ActionItem{
-				Type: pb.ActType_ActURL,
-				Name: ss[0],
-				Link: ss[1],
-			}
-			ctx.Actions = append(ctx.Actions, item)
-		}
-	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m
 }
 
 // FileContent set file notification
-func (m *Message) FileContent(path string, filename string, desc string, size int) *Message {
+func (m *Message) FileContent(path string, filename string, desc string, size int, actions []string) *Message {
 	ctx := &pb.MsgContent{
 		Type:     pb.MsgType_File,
 		File:     path,
 		Filename: filename,
 		Size:     uint64(size),
+		Actions:  parseActions(actions),
 	}
 	if len(desc) > 0 {
 		ctx.Text = desc
@@ -181,12 +168,13 @@ func (m *Message) AudioContent(path string, duration uint64, size int) *Message 
 }
 
 // TextFileContent set text file notification
-func (m *Message) TextFileContent(path string, filename string, title string, desc string, size int) *Message {
+func (m *Message) TextFileContent(path string, filename string, title string, desc string, size int, actions []string) *Message {
 	ctx := &pb.MsgContent{
 		Type:     pb.MsgType_File,
 		File:     path,
 		Filename: filename,
 		Size:     uint64(size),
+		Actions:  parseActions(actions),
 	}
 	if len(title) > 0 {
 		ctx.Title = title
@@ -268,4 +256,26 @@ func (m *Message) fixChannel() {
 			m.Channel = defaultChannel
 		}
 	}
+}
+
+func parseActions(actions []string) []*pb.ActionItem {
+	if len(actions) <= 0 {
+		return nil
+	}
+	if len(actions) > 4 {
+		actions = actions[:4]
+	}
+	acts := []*pb.ActionItem{}
+	for _, act := range actions {
+		ss := strings.SplitN(act, "|", 2)
+		if len(ss) > 1 {
+			item := &pb.ActionItem{
+				Type: pb.ActType_ActURL,
+				Name: ss[0],
+				Link: ss[1],
+			}
+			acts = append(acts, item)
+		}
+	}
+	return acts
 }

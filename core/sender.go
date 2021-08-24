@@ -172,7 +172,7 @@ func (c *Core) saveUploadAudio(ctx *gin.Context, token *model.Token, data []byte
 	return model.NewMessage(token).AudioContent(path, 0, len(data)), nil
 }
 
-func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string, desc string) (*model.Message, error) {
+func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string, desc string, actions []string) (*model.Message, error) {
 	if len(data) <= 0 {
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no file content"})
 		return nil, ErrNoContent
@@ -182,18 +182,18 @@ func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte,
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid file content"})
 		return nil, ErrInvalidContent
 	}
-	return model.NewMessage(token).FileContent(path, filename, desc, len(data)), nil
+	return model.NewMessage(token).FileContent(path, filename, desc, len(data), actions), nil
 }
 
 func (c *Core) makeTextContent(msg *model.Message, text string, title string, copytext string, autocopy string, actions []string) (*model.Message, error) {
 	var fname string
-	if len(actions) > 0 {
-		return c.makeActionContent(msg, text, title, actions)
-	}
 	if len(copytext) > 1000 {
 		return nil, ErrTooLargeContent
 	}
 	if len(text)+len(title) < 1200 {
+		if len(actions) > 0 {
+			return c.makeActionContent(msg, text, title, actions)
+		}
 		return msg.TextContent(text, title, copytext, autocopy), nil
 	}
 	if !c.logic.CanFileStore() {
@@ -222,7 +222,7 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 	if len(fname) > 0 {
 		fname = "text"
 	}
-	return msg.TextFileContent(path, fname+".txt", title, string([]rune(text)[:100])+"⋯", len(data)), nil
+	return msg.TextFileContent(path, fname+".txt", title, string([]rune(text)[:100])+"⋯", len(data), actions), nil
 }
 
 func (c *Core) makeActionContent(msg *model.Message, text string, title string, actions []string) (*model.Message, error) {
