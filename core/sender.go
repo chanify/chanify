@@ -219,7 +219,7 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 	if len(fname) > 0 {
 		fname = strings.ReplaceAll(filepath.Base(fname), ".", "")
 	}
-	if len(fname) > 0 {
+	if len(fname) <= 0 {
 		fname = "text"
 	}
 	return msg.TextFileContent(path, fname+".txt", title, string([]rune(text)[:100])+"⋯", len(data), actions), nil
