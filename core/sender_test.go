@@ -590,6 +590,24 @@ func TestTooLargeText(t *testing.T) {
 	}
 }
 
+func TestTooLargeTextNoTitle(t *testing.T) {
+	fpath := filepath.Join(os.TempDir(), "files")
+	defer os.RemoveAll(fpath)
+	os.MkdirAll(fpath+"/files/", os.ModePerm) // nolint: errcheck
+	logic.APIEndpoint = "http://127.0.0.1"
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", FilePath: fpath}) // nolint: errcheck
+
+	tk, _ := model.ParseToken("EgMxMjMiBGNoYW4qBU1GUkdHMhQZZ_-_F4Oa-oQO0sLHXKqNSU8Qmw..c2lnbg") // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "/", nil)
+	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 2001), "", "", "1", nil); err != nil {
+		t.Error("Fix too large text failed", err)
+	}
+}
+
 func TestTooLargeTextFailed(t *testing.T) {
 	c := New()
 	defer c.Close()
