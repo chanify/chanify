@@ -71,6 +71,8 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
         </ul>
     </li>
     <li><a href="#chrome 插件">Chrome 插件</a></li>
+    <li><a href="#Windows 右键发送">Windows 右键发送</a></li>
+    <li><a href="#Docker-compose 方式自建有状态服务搭配ssl">Docker-compose 方式自建有状态服务搭配ssl</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
@@ -464,6 +466,83 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 - 发送选中的`文本/图片/音频/链接`消息到 Chanify
 - 发送网页链接到 Chanify
+
+## Windows 右键发送
+
+1. 下载最新的预编译的[二进制包](https://github.com/chanify/chanify/releases/latest) 
+
+2. 复制到Chanify\cmdScript 目录
+
+3. 修改配置<address>:<port> <token> 更换为自己的
+
+4. 管理员方式执行
+
+   注意：*运行时会出现命令框，执行完成后会自动关闭， 介意请勿使用*
+
+## Docker-compose 方式自建有状态服务搭配ssl
+
+1. 创建 docker-compose.yml文件
+
+```yml
+version: "3"
+services:
+  chanify:
+    image: wizjin/chanify:latest
+    restart: always
+    volumes:
+      - ~/chanify:/root/.chanify
+      - /root/.chanify.yml:/root/.chanify.yml
+  caddy:
+    image: abiosoft/caddy
+    restart: always
+    volumes:
+      - ./Caddyfile:/etc/Caddyfile:ro
+      - caddycerts:/root/.caddy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      ACME_AGREE: "true" 
+      DOMAIN: "https://example.com"
+      EMAIL: "admin@example.com"
+volumes:
+  caddycerts:
+```
+
+2. 创建Caddyfile
+
+```
+{$API_DOMAIN} {
+    tls {$EMAIL}
+
+    proxy / chanify:80 {
+        transparent
+    }
+}
+```
+
+3. 创建.chanify.yml
+
+```yml
+server:
+    host: 0.0.0.0   
+    port: 80
+    endpoint: https://example.com
+    name: fuchangling # 节点名称
+    datapath: /root/.chanify # 有状态服务器使用的数据存储路径
+    register:
+        enable: false # 关闭注册
+        whitelist: # 白名单
+            - <user id>
+```
+
+4. 运行
+
+```shell
+docker-compose up -d
+```
+
+
 
 ## 贡献
 
