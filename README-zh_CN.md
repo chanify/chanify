@@ -30,7 +30,6 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
             <li><a href="#预编译包">预编译包</a></li>
             <li><a href="#docker">Docker</a></li>
             <li><a href="#从源代码">从源代码</a></li>
-            <li><a href="#Docker-compose">Docker-compose</a></li>
         </ul>
     </li>
     <li>
@@ -71,14 +70,12 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
             <li><a href="#令牌生命周期">令牌生命周期</a></li>
         </ul>
     </li>
-    <li><a href="#chrome 插件">Chrome 插件</a></li>
-    <li><a href="#Windows 右键发送">Windows 右键发送</a></li>
+    <li><a href="#chrome-插件">Chrome 插件</a></li>
+    <li><a href="#docker-compose">Docker Compose</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
 </details>
-
-
 
 ## 功能
 
@@ -192,69 +189,6 @@ $ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=
 $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
 
-#### Docker-compose 方式自建有状态服务搭配ssl
-
-1. 创建 docker-compose.yml文件
-
-```yml
-version: "3"
-services:
-  chanify:
-    image: wizjin/chanify:latest
-    restart: always
-    volumes:
-      - ~/chanify:/root/.chanify
-      - /root/.chanify.yml:/root/.chanify.yml
-  caddy:
-    image: abiosoft/caddy
-    restart: always
-    volumes:
-      - ./Caddyfile:/etc/Caddyfile:ro
-      - caddycerts:/root/.caddy
-    ports:
-      - 80:80
-      - 443:443
-    environment:
-      ACME_AGREE: "true" 
-      DOMAIN: "https://example.com"
-      EMAIL: "admin@example.com"
-volumes:
-  caddycerts:
-```
-
-2. 创建Caddyfile
-
-```
-{$DOMAIN} {
-    tls {$EMAIL}
-
-    proxy / chanify:80 {
-        transparent
-    }
-}
-```
-
-3. 创建.chanify.yml
-
-```yml
-server:    
-  host: 0.0.0.0       
-  port: 80    
-  endpoint: https://example.com   
-     name: example # 节点名称    
-     datapath: /root/.chanify # 有状态服务器使用的数据存储路径    
-     register:        
-     enable: false # 关闭注册        
-     whitelist: # 白名单            
-        - <user id>
-```
-
-4. 运行
-
-```shell
-docker-compose up -d
-```
-
 默认会使用 sqlite 保存数据，如果要使用 MySQL 作为数据库存储信息可以添加如下参数：
 
 ```bash
@@ -262,28 +196,6 @@ docker-compose up -d
 ```
 
 注意：Chanify 不会创建数据库，只会创建表格，所以使用前请先自行建立数据库。
-
-#### docker-compose 方式使用Mysql数据
-
-docker-compose 下添加mysql配置
-
-```yml
-services:  
-  db:    
-    image: mysql:latest    
-    restart: always    
-    environment:      
-      MYSQL_ROOT_PASSWORD: 123456      
-      MYSQL_DATABASE: chanify      
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-```
-
-.chanify.yml 添加
-
-```yml
-server:	
-  dburl: mysql://root:123456@tcp(db:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
-```
 
 ### 添加节点服务器
 
@@ -371,13 +283,11 @@ echo $response;
 ### 发送文本
 
 - __GET__
-
 ```url
 http://<address>:<port>/v1/sender/<token>/<message>
 ```
 
 - __POST__
-
 ```url
 http://<address>:<port>/v1/sender/<token>
 ```
@@ -388,7 +298,6 @@ Content-Type:
 - `multipart/form-data`: The block of data("text") is text message
 - `application/x-www-form-urlencoded`: `text=<url encoded text message>`
 - `application/json; charset=utf-8`: 字段都是可选的
-
 ```json
 {
     "token": "<令牌Token>",
@@ -417,15 +326,15 @@ Content-Type:
 
 支持以下参数：
 
-| 参数名   | 默认值 | 描述                                 |
-| -------- | ------ | ------------------------------------ |
-| title    | 无     | 通知消息的标题                       |
-| copy     | 无     | 可选的复制文本（仅文本消息有效）     |
-| autocopy | `0`    | 是否自动复制文本（仅文本消息有效）   |
-| sound    | `0`    | `1` 启用声音提示, 其他情况会静音推送 |
-| priority | `10`   | `10` 正常优先级, `5` 较低优先级      |
-| actions  | 无     | 动作列表                             |
-| timeline | 无     | Timeline 对象                        |
+| 参数名    | 默认值 | 描述                              |
+| -------- | ----- | -------------------------------- |
+| title    | 无    | 通知消息的标题                      |
+| copy     | 无    | 可选的复制文本（仅文本消息有效）       |
+| autocopy | `0`   | 是否自动复制文本（仅文本消息有效）     |
+| sound    | `0`   | `1` 启用声音提示, 其他情况会静音推送  |
+| priority | `10`  | `10` 正常优先级, `5` 较低优先级     |
+| actions  | 无    | 动作列表                           |
+| timeline | 无    | Timeline 对象                     |
 
 `timestamp` 单位为毫秒 (时区 - UTC)
 
@@ -556,6 +465,120 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 - 发送选中的`文本/图片/音频/链接`消息到 Chanify
 - 发送网页链接到 Chanify
+
+## Docker Compose
+
+1. 安装 [docker compose](https://docs.docker.com/compose/install).
+2. 编辑配置文件 (`docker-compose.yml`).
+3. 启动 docker compose: `docker-compose up -d`
+
+`docker-compose.yml`:
+```yml
+version: "3"
+services:
+    web:
+        image: nginx:alpine
+        restart: always
+        volumes:
+            - <workdir>/nginx.conf:/etc/nginx/nginx.conf
+            - <workdir>/ssl:/ssl
+        ports:
+            - 80:80
+            - 443:443
+    chanify:
+        image: wizjin/chanify:dev
+        restart: always
+        volumes:
+            - <workdir>/data:/data
+            - <workdir>/chanify.yml:/root/.chanify.yml
+```
+
+| 参数名    | 描述                        |
+| -------- | --------------------------- |
+| workdir  | 节点服务器的数据和配置存储目录。 |
+
+`<workdir>/nginx.conf`:
+```txt
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+	worker_connections  1024;
+}
+
+http {
+	include       /etc/nginx/mime.types;
+	default_type  application/octet-stream;
+	log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    '$status $body_bytes_sent "$http_referer" '
+    '"$http_user_agent" "$http_x_forwarded_for"';
+
+	access_log  /var/log/nginx/access.log  main;
+
+	server_tokens   off;
+	autoindex       off;
+	sendfile        on;
+	tcp_nopush      on;
+	tcp_nodelay     on;
+
+	keepalive_timeout  10;
+
+    server {
+		listen				80;
+		server_name         <hostname or ip>;
+		access_log          off;
+		return 301 https://$host$request_uri;
+	}
+
+	server {
+		listen              443 ssl http2;
+		server_name         <hostname or ip>;
+		ssl_certificate     /ssl/<ssl key>.crt;
+		ssl_certificate_key /ssl/<ssl key>.key;
+		ssl_protocols       TLSv1.2 TLSv1.3;
+		ssl_ciphers         HIGH:!aNULL:!MD5;
+		keepalive_timeout   30;
+		charset             UTF-8;
+		access_log          off;
+
+		location / {
+			proxy_set_header   Host               $host;
+			proxy_set_header   X-Real-IP          $remote_addr;
+			proxy_set_header   X-Forwarded-Proto  $scheme;
+			proxy_set_header   X-Forwarded-For    $proxy_add_x_forwarded_for;
+			proxy_pass http://chanify:8080/;
+		}
+	}
+}
+```
+
+| 参数名           | 描述                           |
+| --------------- | ----------------------------- |
+| hostname or ip  | 节点服务器的外网域名或者 ip 地址。 |
+| ssl key         | SSL 证书的文件名。               |
+
+`<workdir>/chanify.yml`:
+```yml
+server:
+    endpoint: https://<hostname or ip>
+    host: 0.0.0.0
+    port: 80
+    name: <node name>
+    datapath: /data
+    register:
+        enable: false
+        whitelist: # whitelist    
+            - <user id>
+```
+
+| 参数名           | 描述                           |
+| --------------- | ----------------------------- |
+| hostname or ip  | 节点服务器的外网域名或者 ip 地址。 |
+| node name       | 节点服务器名称。                 |
+| user id         | 用户白名单。                    |
 
 ## 贡献
 

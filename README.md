@@ -71,6 +71,7 @@ Chanify is a safe and simple notification tools. For developers, system administ
         </ul>
     </li>
     <li><a href="#chrome-extension">Chrome Extension</a></li>
+    <li><a href="#docker-compose">Docker Compose</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
   </ol>
@@ -188,68 +189,6 @@ $ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=
 $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
 
-#### Docker-compose deploy self-built stateful service with caddy
-
-1. Create docker-compose.yml
-
-```yml
-version: "3"
-services:
-  chanify:
-    image: wizjin/chanify:latest
-    restart: always
-    volumes:
-      - ~/chanify:/root/.chanify
-      - /root/.chanify.yml:/root/.chanify.yml
-  caddy:
-    image: abiosoft/caddy
-    restart: always
-    volumes:
-      - ./Caddyfile:/etc/Caddyfile:ro
-      - caddycerts:/root/.caddy
-    ports:
-      - 80:80
-      - 443:443
-    environment:
-      ACME_AGREE: "true" 
-      DOMAIN: "https://example.com"
-      EMAIL: "admin@example.com"
-volumes:
-  caddycerts:
-```
-
-2. Create Caddyfile
-
-```
-{$DOMAIN} {
-    tls {$EMAIL}
-
-    proxy / chanify:80 {
-        transparent
-    }
-}
-```
-
-3. Create .chanify.yml
-
-```yml
-server:    
-  host: 0.0.0.0       
-  port: 80    
-  endpoint: https://example.com   
-     name: example # nodeName    
-     datapath: /root/.chanify # data storage path for serverful node server  
-     register:        
-     enable: false # close Registration        
-     whitelist: # whitelist            
-        - <user id>
-```
-
-4. run server
-
-```shell
-docker-compose up -d
-```
 Use MySQL as a backend
 
 ```bash
@@ -525,6 +464,120 @@ Extension features:
 
 - Send select `text/image/audio/url` message to Chanify
 - Send page url to Chanify
+
+## Docker Compose
+
+1. Install [docker compose](https://docs.docker.com/compose/install).
+2. Edit configuration file (`docker-compose.yml`).
+3. Start docker compose: `docker-compose up -d`
+
+`docker-compose.yml`:
+```yml
+version: "3"
+services:
+    web:
+        image: nginx:alpine
+        restart: always
+        volumes:
+            - <workdir>/nginx.conf:/etc/nginx/nginx.conf
+            - <workdir>/ssl:/ssl
+        ports:
+            - 80:80
+            - 443:443
+    chanify:
+        image: wizjin/chanify:dev
+        restart: always
+        volumes:
+            - <workdir>/data:/data
+            - <workdir>/chanify.yml:/root/.chanify.yml
+```
+
+| Key      | Description                     |
+| -------- | ------------------------------- |
+| workdir  | Work directory for node server. |
+
+`<workdir>/nginx.conf`:
+```txt
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+events {
+	worker_connections  1024;
+}
+
+http {
+	include       /etc/nginx/mime.types;
+	default_type  application/octet-stream;
+	log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    '$status $body_bytes_sent "$http_referer" '
+    '"$http_user_agent" "$http_x_forwarded_for"';
+
+	access_log  /var/log/nginx/access.log  main;
+
+	server_tokens   off;
+	autoindex       off;
+	sendfile        on;
+	tcp_nopush      on;
+	tcp_nodelay     on;
+
+	keepalive_timeout  10;
+
+    server {
+		listen				80;
+		server_name         <hostname or ip>;
+		access_log          off;
+		return 301 https://$host$request_uri;
+	}
+
+	server {
+		listen              443 ssl http2;
+		server_name         <hostname or ip>;
+		ssl_certificate     /ssl/<ssl key>.crt;
+		ssl_certificate_key /ssl/<ssl key>.key;
+		ssl_protocols       TLSv1.2 TLSv1.3;
+		ssl_ciphers         HIGH:!aNULL:!MD5;
+		keepalive_timeout   30;
+		charset             UTF-8;
+		access_log          off;
+
+		location / {
+			proxy_set_header   Host               $host;
+			proxy_set_header   X-Real-IP          $remote_addr;
+			proxy_set_header   X-Forwarded-Proto  $scheme;
+			proxy_set_header   X-Forwarded-For    $proxy_add_x_forwarded_for;
+			proxy_pass http://chanify:8080/;
+		}
+	}
+}
+```
+
+| Key             | Description                              |
+| --------------- | ---------------------------------------- |
+| hostname or ip  | Internet hostname or ip for node server. |
+| ssl key         | SSL key file for node server.            |
+
+`<workdir>/chanify.yml`:
+```yml
+server:
+    endpoint: https://<hostname or ip>
+    host: 0.0.0.0
+    port: 80
+    name: <node name>
+    datapath: /data
+    register:
+        enable: false
+        whitelist: # whitelist    
+            - <user id>
+```
+
+| Key             | Description                              |
+| --------------- | ---------------------------------------- |
+| hostname or ip  | Internet hostname or ip for node server. |
+| node name       | Name for node server.                    |
+| user id         | User ids for whitelist.                  |
 
 ## Contributing
 
