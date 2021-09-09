@@ -557,18 +557,6 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 - 发送选中的`文本/图片/音频/链接`消息到 Chanify
 - 发送网页链接到 Chanify
 
-## Windows 右键发送
-
-1. 下载最新的预编译的[二进制包](https://github.com/chanify/chanify/releases/latest) （可选项，可将注册表执行命令更换为curl请求，这里使用二进制包是便于多消息通道更换配置）
-
-2. 复制到Chanify\cmdScript 目录
-
-3. 修改配置<address>:<port> <token> 更换为自己的
-
-4. 管理员方式执行
-
-   注意：*运行时会出现命令框，执行完成后会自动关闭， 介意请勿使用*
-
 ## 贡献
 
 贡献使开源社区成为了一个令人赞叹的学习，启发和创造场所。 **十分感谢**您做出的任何贡献。
