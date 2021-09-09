@@ -30,6 +30,7 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
             <li><a href="#预编译包">预编译包</a></li>
             <li><a href="#docker">Docker</a></li>
             <li><a href="#从源代码">从源代码</a></li>
+            <li><a href="#Docker-compose">Docker-compose</a></li>
         </ul>
     </li>
     <li>
@@ -71,10 +72,13 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
         </ul>
     </li>
     <li><a href="#chrome 插件">Chrome 插件</a></li>
+    <li><a href="#Windows 右键发送">Windows 右键发送</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
 </details>
+
+
 
 ## 功能
 
@@ -188,6 +192,54 @@ $ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=
 $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
 
+#### Docker-compose 方式自建有状态服务搭配ssl
+
+1. 创建 docker-compose.yml文件
+
+```yml
+version: "3"
+services:
+  chanify:
+    image: wizjin/chanify:latest
+    restart: always
+    volumes:
+      - ~/chanify:/root/.chanify
+      - /root/.chanify.yml:/root/.chanify.yml
+  caddy:
+    image: abiosoft/caddy
+    restart: always
+    volumes:
+      - ./Caddyfile:/etc/Caddyfile:ro
+      - caddycerts:/root/.caddy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      ACME_AGREE: "true" 
+      DOMAIN: "https://example.com"
+      EMAIL: "admin@example.com"
+volumes:
+  caddycerts:
+```
+
+2. 创建Caddyfile
+
+```
+{$API_DOMAIN} {    tls {$EMAIL}    proxy / chanify:80 {        transparent    }}
+```
+
+3. 创建.chanify.yml
+
+```yml
+server:    host: 0.0.0.0       port: 80    endpoint: https://example.com    name: example # 节点名称    datapath: /root/.chanify # 有状态服务器使用的数据存储路径    register:        enable: false # 关闭注册        whitelist: # 白名单            - <user id>
+```
+
+4. 运行
+
+```shell
+docker-compose up -d
+```
+
 默认会使用 sqlite 保存数据，如果要使用 MySQL 作为数据库存储信息可以添加如下参数：
 
 ```bash
@@ -195,6 +247,20 @@ $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<
 ```
 
 注意：Chanify 不会创建数据库，只会创建表格，所以使用前请先自行建立数据库。
+
+#### docker-compose 方式使用Mysql数据
+
+docker-compose 下添加mysql配置
+
+```yml
+services:  db:    image: mysql:latest    restart: always    environment:      MYSQL_ROOT_PASSWORD: 123456      MYSQL_DATABASE: chanify      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+```
+
+.chanify.yml 添加
+
+```yml
+server:	dburl: mysql://root:123456@tcp(db:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
+```
 
 ### 添加节点服务器
 
@@ -207,74 +273,31 @@ $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<
 #### 命令行
 
 ```bash
-# 发送文本消息
-$ curl --form-string "text=hello" "http://<address>:<port>/v1/sender/<token>"
-
-# 发送文本文件
-$ cat message.txt | curl -H "Content-Type: text/plain" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
+# 发送文本消息$ curl --form-string "text=hello" "http://<address>:<port>/v1/sender/<token>"# 发送文本文件$ cat message.txt | curl -H "Content-Type: text/plain" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
 ```
 
 #### Python 3
 
 ```python
-from urllib import request, parse
-
-data = parse.urlencode({ 'text': 'hello' }).encode()
-req = request.Request("http://<address>:<port>/v1/sender/<token>", data=data)
-request.urlopen(req)
+from urllib import request, parsedata = parse.urlencode({ 'text': 'hello' }).encode()req = request.Request("http://<address>:<port>/v1/sender/<token>", data=data)request.urlopen(req)
 ```
 
 #### Ruby
 
 ```ruby
-require 'net/http'
-
-uri = URI('http://<address>:<port>/v1/sender/<token>')
-res = Net::HTTP.post_form(uri, 'text' => 'hello')
-puts res.body
+require 'net/http'uri = URI('http://<address>:<port>/v1/sender/<token>')res = Net::HTTP.post_form(uri, 'text' => 'hello')puts res.body
 ```
 
 #### NodeJS
 
 ```javascript
-const https = require('https')
-const querystring = require('querystring');
-
-const data = querystring.stringify({ text: 'hello' })
-const options = {
-    hostname: '<address>:<port>',
-    port: 80,
-    path: '/v1/sender/<token>',
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': data.length
-        }
-    }
-    var req = https.request(options, (res) => {
-    res.on('data', (d) => {
-        process.stdout.write(d);
-    });
-});  
-req.write(data);
-req.end();
+const https = require('https')const querystring = require('querystring');const data = querystring.stringify({ text: 'hello' })const options = {    hostname: '<address>:<port>',    port: 80,    path: '/v1/sender/<token>',    method: 'POST',    headers: {        'Content-Type': 'application/x-www-form-urlencoded',        'Content-Length': data.length        }    }    var req = https.request(options, (res) => {    res.on('data', (d) => {        process.stdout.write(d);    });});  req.write(data);req.end();
 ```
 
 #### PHP
 
 ```php
-$curl = curl_init();
-
-curl_setopt_array($curl, [
-    CURLOPT_URL           => 'http://<address>:<port>/v1/sender/<token>',
-    CURLOPT_CUSTOMREQUEST => 'POST',
-    CURLOPT_POSTFIELDS    => [ 'text' => 'hello' ],
-]);
-
-$response = curl_exec($curl);
-
-curl_close($curl);
-echo $response;
+$curl = curl_init();curl_setopt_array($curl, [    CURLOPT_URL           => 'http://<address>:<port>/v1/sender/<token>',    CURLOPT_CUSTOMREQUEST => 'POST',    CURLOPT_POSTFIELDS    => [ 'text' => 'hello' ],]);$response = curl_exec($curl);curl_close($curl);echo $response;
 ```
 
 ## HTTP API
@@ -282,58 +305,39 @@ echo $response;
 ### 发送文本
 
 - __GET__
+
 ```url
 http://<address>:<port>/v1/sender/<token>/<message>
 ```
 
 - __POST__
+
 ```url
 http://<address>:<port>/v1/sender/<token>
 ```
 
-Content-Type: 
+Content-Type:
 
 - `text/plain`: Body is text message
 - `multipart/form-data`: The block of data("text") is text message
 - `application/x-www-form-urlencoded`: `text=<url encoded text message>`
 - `application/json; charset=utf-8`: 字段都是可选的
+
 ```json
-{
-    "token": "<令牌Token>",
-    "title": "<消息标题>",
-    "text": "<文本消息内容>",
-    "copy": "<可选的复制文本>",
-    "autocopy": 1,
-    "sound": 1,
-    "priority": 10,
-    "actions": [
-        "动作名称1|http://<action host>/<action1>",
-        "动作名称2|http://<action host>/<action2>",
-        ...
-    ],
-    "timeline": {
-        "code": "<标识 code>",
-        "timestamp": 1620000000000,
-        "items": {
-            "key1": "value1",
-            "key2": "value2",
-            ...
-        }
-    }
-}
+{    "token": "<令牌Token>",    "title": "<消息标题>",    "text": "<文本消息内容>",    "copy": "<可选的复制文本>",    "autocopy": 1,    "sound": 1,    "priority": 10,    "actions": [        "动作名称1|http://<action host>/<action1>",        "动作名称2|http://<action host>/<action2>",        ...    ],    "timeline": {        "code": "<标识 code>",        "timestamp": 1620000000000,        "items": {            "key1": "value1",            "key2": "value2",            ...        }    }}
 ```
 
 支持以下参数：
 
-| 参数名    | 默认值 | 描述                              |
-| -------- | ----- | -------------------------------- |
-| title    | 无    | 通知消息的标题                      |
-| copy     | 无    | 可选的复制文本（仅文本消息有效）       |
-| autocopy | `0`   | 是否自动复制文本（仅文本消息有效）     |
-| sound    | `0`   | `1` 启用声音提示, 其他情况会静音推送  |
-| priority | `10`  | `10` 正常优先级, `5` 较低优先级     |
-| actions  | 无    | 动作列表                           |
-| timeline | 无    | Timeline 对象                     |
+| 参数名   | 默认值 | 描述                                 |
+| -------- | ------ | ------------------------------------ |
+| title    | 无     | 通知消息的标题                       |
+| copy     | 无     | 可选的复制文本（仅文本消息有效）     |
+| autocopy | `0`    | 是否自动复制文本（仅文本消息有效）   |
+| sound    | `0`    | `1` 启用声音提示, 其他情况会静音推送 |
+| priority | `10`   | `10` 正常优先级, `5` 较低优先级      |
+| actions  | 无     | 动作列表                             |
+| timeline | 无     | Timeline 对象                        |
 
 `timestamp` 单位为毫秒 (时区 - UTC)
 
@@ -350,11 +354,7 @@ $ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ```json
-{
-    "link": "<web url>",
-    "sound": 1,
-    "priority": 10,
-}
+{    "link": "<web url>",    "sound": 1,    "priority": 10,}
 ```
 
 ### 发送图片
@@ -414,24 +414,7 @@ $ curl --form "action=动作名称1|http://<action host>/<action1>" "http://<add
 可以通过 yml 文件来配置 Chanify，默认路径`~/.chanify.yml`。
 
 ```yml
-server:
-    host: 0.0.0.0   # 监听IP地址
-    port: 8080      # 监听端口
-    endpoint: http://my.server/path # 入口URL
-    name: Node name # 节点名称
-    secret: <secret code> # 无状态服务器使用的密钥
-    datapath: <data path> # 有状态服务器使用的数据存储路径
-    dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
-    register:
-        enable: false # 关闭注册
-        whitelist: # 白名单
-            - <user id 1>
-            - <user id 2>
-
-client: # 作为客户端发送消息时使用
-    sound: 1    # 是否有提示音
-    endpoint: <default node server endpoint>
-    token: <default token>
+server:    host: 0.0.0.0   # 监听IP地址    port: 8080      # 监听端口    endpoint: http://my.server/path # 入口URL    name: Node name # 节点名称    secret: <secret code> # 无状态服务器使用的密钥    datapath: <data path> # 有状态服务器使用的数据存储路径    dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接    register:        enable: false # 关闭注册        whitelist: # 白名单            - <user id 1>            - <user id 2>client: # 作为客户端发送消息时使用    sound: 1    # 是否有提示音    endpoint: <default node server endpoint>    token: <default token>
 ```
 
 ## 安全
@@ -464,6 +447,18 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 - 发送选中的`文本/图片/音频/链接`消息到 Chanify
 - 发送网页链接到 Chanify
+
+## Windows 右键发送
+
+1. 下载最新的预编译的[二进制包](https://github.com/chanify/chanify/releases/latest) （可选项，可将注册表执行命令更换为curl请求，这里使用二进制包是便于多消息通道更换配置）
+
+2. 复制到Chanify\cmdScript 目录
+
+3. 修改配置<address>:<port> <token> 更换为自己的
+
+4. 管理员方式执行
+
+   注意：*运行时会出现命令框，执行完成后会自动关闭， 介意请勿使用*
 
 ## 贡献
 
