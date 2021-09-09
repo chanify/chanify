@@ -225,13 +225,28 @@ volumes:
 2. 创建Caddyfile
 
 ```
-{$API_DOMAIN} {    tls {$EMAIL}    proxy / chanify:80 {        transparent    }}
+{$DOMAIN} {
+    tls {$EMAIL}
+
+    proxy / chanify:80 {
+        transparent
+    }
+}
 ```
 
 3. 创建.chanify.yml
 
 ```yml
-server:    host: 0.0.0.0       port: 80    endpoint: https://example.com    name: example # 节点名称    datapath: /root/.chanify # 有状态服务器使用的数据存储路径    register:        enable: false # 关闭注册        whitelist: # 白名单            - <user id>
+server:    
+  host: 0.0.0.0       
+  port: 80    
+  endpoint: https://example.com   
+     name: example # 节点名称    
+     datapath: /root/.chanify # 有状态服务器使用的数据存储路径    
+     register:        
+     enable: false # 关闭注册        
+     whitelist: # 白名单            
+        - <user id>
 ```
 
 4. 运行
@@ -253,13 +268,21 @@ docker-compose up -d
 docker-compose 下添加mysql配置
 
 ```yml
-services:  db:    image: mysql:latest    restart: always    environment:      MYSQL_ROOT_PASSWORD: 123456      MYSQL_DATABASE: chanify      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+services:  
+  db:    
+    image: mysql:latest    
+    restart: always    
+    environment:      
+      MYSQL_ROOT_PASSWORD: 123456      
+      MYSQL_DATABASE: chanify      
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
 ```
 
 .chanify.yml 添加
 
 ```yml
-server:	dburl: mysql://root:123456@tcp(db:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
+server:	
+  dburl: mysql://root:123456@tcp(db:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
 ```
 
 ### 添加节点服务器
@@ -273,31 +296,74 @@ server:	dburl: mysql://root:123456@tcp(db:3306)/chanify?charset=utf8mb4&parseTim
 #### 命令行
 
 ```bash
-# 发送文本消息$ curl --form-string "text=hello" "http://<address>:<port>/v1/sender/<token>"# 发送文本文件$ cat message.txt | curl -H "Content-Type: text/plain" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
+# 发送文本消息
+$ curl --form-string "text=hello" "http://<address>:<port>/v1/sender/<token>"
+
+# 发送文本文件
+$ cat message.txt | curl -H "Content-Type: text/plain" --data-binary @- "http://<address>:<port>/v1/sender/<token>"
 ```
 
 #### Python 3
 
 ```python
-from urllib import request, parsedata = parse.urlencode({ 'text': 'hello' }).encode()req = request.Request("http://<address>:<port>/v1/sender/<token>", data=data)request.urlopen(req)
+from urllib import request, parse
+
+data = parse.urlencode({ 'text': 'hello' }).encode()
+req = request.Request("http://<address>:<port>/v1/sender/<token>", data=data)
+request.urlopen(req)
 ```
 
 #### Ruby
 
 ```ruby
-require 'net/http'uri = URI('http://<address>:<port>/v1/sender/<token>')res = Net::HTTP.post_form(uri, 'text' => 'hello')puts res.body
+require 'net/http'
+
+uri = URI('http://<address>:<port>/v1/sender/<token>')
+res = Net::HTTP.post_form(uri, 'text' => 'hello')
+puts res.body
 ```
 
 #### NodeJS
 
 ```javascript
-const https = require('https')const querystring = require('querystring');const data = querystring.stringify({ text: 'hello' })const options = {    hostname: '<address>:<port>',    port: 80,    path: '/v1/sender/<token>',    method: 'POST',    headers: {        'Content-Type': 'application/x-www-form-urlencoded',        'Content-Length': data.length        }    }    var req = https.request(options, (res) => {    res.on('data', (d) => {        process.stdout.write(d);    });});  req.write(data);req.end();
+const https = require('https')
+const querystring = require('querystring');
+
+const data = querystring.stringify({ text: 'hello' })
+const options = {
+    hostname: '<address>:<port>',
+    port: 80,
+    path: '/v1/sender/<token>',
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': data.length
+        }
+    }
+    var req = https.request(options, (res) => {
+    res.on('data', (d) => {
+        process.stdout.write(d);
+    });
+});  
+req.write(data);
+req.end();
 ```
 
 #### PHP
 
 ```php
-$curl = curl_init();curl_setopt_array($curl, [    CURLOPT_URL           => 'http://<address>:<port>/v1/sender/<token>',    CURLOPT_CUSTOMREQUEST => 'POST',    CURLOPT_POSTFIELDS    => [ 'text' => 'hello' ],]);$response = curl_exec($curl);curl_close($curl);echo $response;
+$curl = curl_init();
+
+curl_setopt_array($curl, [
+    CURLOPT_URL           => 'http://<address>:<port>/v1/sender/<token>',
+    CURLOPT_CUSTOMREQUEST => 'POST',
+    CURLOPT_POSTFIELDS    => [ 'text' => 'hello' ],
+]);
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
 ```
 
 ## HTTP API
@@ -324,7 +390,29 @@ Content-Type:
 - `application/json; charset=utf-8`: 字段都是可选的
 
 ```json
-{    "token": "<令牌Token>",    "title": "<消息标题>",    "text": "<文本消息内容>",    "copy": "<可选的复制文本>",    "autocopy": 1,    "sound": 1,    "priority": 10,    "actions": [        "动作名称1|http://<action host>/<action1>",        "动作名称2|http://<action host>/<action2>",        ...    ],    "timeline": {        "code": "<标识 code>",        "timestamp": 1620000000000,        "items": {            "key1": "value1",            "key2": "value2",            ...        }    }}
+{
+    "token": "<令牌Token>",
+    "title": "<消息标题>",
+    "text": "<文本消息内容>",
+    "copy": "<可选的复制文本>",
+    "autocopy": 1,
+    "sound": 1,
+    "priority": 10,
+    "actions": [
+        "动作名称1|http://<action host>/<action1>",
+        "动作名称2|http://<action host>/<action2>",
+        ...
+    ],
+    "timeline": {
+        "code": "<标识 code>",
+        "timestamp": 1620000000000,
+        "items": {
+            "key1": "value1",
+            "key2": "value2",
+            ...
+        }
+    }
+}
 ```
 
 支持以下参数：
@@ -354,7 +442,11 @@ $ curl --form "link=@<web url>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
 ```json
-{    "link": "<web url>",    "sound": 1,    "priority": 10,}
+{
+    "link": "<web url>",
+    "sound": 1,
+    "priority": 10,
+}
 ```
 
 ### 发送图片
@@ -414,7 +506,24 @@ $ curl --form "action=动作名称1|http://<action host>/<action1>" "http://<add
 可以通过 yml 文件来配置 Chanify，默认路径`~/.chanify.yml`。
 
 ```yml
-server:    host: 0.0.0.0   # 监听IP地址    port: 8080      # 监听端口    endpoint: http://my.server/path # 入口URL    name: Node name # 节点名称    secret: <secret code> # 无状态服务器使用的密钥    datapath: <data path> # 有状态服务器使用的数据存储路径    dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接    register:        enable: false # 关闭注册        whitelist: # 白名单            - <user id 1>            - <user id 2>client: # 作为客户端发送消息时使用    sound: 1    # 是否有提示音    endpoint: <default node server endpoint>    token: <default token>
+server:
+    host: 0.0.0.0   # 监听IP地址
+    port: 8080      # 监听端口
+    endpoint: http://my.server/path # 入口URL
+    name: Node name # 节点名称
+    secret: <secret code> # 无状态服务器使用的密钥
+    datapath: <data path> # 有状态服务器使用的数据存储路径
+    dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
+    register:
+        enable: false # 关闭注册
+        whitelist: # 白名单
+            - <user id 1>
+            - <user id 2>
+
+client: # 作为客户端发送消息时使用
+    sound: 1    # 是否有提示音
+    endpoint: <default node server endpoint>
+    token: <default token>
 ```
 
 ## 安全
