@@ -30,6 +30,7 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
             <li><a href="#预编译包">预编译包</a></li>
             <li><a href="#docker">Docker</a></li>
             <li><a href="#从源代码">从源代码</a></li>
+            <li><a href="#Docker-compose">Docker-compose</a></li>
         </ul>
     </li>
     <li>
@@ -71,10 +72,13 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
         </ul>
     </li>
     <li><a href="#chrome 插件">Chrome 插件</a></li>
+    <li><a href="#Windows 右键发送">Windows 右键发送</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
 </details>
+
+
 
 ## 功能
 
@@ -188,6 +192,69 @@ $ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=
 $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
 
+#### Docker-compose 方式自建有状态服务搭配ssl
+
+1. 创建 docker-compose.yml文件
+
+```yml
+version: "3"
+services:
+  chanify:
+    image: wizjin/chanify:latest
+    restart: always
+    volumes:
+      - ~/chanify:/root/.chanify
+      - /root/.chanify.yml:/root/.chanify.yml
+  caddy:
+    image: abiosoft/caddy
+    restart: always
+    volumes:
+      - ./Caddyfile:/etc/Caddyfile:ro
+      - caddycerts:/root/.caddy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      ACME_AGREE: "true" 
+      DOMAIN: "https://example.com"
+      EMAIL: "admin@example.com"
+volumes:
+  caddycerts:
+```
+
+2. 创建Caddyfile
+
+```
+{$DOMAIN} {
+    tls {$EMAIL}
+
+    proxy / chanify:80 {
+        transparent
+    }
+}
+```
+
+3. 创建.chanify.yml
+
+```yml
+server:    
+  host: 0.0.0.0       
+  port: 80    
+  endpoint: https://example.com   
+     name: example # 节点名称    
+     datapath: /root/.chanify # 有状态服务器使用的数据存储路径    
+     register:        
+     enable: false # 关闭注册        
+     whitelist: # 白名单            
+        - <user id>
+```
+
+4. 运行
+
+```shell
+docker-compose up -d
+```
+
 默认会使用 sqlite 保存数据，如果要使用 MySQL 作为数据库存储信息可以添加如下参数：
 
 ```bash
@@ -195,6 +262,28 @@ $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<
 ```
 
 注意：Chanify 不会创建数据库，只会创建表格，所以使用前请先自行建立数据库。
+
+#### docker-compose 方式使用Mysql数据
+
+docker-compose 下添加mysql配置
+
+```yml
+services:  
+  db:    
+    image: mysql:latest    
+    restart: always    
+    environment:      
+      MYSQL_ROOT_PASSWORD: 123456      
+      MYSQL_DATABASE: chanify      
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+```
+
+.chanify.yml 添加
+
+```yml
+server:	
+  dburl: mysql://root:123456@tcp(db:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
+```
 
 ### 添加节点服务器
 
@@ -282,21 +371,24 @@ echo $response;
 ### 发送文本
 
 - __GET__
+
 ```url
 http://<address>:<port>/v1/sender/<token>/<message>
 ```
 
 - __POST__
+
 ```url
 http://<address>:<port>/v1/sender/<token>
 ```
 
-Content-Type: 
+Content-Type:
 
 - `text/plain`: Body is text message
 - `multipart/form-data`: The block of data("text") is text message
 - `application/x-www-form-urlencoded`: `text=<url encoded text message>`
 - `application/json; charset=utf-8`: 字段都是可选的
+
 ```json
 {
     "token": "<令牌Token>",
@@ -325,15 +417,15 @@ Content-Type:
 
 支持以下参数：
 
-| 参数名    | 默认值 | 描述                              |
-| -------- | ----- | -------------------------------- |
-| title    | 无    | 通知消息的标题                      |
-| copy     | 无    | 可选的复制文本（仅文本消息有效）       |
-| autocopy | `0`   | 是否自动复制文本（仅文本消息有效）     |
-| sound    | `0`   | `1` 启用声音提示, 其他情况会静音推送  |
-| priority | `10`  | `10` 正常优先级, `5` 较低优先级     |
-| actions  | 无    | 动作列表                           |
-| timeline | 无    | Timeline 对象                     |
+| 参数名   | 默认值 | 描述                                 |
+| -------- | ------ | ------------------------------------ |
+| title    | 无     | 通知消息的标题                       |
+| copy     | 无     | 可选的复制文本（仅文本消息有效）     |
+| autocopy | `0`    | 是否自动复制文本（仅文本消息有效）   |
+| sound    | `0`    | `1` 启用声音提示, 其他情况会静音推送 |
+| priority | `10`   | `10` 正常优先级, `5` 较低优先级      |
+| actions  | 无     | 动作列表                             |
+| timeline | 无     | Timeline 对象                        |
 
 `timestamp` 单位为毫秒 (时区 - UTC)
 

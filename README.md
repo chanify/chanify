@@ -188,6 +188,68 @@ $ chanify serve --host=<ip address> --port=<port> --name=<node name> --datapath=
 $ docker run -it -v /my/data:/root/.chanify wizjin/chanify:latest serve --name=<node name> --endpoint=http://<address>:<port>
 ```
 
+#### Docker-compose deploy self-built stateful service with caddy
+
+1. Create docker-compose.yml
+
+```yml
+version: "3"
+services:
+  chanify:
+    image: wizjin/chanify:latest
+    restart: always
+    volumes:
+      - ~/chanify:/root/.chanify
+      - /root/.chanify.yml:/root/.chanify.yml
+  caddy:
+    image: abiosoft/caddy
+    restart: always
+    volumes:
+      - ./Caddyfile:/etc/Caddyfile:ro
+      - caddycerts:/root/.caddy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      ACME_AGREE: "true" 
+      DOMAIN: "https://example.com"
+      EMAIL: "admin@example.com"
+volumes:
+  caddycerts:
+```
+
+2. Create Caddyfile
+
+```
+{$DOMAIN} {
+    tls {$EMAIL}
+
+    proxy / chanify:80 {
+        transparent
+    }
+}
+```
+
+3. Create .chanify.yml
+
+```yml
+server:    
+  host: 0.0.0.0       
+  port: 80    
+  endpoint: https://example.com   
+     name: example # nodeName    
+     datapath: /root/.chanify # data storage path for serverful node server  
+     register:        
+     enable: false # close Registration        
+     whitelist: # whitelist            
+        - <user id>
+```
+
+4. run server
+
+```shell
+docker-compose up -d
+```
 Use MySQL as a backend
 
 ```bash
