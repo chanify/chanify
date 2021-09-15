@@ -4,6 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/chanify/chanify?logo=github&style=flat-square)](https://github.com/chanify/chanify/releases/latest)
 [![iTunes App Store](https://img.shields.io/itunes/v/1531546573?logo=apple&style=flat-square)](https://itunes.apple.com/cn/app/id1531546573)
 [![WebStore](https://img.shields.io/chrome-web-store/v/llpdpmhkemkjeeigibdamadahmhoebdg?logo=Google%20Chrome&logoColor=white&style=flat-square)](https://chrome.google.com/webstore/detail/chanify/llpdpmhkemkjeeigibdamadahmhoebdg)
+[![Windows](https://img.shields.io/github/v/release/chanify/chanify-win?label=windows&logo=windows&style=flat-square)](https://github.com/chanify/chanify-win/releases/latest)
 [![Workflow](https://img.shields.io/github/workflow/status/chanify/chanify/ci?label=build&logo=github&style=flat-square)](https://github.com/chanify/chanify/actions?workflow=ci)
 [![CodeQL](https://img.shields.io/github/workflow/status/chanify/chanify/codeql?label=codeql&logo=github&style=flat-square)](https://github.com/chanify/chanify/actions?workflow=codeql)
 [![Codecov](https://img.shields.io/codecov/c/github/chanify/chanify?logo=codecov&style=flat-square)](https://codecov.io/gh/chanify/chanify)
@@ -71,6 +72,7 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
         </ul>
     </li>
     <li><a href="#chrome-插件">Chrome 插件</a></li>
+    <li><a href="#windows-客户端">Windows 客户端</a></li>
     <li><a href="#docker-compose">Docker Compose</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
@@ -465,6 +467,15 @@ chanify serve --registerable=false --whitelist=<user1 id>,<user2 id>
 
 - 发送选中的`文本/图片/音频/链接`消息到 Chanify
 - 发送网页链接到 Chanify
+
+## Windows 客户端
+
+可以从[这里](https://github.com/chanify/chanify-win/releases/latest)获取到 [Windows 客户端](https://github.com/chanify/chanify-win)。
+
+客户端有以下功能:
+
+- 支持在 Windows 的 `发送到` 菜单中添加 Chanify
+- 支持利用`命令行`发送消息
 
 ## Docker Compose
 

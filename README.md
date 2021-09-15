@@ -4,6 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/chanify/chanify?logo=github&style=flat-square)](https://github.com/chanify/chanify/releases/latest)
 [![iTunes App Store](https://img.shields.io/itunes/v/1531546573?logo=apple&style=flat-square)](https://itunes.apple.com/us/app/id1531546573)
 [![WebStore](https://img.shields.io/chrome-web-store/v/llpdpmhkemkjeeigibdamadahmhoebdg?logo=Google%20Chrome&logoColor=white&style=flat-square)](https://chrome.google.com/webstore/detail/chanify/llpdpmhkemkjeeigibdamadahmhoebdg)
+[![Windows](https://img.shields.io/github/v/release/chanify/chanify-win?label=windows&logo=windows&style=flat-square)](https://github.com/chanify/chanify-win/releases/latest)
 [![Workflow](https://img.shields.io/github/workflow/status/chanify/chanify/ci?label=build&logo=github&style=flat-square)](https://github.com/chanify/chanify/actions?workflow=ci)
 [![CodeQL](https://img.shields.io/github/workflow/status/chanify/chanify/codeql?label=codeql&logo=github&style=flat-square)](https://github.com/chanify/chanify/actions?workflow=codeql)
 [![Codecov](https://img.shields.io/codecov/c/github/chanify/chanify?logo=codecov&style=flat-square)](https://codecov.io/gh/chanify/chanify)
@@ -71,6 +72,7 @@ Chanify is a safe and simple notification tools. For developers, system administ
         </ul>
     </li>
     <li><a href="#chrome-extension">Chrome Extension</a></li>
+    <li><a href="#windows-client">Windows Client</a></li>
     <li><a href="#docker-compose">Docker Compose</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -97,7 +99,7 @@ Chanify is include these features:
 
 ### Precompiled binary
 
-Download precompiled binary from [this](https://github.com/chanify/chanify/releases/latest).
+Download precompiled binary from [here](https://github.com/chanify/chanify/releases/latest).
 
 ### Docker
 
@@ -458,12 +460,21 @@ If your token is leaked, add leaked token into the blocklist (iOS client setting
 
 ## Chrome Extension
 
-Download the extension for [Chrome web store](https://chrome.google.com/webstore/detail/chanify/llpdpmhkemkjeeigibdamadahmhoebdg).
+Download the extension from [Chrome web store](https://chrome.google.com/webstore/detail/chanify/llpdpmhkemkjeeigibdamadahmhoebdg).
 
 Extension features:
 
 - Send select `text/image/audio/url` message to Chanify
 - Send page url to Chanify
+
+## Windows Client
+
+Get the [Windows Client](https://github.com/chanify/chanify-win) from [here](https://github.com/chanify/chanify-win/releases/latest).
+
+Windows Client features:
+
+- Support Chanify to the Windows `Send To` Menu.
+- Support send message with `CLI`.
 
 ## Docker Compose
 
