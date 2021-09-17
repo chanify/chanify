@@ -40,6 +40,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	params.Sound = ctx.Query("sound")
 	params.AutoCopy = ctx.Query("autocopy")
 	params.CopyText = ctx.Query("copy")
+	params.Filename = fileBaseName(ctx.Query("filename"))
 	params.Priority = parsePriority(ctx.Query("priority"))
 	params.TimeContent.Code = ctx.Query("timeline-code")
 
@@ -159,7 +160,7 @@ func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte
 	return model.NewMessage(token).ImageContent(path, createThumbnail(data), len(data)), nil
 }
 
-func (c *Core) saveUploadAudio(ctx *gin.Context, token *model.Token, title string, data []byte) (*model.Message, error) {
+func (c *Core) saveUploadAudio(ctx *gin.Context, token *model.Token, fname string, title string, data []byte) (*model.Message, error) {
 	if len(data) <= 0 {
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no audio content"})
 		return nil, ErrNoContent
@@ -169,7 +170,7 @@ func (c *Core) saveUploadAudio(ctx *gin.Context, token *model.Token, title strin
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid audio content"})
 		return nil, ErrInvalidContent
 	}
-	return model.NewMessage(token).AudioContent(path, title, 0, len(data)), nil
+	return model.NewMessage(token).AudioContent(path, fname, title, 0, len(data)), nil
 }
 
 func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte, filename string, desc string, actions []string) (*model.Message, error) {

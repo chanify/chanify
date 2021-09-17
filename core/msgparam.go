@@ -27,6 +27,7 @@ type MsgParam struct {
 	Sound       string
 	AutoCopy    string
 	CopyText    string
+	Filename    string
 	Priority    int
 	Actions     []string
 	TimeContent TimeContent
@@ -136,6 +137,7 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 		m.Link = tryFormValue(form, "link", m.Link)
 		m.CopyText = tryFormValue(form, "copy", m.CopyText)
 		m.AutoCopy = tryFormValue(form, "autocopy", m.AutoCopy)
+		m.Filename = tryFormValue(form, "filename", m.Filename)
 		m.Sound = tryFormValue(form, "sound", m.Sound)
 		m.Actions = tryFormValues(form, "action", m.Actions)
 		m.parsePriorityFromForm(form)
@@ -152,17 +154,16 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 				}
 			}
 			if data, fname, err := readFileFromForm(form, "audio"); err == nil {
-				title := m.Title
-				if len(title) <= 0 {
-					title = fileBaseName(fname)
+				if len(m.Filename) > 0 {
+					fname = m.Filename
 				}
-				msg, err = c.saveUploadAudio(ctx, m.Token, title, data)
+				msg, err = c.saveUploadAudio(ctx, m.Token, fileBaseName(fname), m.Title, data)
 				if err != nil {
 					return nil, err
 				}
 			}
 			if data, fname, err := readFileFromForm(form, "file"); err == nil {
-				msg, err = c.saveUploadFile(ctx, m.Token, data, fname, m.Text, m.Actions)
+				msg, err = c.saveUploadFile(ctx, m.Token, data, fileBaseName(fname), m.Text, m.Actions)
 				if err != nil {
 					return nil, err
 				}
@@ -192,7 +193,7 @@ func (m *MsgParam) ParseAudio(c *Core, ctx *gin.Context) (*model.Message, error)
 	if m.Token != nil && c.logic.CanFileStore() {
 		var err error
 		data, _ := ctx.GetRawData()
-		msg, err = c.saveUploadAudio(ctx, m.Token, m.Title, data)
+		msg, err = c.saveUploadAudio(ctx, m.Token, m.Filename, m.Title, data)
 		if err != nil {
 			return nil, err
 		}

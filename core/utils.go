@@ -118,9 +118,12 @@ func createThumbnail(data []byte) *model.Thumbnail {
 }
 
 func fileBaseName(path string) string {
-	_, name := filepath.Split(path)
-	if len(name) > 0 && name[0] == '.' {
-		name = ""
+	name := ""
+	if len(path) > 0 {
+		_, fname := filepath.Split(path)
+		if len(fname) > 0 && fname[0] != '.' {
+			name = fname
+		}
 	}
 	return name
 }
