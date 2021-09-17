@@ -6,6 +6,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -114,6 +115,14 @@ func createThumbnail(data []byte) *model.Thumbnail {
 		return model.NewThumbnail(cfg.Width, cfg.Height)
 	}
 	return nil
+}
+
+func fileBaseName(path string) string {
+	_, name := filepath.Split(path)
+	if len(name) > 0 && name[0] == '.' {
+		name = ""
+	}
+	return name
 }
 
 // JSONString define boolean string

@@ -527,7 +527,7 @@ func TestSaveAudioFile(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg") // nolint: errcheck
-	if _, err := c.saveUploadAudio(ctx, tk, []byte("123")); err != nil {
+	if _, err := c.saveUploadAudio(ctx, tk, "test audio", []byte("123")); err != nil {
 		t.Error("Save audio failed", err)
 	}
 }
@@ -538,7 +538,7 @@ func TestSaveIAudioFileFailed(t *testing.T) {
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	c.saveUploadAudio(ctx, nil, []byte("123")) // nolint: errcheck
+	c.saveUploadAudio(ctx, nil, "", []byte("123")) // nolint: errcheck
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check save audio failed")
 	}

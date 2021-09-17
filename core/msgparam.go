@@ -151,8 +151,12 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 					return nil, err
 				}
 			}
-			if data, _, err := readFileFromForm(form, "audio"); err == nil {
-				msg, err = c.saveUploadAudio(ctx, m.Token, data)
+			if data, fname, err := readFileFromForm(form, "audio"); err == nil {
+				title := m.Title
+				if len(title) <= 0 {
+					title = fileBaseName(fname)
+				}
+				msg, err = c.saveUploadAudio(ctx, m.Token, title, data)
 				if err != nil {
 					return nil, err
 				}
@@ -188,7 +192,7 @@ func (m *MsgParam) ParseAudio(c *Core, ctx *gin.Context) (*model.Message, error)
 	if m.Token != nil && c.logic.CanFileStore() {
 		var err error
 		data, _ := ctx.GetRawData()
-		msg, err = c.saveUploadAudio(ctx, m.Token, data)
+		msg, err = c.saveUploadAudio(ctx, m.Token, m.Title, data)
 		if err != nil {
 			return nil, err
 		}

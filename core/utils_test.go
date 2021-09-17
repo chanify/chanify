@@ -98,6 +98,15 @@ func TestCreateThumbnail(t *testing.T) {
 	}
 }
 
+func TestFileBaseName(t *testing.T) {
+	if fileBaseName("..") != "" {
+		t.Error("Check file base name failed!")
+	}
+	if fileBaseName("./123/abc.xyz") != "abc.xyz" {
+		t.Error("Get file base name failed!")
+	}
+}
+
 func TestJsonString(t *testing.T) {
 	var data struct {
 		A JSONString `json:"a"`

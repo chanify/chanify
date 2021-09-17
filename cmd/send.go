@@ -1,4 +1,5 @@
-//+build !test
+//go:build !test
+// +build !test
 
 package cmd
 
@@ -113,6 +114,7 @@ func parseOtherMessage(cmd *cobra.Command, w *multipart.Writer) error {
 	flags := cmd.Flags()
 	text, _ := flags.GetString("text")
 	link, _ := flags.GetString("link")
+	title, _ := flags.GetString("title")
 	autocopy := viper.GetString("client.autocopy")
 	if len(text) > 1 && text[0] == '@' {
 		txt, err := readInputFile(text[1:])
@@ -141,7 +143,6 @@ func parseOtherMessage(cmd *cobra.Command, w *multipart.Writer) error {
 	setFieldFile(w, "image", "image", image)
 	setFieldFile(w, "audio", "audio", audio)
 	setFieldFile(w, "file", filename, file)
-	title, _ := flags.GetString("title")
 	setFieldValue(w, "title", []byte(title))
 	copytext, _ := flags.GetString("copy")
 	setFieldValue(w, "copy", []byte(copytext))
