@@ -117,16 +117,16 @@ func parseOtherMessage(cmd *cobra.Command, w *multipart.Writer) error {
 	title, _ := flags.GetString("title")
 	autocopy := viper.GetString("client.autocopy")
 	if len(text) > 1 && text[0] == '@' {
-		txt, err := readInputFile(text[1:])
+		txt, _, err := readInputFile(text[1:])
 		if err != nil {
 			return err
 		}
 		text = string(txt)
 	}
 	imagePath, _ := flags.GetString("image")
-	image, _ := readInputFile(imagePath)
+	image, _, _ := readInputFile(imagePath)
 	audioPath, _ := flags.GetString("audio")
-	audio, _ := readInputFile(audioPath)
+	audio, faudio, _ := readInputFile(audioPath)
 	filePath, err := flags.GetString("file")
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func parseOtherMessage(cmd *cobra.Command, w *multipart.Writer) error {
 	setFieldValue(w, "text", []byte(text))
 	setFieldValue(w, "link", []byte(link))
 	setFieldFile(w, "image", "image", image)
-	setFieldFile(w, "audio", "audio", audio)
+	setFieldFile(w, "audio", fixFilename(faudio, "audio"), audio)
 	setFieldFile(w, "file", filename, file)
 	setFieldValue(w, "title", []byte(title))
 	copytext, _ := flags.GetString("copy")
@@ -189,24 +189,26 @@ func readFile(filePath string) ([]byte, string, error) {
 	return nil, "", nil
 }
 
-func readInputFile(path string) ([]byte, error) {
+func readInputFile(path string) ([]byte, string, error) {
+	fname := ""
 	var data []byte
 	if len(path) > 0 {
 		if path[0] == '-' {
 			in, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
-				return nil, err
+				return nil, "", err
 			}
 			data = in
 		} else {
 			in, err := ioutil.ReadFile(path)
 			if err != nil {
-				return nil, err
+				return nil, "", err
 			}
 			data = in
+			fname = filepath.Base(path)
 		}
 	}
-	return data, nil
+	return data, fname, nil
 }
 
 func setFieldValue(w *multipart.Writer, name string, value []byte) {
@@ -237,4 +239,11 @@ func setFieldFile(w *multipart.Writer, name string, fname string, value []byte) 
 		fw, _ := w.CreateFormFile(name, fname)
 		fw.Write(value) // nolint: errcheck
 	}
+}
+
+func fixFilename(name string, defname string) string {
+	if len(name) > 0 {
+		return name
+	}
+	return defname
 }
