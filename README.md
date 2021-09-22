@@ -308,6 +308,7 @@ Content-Type:
     "autocopy": 1,
     "sound": 1,
     "priority": 10,
+    "interruptionlevel": 0,
     "actions": [
         "ActionName1|http://<action host>/<action1>",
         "ActionName2|http://<action host>/<action2>",
@@ -327,15 +328,21 @@ Content-Type:
 
 Additional params
 
-| Key      | Default | Description                                 |
-| -------- | ------- | ------------------------------------------- |
-| title    | None    | The title for notification message.         |
-| copy     | None    | The copy text for text notification.        |
-| autocopy | `0`     | Enable autocopy text for text notification. |
-| sound    | `0`     | `1` enable sound, otherwise disable sound.  |
-| priority | `10`    | `10` normal, `5` lower level.               |
-| actions  | None    | Actions list.                               |
-| timeline | None    | Timeline object.                            |
+| Key                | Default  | Description                                      |
+| ------------------ | -------- | ------------------------------------------------ |
+| title              | None     | The title for notification message.              |
+| copy               | None     | The copy text for text notification.             |
+| autocopy           | `0`      | Enable autocopy text for text notification.      |
+| sound              | `0`      | `1` enable sound, otherwise disable sound.       |
+| priority           | `10`     | `10` normal, `5` lower level.                    |
+| interruption-level | `active` | Interruption level for timing of a notification. |
+| actions            | None     | Actions list.                                    |
+| timeline           | None     | Timeline object.                                 |
+
+`interruption-level`:
+  - `active`: Lights up screen and may play a sound.
+  - `passive`: Does not light up screen or play sound.
+  - `time-sensitive`: Lights up screen and may play a sound; May be presented during Do Not Disturb.
 
 `timestamp` in milliseconds (timezone - UTC)
 
@@ -434,6 +441,7 @@ client: # configuration for sender client
     sound: 1    # enable sound
     endpoint: <default node server endpoint>
     token: <default token>
+    interruption-level: <interruption level>
 ```
 
 ## Security

@@ -289,15 +289,19 @@ func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 }
 
 // SendAPNS send message to APNS
-func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, priority int, isTimeline bool) (string, int) {
+func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, priority int, interruptionLevel string, isTimeline bool) (string, int) {
 	uuid := uuid.New().String()
+	notificationPayload := payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
+		Custom("uid", uid).
+		Custom("src", l.NodeID).
+		Custom("msg", crypto.Base64Encode.EncodeToString(data))
+	if len(interruptionLevel) > 0 {
+		notificationPayload = notificationPayload.InterruptionLevel(payload.EInterruptionLevel(interruptionLevel))
+	}
 	notification := &apns2.Notification{
 		ApnsID:     uuid,
 		Expiration: time.Now().Add(24 * time.Hour),
-		Payload: payload.NewPayload().MutableContent().AlertLocKey("NewMsg").
-			Custom("uid", uid).
-			Custom("src", l.NodeID).
-			Custom("msg", crypto.Base64Encode.EncodeToString(data)),
+		Payload:    notificationPayload,
 	}
 	if priority == 5 { // only 10 or 5
 		notification.Priority = priority

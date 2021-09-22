@@ -29,7 +29,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "too large text content"})
 		return
 	}
-	c.sendMsg(ctx, token, msg.SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority"))))
+	c.sendMsg(ctx, token, msg.SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority"))).SetInterruptionLevel(ctx.Query("interruption-level")))
 }
 
 func (c *Core) handlePostSender(ctx *gin.Context) {
@@ -42,6 +42,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	params.CopyText = ctx.Query("copy")
 	params.Filename = fileBaseName(ctx.Query("filename"))
 	params.Priority = parsePriority(ctx.Query("priority"))
+	params.InterruptionLevel = ctx.Query("interruption-level")
 	params.TimeContent.Code = ctx.Query("timeline-code")
 
 	var err error
@@ -88,7 +89,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			}
 		}
 	}
-	c.sendMsg(ctx, params.Token, msg.SoundName(params.Sound).SetPriority(params.Priority))
+	c.sendMsg(ctx, params.Token, msg.SoundName(params.Sound).SetPriority(params.Priority).SetInterruptionLevel(params.InterruptionLevel))
 }
 
 func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
@@ -108,7 +109,7 @@ func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Messa
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "message body too large"})
 		return
 	}
-	uuid, n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority), msg.IsTimeline())
+	uuid, n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority), "passive", msg.IsTimeline())
 	if n <= 0 {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices send success"})
 		return

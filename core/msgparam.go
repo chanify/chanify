@@ -20,17 +20,18 @@ type TimeContent struct {
 
 // MsgParam parse message parameters
 type MsgParam struct {
-	Token       *model.Token
-	Text        string
-	Link        string
-	Title       string
-	Sound       string
-	AutoCopy    string
-	CopyText    string
-	Filename    string
-	Priority    int
-	Actions     []string
-	TimeContent TimeContent
+	Token             *model.Token
+	Text              string
+	Link              string
+	Title             string
+	Sound             string
+	AutoCopy          string
+	CopyText          string
+	Filename          string
+	Priority          int
+	InterruptionLevel string
+	Actions           []string
+	TimeContent       TimeContent
 }
 
 // ParsePlainText process text/plain
@@ -45,16 +46,17 @@ func (m *MsgParam) ParsePlainText(ctx *gin.Context) {
 func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 	defer ctx.Request.Body.Close()
 	var params struct {
-		Token    string     `json:"token,omitempty"`
-		Title    string     `json:"title,omitempty"`
-		Text     string     `json:"text,omitempty"`
-		Copy     string     `json:"copy,omitempty"`
-		AutoCopy JSONString `json:"autocopy,omitempty"`
-		Link     string     `json:"link,omitempty"`
-		Sound    JSONString `json:"sound,omitempty"`
-		Priority int        `json:"priority,omitempty"`
-		Actions  []string   `json:"actions,omitempty"`
-		Timeline struct {
+		Token             string     `json:"token,omitempty"`
+		Title             string     `json:"title,omitempty"`
+		Text              string     `json:"text,omitempty"`
+		Copy              string     `json:"copy,omitempty"`
+		AutoCopy          JSONString `json:"autocopy,omitempty"`
+		Link              string     `json:"link,omitempty"`
+		Sound             JSONString `json:"sound,omitempty"`
+		Priority          int        `json:"priority,omitempty"`
+		InterruptionLevel string     `json:"interruption-level,omitempty"`
+		Actions           []string   `json:"actions,omitempty"`
+		Timeline          struct {
 			Code     string                 `json:"code"`
 			Timstamp interface{}            `json:"timestamp,omitempty"`
 			Items    map[string]interface{} `json:"items"`
@@ -78,6 +80,9 @@ func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 		}
 		if m.Priority <= 0 {
 			m.Priority = params.Priority
+		}
+		if len(m.InterruptionLevel) <= 0 {
+			m.InterruptionLevel = params.InterruptionLevel
 		}
 		if len(m.TimeContent.Code) <= 0 {
 			m.TimeContent.Code = params.Timeline.Code
@@ -112,6 +117,9 @@ func (m *MsgParam) ParseForm(c *Core, ctx *gin.Context) {
 	if m.Priority <= 0 {
 		m.Priority = parsePriority(ctx.PostForm("priority"))
 	}
+	if len(m.InterruptionLevel) <= 0 {
+		m.InterruptionLevel = ctx.PostForm("interruption-level")
+	}
 	if len(m.TimeContent.Code) <= 0 {
 		m.TimeContent.Code = ctx.PostForm("timeline-code")
 		m.TimeContent.Timestamp = parseTimestamp(ctx.PostForm("timeline-timestamp"))
@@ -141,6 +149,7 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 		m.Sound = tryFormValue(form, "sound", m.Sound)
 		m.Actions = tryFormValues(form, "action", m.Actions)
 		m.parsePriorityFromForm(form)
+		m.InterruptionLevel = tryFormValue(form, "interruption-level", m.InterruptionLevel)
 		m.TimeContent.Code = tryFormValue(form, "timeline-code", m.TimeContent.Code)
 		if len(m.TimeContent.Code) > 0 {
 			m.TimeContent.Timestamp = tryFormTimestamp(form, "timeline-timestamp", m.TimeContent.Timestamp)

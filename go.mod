@@ -62,4 +62,4 @@ require (
 	modernc.org/token v1.0.0 // indirect
 )
 
-replace github.com/sideshow/apns2 => github.com/wizjin/apns2 v0.20.1
+replace github.com/sideshow/apns2 => github.com/wizjin/apns2 v0.20.2

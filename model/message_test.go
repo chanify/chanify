@@ -8,6 +8,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func TestInterruptionLevel(t *testing.T) {
+	tk, _ := ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg")
+	m := NewMessage(tk)
+	m.SetInterruptionLevel("passive")
+	if m.InterruptionLevel != pb.InterruptionLevel_IlPassive {
+		t.Error("Interruption level passive failed!")
+	}
+	m.SetInterruptionLevel("active")
+	if m.InterruptionLevel != pb.InterruptionLevel_IlActive {
+		t.Error("Interruption level active failed!")
+	}
+	m.SetInterruptionLevel("time-sensitive")
+	if m.InterruptionLevel != pb.InterruptionLevel_IlTimeSensitive {
+		t.Error("Interruption level time sensitive failed!")
+	}
+}
+
 func TestImageContent(t *testing.T) {
 	tk, _ := ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRzIUx5tXg-Vym58og7aZw05IkoDvse8..c2lnbg")
 	m := NewMessage(tk)

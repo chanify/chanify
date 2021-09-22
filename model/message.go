@@ -20,6 +20,7 @@ type MsgTimeItem struct {
 type Message struct {
 	pb.Message
 	isTimeline bool
+	ilValue    string
 }
 
 // NewMessage with sender token
@@ -211,6 +212,21 @@ func (m *Message) SoundName(sound string) *Message {
 func (m *Message) SetPriority(priority int) *Message {
 	if priority > 0 && priority < 0x7fffffff {
 		m.Priority = int32(priority)
+	}
+	return m
+}
+
+func (m *Message) SetInterruptionLevel(interruptionLevel string) *Message {
+	m.ilValue = interruptionLevel
+	if len(interruptionLevel) > 0 {
+		switch interruptionLevel {
+		case "active":
+			m.InterruptionLevel = pb.InterruptionLevel_IlActive
+		case "passive":
+			m.InterruptionLevel = pb.InterruptionLevel_IlPassive
+		case "time-sensitive":
+			m.InterruptionLevel = pb.InterruptionLevel_IlTimeSensitive
+		}
 	}
 	return m
 }

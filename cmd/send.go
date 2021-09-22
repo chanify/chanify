@@ -42,13 +42,15 @@ func init() {
 	sendCmd.Flags().String("autocopy", "", "Auto copy text for text message.")
 	sendCmd.Flags().StringArray("action", []string{}, "Action item for action message.")
 	sendCmd.Flags().Int("priority", 0, "Message priority.")
+	sendCmd.Flags().String("interruption-level", "", "Interruption level for message.")
 	sendCmd.Flags().String("timeline.code", "", "Code for timeline message.")
 	sendCmd.Flags().String("timeline.timestamp", "", "Timestamp for timeline message.")
-	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))       // nolint: errcheck
-	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))       // nolint: errcheck
-	viper.BindPFlag("client.autocopy", sendCmd.Flags().Lookup("autocopy")) // nolint: errcheck
-	viper.BindPFlag("client.priority", sendCmd.Flags().Lookup("priority")) // nolint: errcheck
-	viper.BindPFlag("client.endpoint", sendCmd.Flags().Lookup("endpoint")) // nolint: errcheck
+	viper.BindPFlag("client.token", sendCmd.Flags().Lookup("token"))                           // nolint: errcheck
+	viper.BindPFlag("client.sound", sendCmd.Flags().Lookup("sound"))                           // nolint: errcheck
+	viper.BindPFlag("client.autocopy", sendCmd.Flags().Lookup("autocopy"))                     // nolint: errcheck
+	viper.BindPFlag("client.priority", sendCmd.Flags().Lookup("priority"))                     // nolint: errcheck
+	viper.BindPFlag("client.endpoint", sendCmd.Flags().Lookup("endpoint"))                     // nolint: errcheck
+	viper.BindPFlag("client.interruption-level", sendCmd.Flags().Lookup("interruption-level")) // nolint: errcheck
 }
 
 func runSendCmd(cmd *cobra.Command, args []string) error {
@@ -56,6 +58,7 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 	sound := viper.GetString("client.sound")
 	priority := viper.GetInt("client.priority")
+	interruptionLevel := viper.GetString("client.interruption-level")
 	token := viper.GetString("client.token")
 	if len(token) <= 0 {
 		return errors.New("send token not found")
@@ -75,6 +78,7 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	setFieldValue(w, "token", []byte(token))
 	setFieldValue(w, "sound", []byte(sound))
 	setFieldValueInt(w, "priority", priority)
+	setFieldValue(w, "interruption-level", []byte(interruptionLevel))
 	w.Close()
 	return sendMessage(&data, w.FormDataContentType())
 }

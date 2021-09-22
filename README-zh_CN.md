@@ -328,15 +328,21 @@ Content-Type:
 
 支持以下参数：
 
-| 参数名    | 默认值 | 描述                              |
-| -------- | ----- | -------------------------------- |
-| title    | 无    | 通知消息的标题                      |
-| copy     | 无    | 可选的复制文本（仅文本消息有效）       |
-| autocopy | `0`   | 是否自动复制文本（仅文本消息有效）     |
-| sound    | `0`   | `1` 启用声音提示, 其他情况会静音推送  |
-| priority | `10`  | `10` 正常优先级, `5` 较低优先级     |
-| actions  | 无    | 动作列表                           |
-| timeline | 无    | Timeline 对象                     |
+| 参数名              | 默认值    | 描述                              |
+| ------------------ | -------- | -------------------------------- |
+| title              | 无       | 通知消息的标题                      |
+| copy               | 无       | 可选的复制文本（仅文本消息有效）       |
+| autocopy           | `0`      | 是否自动复制文本（仅文本消息有效）     |
+| sound              | `0`      | `1` 启用声音提示, 其他情况会静音推送  |
+| priority           | `10`     | `10` 正常优先级, `5` 较低优先级     |
+| interruption-level | `active` | 通知时间的中断级别                  |
+| actions            | 无       | 动作列表                           |
+| timeline           | 无       | Timeline 对象                     |
+
+`interruption-level`:
+  - `active`: 点亮屏幕并可能播放声音。
+  - `passive`: 不点亮屏幕或播放声音。
+  - `time-sensitive`: 点亮屏幕并可能播放声音； 可能会在“请勿打扰”期间展示。
 
 `timestamp` 单位为毫秒 (时区 - UTC)
 
@@ -435,6 +441,7 @@ client: # 作为客户端发送消息时使用
     sound: 1    # 是否有提示音
     endpoint: <default node server endpoint>
     token: <default token>
+    interruption-level: <interruption level>
 ```
 
 ## 安全
