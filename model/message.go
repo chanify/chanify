@@ -216,6 +216,7 @@ func (m *Message) SetPriority(priority int) *Message {
 	return m
 }
 
+// SetInterruptionLevel set time sensitive notification
 func (m *Message) SetInterruptionLevel(interruptionLevel string) *Message {
 	m.ilValue = interruptionLevel
 	if len(interruptionLevel) > 0 {
