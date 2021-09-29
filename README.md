@@ -91,7 +91,7 @@ Chanify is include these features:
 
 ## Getting Started
 
-1. Install [iOS App](https://itunes.apple.com/us/app/id1531546573)(1.0.0 version and above).
+1. Install [iOS App](https://itunes.apple.com/us/app/id1531546573)(1.0.0 version and above) or [macOS App](https://apps.apple.com/us/app/id1531546573)(1.3.0 version and above).
 2. Get send token, [more detail](https://github.com/chanify/chanify-ios).
 3. Send message.
 

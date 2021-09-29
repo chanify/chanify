@@ -91,7 +91,7 @@ Chanify 包括这些功能：
 
 ## 入门
 
-1. 从 AppStore 安装[iOS 应用](https://itunes.apple.com/cn/app/id1531546573)（1.0.0 或以上版本）。
+1. 从 AppStore 安装 [iOS 应用](https://itunes.apple.com/cn/app/id1531546573)（1.0.0 或以上版本）或 [macOS 应用](https://apps.apple.com/us/app/id1531546573) (1.3.0 或以上版本)。
 2. 获取发送使用的令牌`token`，[更多细节](https://github.com/chanify/chanify-ios)。
 3. 使用 API 来发送消息。
 
