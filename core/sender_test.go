@@ -413,6 +413,25 @@ func TestSendDirectWatch(t *testing.T) {
 	}
 }
 
+func TestSendDirectMacOS(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", Registerable: true})                              // nolint: errcheck
+	tk, _ := model.ParseToken("EiJBQk9PNlRTSVhLU0VWSUpLWExEUVNVWFFSWFVBT1hHR1lZIgRjaGFuKgVNRlJHRw..c2lnbg") // nolint: errcheck
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("GET", "", nil)
+	c.logic.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false)                                         // nolint: errcheck                                  // nolint: errcheck
+	c.logic.BindDevice("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "BDuFNLkmxyK0-NN3H3oKzzOtISq1w17-JAibD7X4pljYl6IEaEglWkKD5Iw537h-DYxAooXkHtu6un078sm7IiQ", 3) // nolint: errcheck
+	c.logic.UpdatePushToken("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "B3BC1B875EDA13986801B1004B4ABF5760C197F4", "aGVsbG8", false)                                                                        // nolint: errcheck                                            // nolint: errcheck
+	c.logic.GetDevices("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY")                                                                                                                                           // nolint: errcheck
+	logic.MockPusher = &MockAPNSPusher{}
+	c.sendDirect(ctx, tk, model.NewMessage(tk).SetPriority(5))
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatal("Send direct failed")
+	}
+}
+
 func TestSendForward(t *testing.T) {
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
