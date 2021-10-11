@@ -431,6 +431,9 @@ server:
     secret: <secret code> # key for serverless node server
     datapath: <data path> # data storage path for serverful node server
     dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # database dsn for serverful node server
+    http:
+        - readtimeout: 10s  # 10 seconds for http read timeout
+        - writetimeout: 10s # 10 seconds for http write timeout
     register:
         enable: false # Disable user register
         whitelist: # whitelist for user register

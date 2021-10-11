@@ -431,6 +431,9 @@ server:
     secret: <secret code> # 无状态服务器使用的密钥
     datapath: <data path> # 有状态服务器使用的数据存储路径
     dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
+    http:
+        - readtimeout: 10s  # Http 读取超时时间设置为 10 秒
+        - writetimeout: 10s # Http 写回超时时间设置为 10 秒
     register:
         enable: false # 关闭注册
         whitelist: # 白名单

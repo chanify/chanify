@@ -29,8 +29,8 @@ func init() {
 		Run: func(cmd *cobra.Command, args []string) {
 			srv := &http.Server{
 				Addr:           fmt.Sprintf("%s:%d", viper.GetString("server.host"), viper.GetInt("server.port")),
-				ReadTimeout:    10 * time.Second,
-				WriteTimeout:   10 * time.Second,
+				ReadTimeout:    parseDuration(viper.GetString("server.http.readtimeout")),
+				WriteTimeout:   parseDuration(viper.GetString("server.http.writetimeout")),
 				MaxHeaderBytes: 1 << 20,
 			}
 			log.Println("Launching service...")
@@ -84,17 +84,21 @@ func init() {
 	serveCmd.Flags().String("filepath", "", "Store file path")
 	serveCmd.Flags().String("dburl", "", "Databse dsn uri")
 	serveCmd.Flags().String("secret", "", "Secret key for serverless mode")
+	serveCmd.Flags().String("readtimeout", "10s", "Http restful service read timeout.")
+	serveCmd.Flags().String("writetimeout", "10s", "Http restful service read timeout.")
 	serveCmd.Flags().Bool("registerable", true, "Enable register user")
 	serveCmd.Flags().String("whitelist", "", "Whitelist for register users")
-	viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))                    // nolint: errcheck
-	viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port"))                    // nolint: errcheck
-	viper.BindPFlag("server.endpoint", serveCmd.Flags().Lookup("endpoint"))            // nolint: errcheck
-	viper.BindPFlag("server.name", serveCmd.Flags().Lookup("name"))                    // nolint: errcheck
-	viper.BindPFlag("server.datapath", serveCmd.Flags().Lookup("datapath"))            // nolint: errcheck
-	viper.BindPFlag("server.filepath", serveCmd.Flags().Lookup("filepath"))            // nolint: errcheck
-	viper.BindPFlag("server.dburl", serveCmd.Flags().Lookup("dburl"))                  // nolint: errcheck
-	viper.BindPFlag("server.secret", serveCmd.Flags().Lookup("secret"))                // nolint: errcheck
-	viper.BindPFlag("server.register.enable", serveCmd.Flags().Lookup("registerable")) // nolint: errcheck
+	viper.BindPFlag("server.host", serveCmd.Flags().Lookup("host"))                      // nolint: errcheck
+	viper.BindPFlag("server.port", serveCmd.Flags().Lookup("port"))                      // nolint: errcheck
+	viper.BindPFlag("server.endpoint", serveCmd.Flags().Lookup("endpoint"))              // nolint: errcheck
+	viper.BindPFlag("server.name", serveCmd.Flags().Lookup("name"))                      // nolint: errcheck
+	viper.BindPFlag("server.datapath", serveCmd.Flags().Lookup("datapath"))              // nolint: errcheck
+	viper.BindPFlag("server.filepath", serveCmd.Flags().Lookup("filepath"))              // nolint: errcheck
+	viper.BindPFlag("server.dburl", serveCmd.Flags().Lookup("dburl"))                    // nolint: errcheck
+	viper.BindPFlag("server.secret", serveCmd.Flags().Lookup("secret"))                  // nolint: errcheck
+	viper.BindPFlag("server.http.readtimeout", serveCmd.Flags().Lookup("readtimeout"))   // nolint: errcheck
+	viper.BindPFlag("server.http.writetimeout", serveCmd.Flags().Lookup("writetimeout")) // nolint: errcheck
+	viper.BindPFlag("server.register.enable", serveCmd.Flags().Lookup("registerable"))   // nolint: errcheck
 }
 
 func getName() string {
@@ -148,4 +152,12 @@ func getUserWhitlist(cmd *cobra.Command) (bool, []string) {
 		users = strings.Split(wl, ",")
 	}
 	return false, append(users, viper.GetStringSlice("server.register.whitelist")...)
+}
+
+func parseDuration(dur string) time.Duration {
+	d, err := time.ParseDuration(dur)
+	if err != nil {
+		return 10 * time.Second
+	}
+	return d
 }
