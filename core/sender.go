@@ -48,10 +48,15 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	var err error
 	var msg *model.Message = nil
 	var parser func(c *Core, ctx *gin.Context) (*model.Message, error) = nil
-	switch ctx.ContentType() {
-	case "text/plain":
+
+	ctype := ctx.Query("content-type")
+	if len(ctype) <= 0 {
+		ctype = ctx.ContentType()
+	}
+	switch ctype {
+	case "text/plain", "text":
 		params.ParsePlainText(ctx)
-	case "application/json":
+	case "application/json", "json":
 		params.ParseJSON(c, ctx)
 	case "multipart/form-data":
 		parser = params.ParseFormData

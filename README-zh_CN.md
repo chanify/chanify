@@ -352,6 +352,12 @@ Content-Type:
 http://<address>:<port>/v1/sender/<token>?sound=1&priority=10&title=hello&copy=123&autocopy=1
 ```
 
+覆盖 `Content-Type`
+
+```url
+http://<address>:<port>/v1/sender/<token>?content-type=<text|json>
+```
+
 ### 发送链接
 
 ```bash
