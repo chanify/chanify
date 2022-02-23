@@ -47,13 +47,13 @@ func (c *Core) handleBindUser(ctx *gin.Context) {
 		return
 	}
 	if serverless {
-		log.Println("Bind user:", params.User.UID)
+		log.Println("Bind user:", fixLog(params.User.UID))
 	} else {
 		if err := c.logic.BindDevice(params.User.UID, params.Device.UUID, params.Device.Key, params.Device.Type); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "bind user device failed"})
 			return
 		}
-		log.Println("Bind user:", params.User.UID, "device:", params.Device.UUID)
+		log.Println("Bind user:", fixLog(params.User.UID), "device:", fixLog(params.Device.UUID))
 		if len(params.Device.PushToken) > 0 {
 			c.logic.UpdatePushToken(params.User.UID, params.Device.UUID, params.Device.PushToken, params.Device.Sandbox) // nolint:errcheck
 		}

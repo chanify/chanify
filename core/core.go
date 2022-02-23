@@ -105,11 +105,11 @@ func loggerMiddleware(c *gin.Context) {
 	}
 	log.Printf("%3d | %15s | %s %s %10v \"%s\"%s\n",
 		c.Writer.Status(),
-		fixClientIP(c),
+		fixLog(fixClientIP(c)),
 		c.Request.Method,
-		path,
+		fixLog(path),
 		latency,
-		c.Request.UserAgent(),
+		fixLog(c.Request.UserAgent()),
 		c.Errors.ByType(gin.ErrorTypePrivate).String(),
 	)
 }

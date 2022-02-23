@@ -1,4 +1,5 @@
-//+build !test
+//go:build !test
+// +build !test
 
 //go:generate protoc --proto_path=./pb --go_out=./pb ./pb/pb.proto
 
