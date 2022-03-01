@@ -62,6 +62,7 @@ func (c *Core) APIHandler() http.Handler {
 	s := r.Group("/v1")
 	s.GET("/sender/:token/:msg", c.handleSender)
 	s.GET("/sender/:token/", c.handleSender)
+	s.GET("/sender/:token", c.handleSender)
 	s.POST("/sender/*token", c.handlePostSender)
 	s.POST("/sender", c.handlePostSender)
 

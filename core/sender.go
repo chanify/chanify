@@ -20,8 +20,11 @@ func (c *Core) handleSender(ctx *gin.Context) {
 	}
 	text := ctx.Param("msg")
 	if len(text) <= 0 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
-		return
+		text = ctx.Query("text")
+		if len(text) <= 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusNoContent, "msg": "no message content"})
+			return
+		}
 	}
 	msg := model.NewMessage(token)
 	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"), ctx.QueryArray("action"))
@@ -31,7 +34,6 @@ func (c *Core) handleSender(ctx *gin.Context) {
 	}
 	c.sendMsg(ctx, token, msg.SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority"))).SetInterruptionLevel(ctx.Query("interruption-level")))
 }
-
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	params := &MsgParam{}
 	params.Token, _ = c.getToken(ctx)
