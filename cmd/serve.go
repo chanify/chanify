@@ -43,13 +43,14 @@ func init() {
 				defer c.Close()
 				endpoint := getEndpoint()
 				opts := &logic.Options{
-					Name:     getName(),
-					Version:  Version,
-					Endpoint: endpoint,
-					DataPath: getDataPath(),
-					FilePath: viper.GetString("server.filepath"),
-					DBUrl:    viper.GetString("server.dburl"),
-					Secret:   viper.GetString("server.secret"),
+					Name:       getName(),
+					Version:    Version,
+					Endpoint:   endpoint,
+					DataPath:   getExpandPath("server.datapath"),
+					FilePath:   getExpandPath("server.filepath"),
+					PluginPath: getExpandPath("server.pluginpath"),
+					DBUrl:      viper.GetString("server.dburl"),
+					Secret:     viper.GetString("server.secret"),
 				}
 				opts.Registerable, opts.RegUsers = getUserWhitlist(cmd)
 				if err := c.Init(opts); err != nil {
@@ -82,6 +83,7 @@ func init() {
 	serveCmd.Flags().String("name", "", "Http service name")
 	serveCmd.Flags().String("datapath", "~/.chanify", "Data file path")
 	serveCmd.Flags().String("filepath", "", "Store file path")
+	serveCmd.Flags().String("pluginpath", "", "Plugin file path")
 	serveCmd.Flags().String("dburl", "", "Databse dsn uri")
 	serveCmd.Flags().String("secret", "", "Secret key for serverless mode")
 	serveCmd.Flags().String("readtimeout", "10s", "Http restful service read timeout.")
@@ -94,6 +96,7 @@ func init() {
 	viper.BindPFlag("server.name", serveCmd.Flags().Lookup("name"))                      // nolint: errcheck
 	viper.BindPFlag("server.datapath", serveCmd.Flags().Lookup("datapath"))              // nolint: errcheck
 	viper.BindPFlag("server.filepath", serveCmd.Flags().Lookup("filepath"))              // nolint: errcheck
+	viper.BindPFlag("server.pluginpath", serveCmd.Flags().Lookup("pluginpath"))          // nolint: errcheck
 	viper.BindPFlag("server.dburl", serveCmd.Flags().Lookup("dburl"))                    // nolint: errcheck
 	viper.BindPFlag("server.secret", serveCmd.Flags().Lookup("secret"))                  // nolint: errcheck
 	viper.BindPFlag("server.http.readtimeout", serveCmd.Flags().Lookup("readtimeout"))   // nolint: errcheck
@@ -112,8 +115,8 @@ func getName() string {
 	return name
 }
 
-func getDataPath() string {
-	path := viper.GetString("server.datapath")
+func getExpandPath(key string) string {
+	path := viper.GetString(key)
 	if len(path) > 0 {
 		if p, err := homedir.Expand(path); err == nil {
 			path = p

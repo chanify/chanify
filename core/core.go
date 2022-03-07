@@ -65,6 +65,8 @@ func (c *Core) APIHandler() http.Handler {
 	s.GET("/sender/:token", c.handleSender)
 	s.POST("/sender/*token", c.handlePostSender)
 	s.POST("/sender", c.handlePostSender)
+	s.POST("/webhook/:name/:token", c.handlePostWebhook)
+	s.POST("/webhook/:name", c.handlePostWebhook)
 
 	api := r.Group("/rest/v1")
 	api.GET("/info", c.handleInfo)
