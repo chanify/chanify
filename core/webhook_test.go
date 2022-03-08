@@ -24,8 +24,8 @@ func TestWebHook(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 	defer fs.Close()
-	fs.WriteString("return 201") // nolint: errcheck
-	fs.Sync()                    // nolint: errcheck
+	fs.WriteString("ctx:token();ctx:body();ctx:header(\"\");return 201") // nolint: errcheck
+	fs.Sync()                                                            // nolint: errcheck
 
 	c := New()
 	defer c.Close()
@@ -79,49 +79,77 @@ func TestWebHookNotFound(t *testing.T) {
 }
 
 func TestGetHttpLuaNoReturn(t *testing.T) {
-	L := lua.NewState()
-	defer L.Close()
-	if err := L.DoString(``); err != nil {
+	l := lua.NewState()
+	defer l.Close()
+	if err := l.DoString(``); err != nil {
 		t.Fatal(err)
 	}
-	c, ct, d := getHttpLuaReturn(L)
+	c, ct, d := getHttpLuaReturn(l)
 	if c != 200 || ct != "text/plain; charset=utf-8" || len(d) != 0 {
 		t.Error("Return value 1 failed:", c, ct, d)
 	}
 }
 
 func TestGetHttpLuaReturn1(t *testing.T) {
-	L := lua.NewState()
-	defer L.Close()
-	if err := L.DoString(`return 401`); err != nil {
+	l := lua.NewState()
+	defer l.Close()
+	if err := l.DoString(`return 401`); err != nil {
 		t.Fatal(err)
 	}
-	c, ct, d := getHttpLuaReturn(L)
+	c, ct, d := getHttpLuaReturn(l)
 	if c != 401 || ct != "text/plain; charset=utf-8" || len(d) != 0 {
 		t.Error("Return value 1 failed:", c, ct, d)
 	}
 }
 
 func TestGetHttpLuaReturn2(t *testing.T) {
-	L := lua.NewState()
-	defer L.Close()
-	if err := L.DoString(`return 201, "abc"`); err != nil {
+	l := lua.NewState()
+	defer l.Close()
+	if err := l.DoString(`return 201, "abc"`); err != nil {
 		t.Fatal(err)
 	}
-	c, ct, d := getHttpLuaReturn(L)
+	c, ct, d := getHttpLuaReturn(l)
 	if c != 201 || ct != "text/plain; charset=utf-8" || d != "abc" {
 		t.Error("Return value 2 failed:", c, ct, d)
 	}
 }
 
 func TestGetHttpLuaReturn3(t *testing.T) {
-	L := lua.NewState()
-	defer L.Close()
-	if err := L.DoString(`return 201, "application/json; charset=utf-8", "{}"`); err != nil {
+	l := lua.NewState()
+	defer l.Close()
+	if err := l.DoString(`return 201, "application/json; charset=utf-8", "{}"`); err != nil {
 		t.Fatal(err)
 	}
-	c, ct, d := getHttpLuaReturn(L)
+	c, ct, d := getHttpLuaReturn(l)
 	if c != 201 || ct != "application/json; charset=utf-8" || d != "{}" {
 		t.Error("Return value 2 failed:", c, ct, d)
+	}
+}
+
+func TestLuaCheckContext(t *testing.T) {
+	l := lua.NewState()
+	defer l.Close()
+
+	mt := l.NewTypeMetatable("Context")
+	l.SetField(mt, "__index", l.SetFuncs(l.NewTable(), luaContextMethods))
+
+	lc := l.NewUserData()
+	lc.Value = nil
+	lc.Metatable = mt
+	l.SetGlobal("ctx", lc)
+	if err := l.DoString(`ctx:token()`); err == nil {
+		t.Error("Check context failed")
+	}
+}
+
+func TestLuaCheckHttpBody(t *testing.T) {
+	l := lua.NewState()
+	defer l.Close()
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Set(gin.BodyBytesKey, []byte("{}"))
+	initHttpLua(l, ctx)
+	if err := l.DoString(`ctx:body()`); err != nil {
+		t.Fatal(err)
 	}
 }

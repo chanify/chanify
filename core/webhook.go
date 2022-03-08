@@ -111,9 +111,6 @@ func luaContextGetBody(l *lua.LState) int {
 
 func luaContextGetHeader(l *lua.LState) int {
 	ctx := luaCheckContext(l)
-	if l.GetTop() != 2 {
-		l.Push(lua.LString(""))
-	}
 	l.Push(lua.LString(ctx.GetHeader(l.CheckString(2))))
 	return 1
 }
