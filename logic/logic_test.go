@@ -2,6 +2,8 @@ package logic
 
 import (
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/chanify/chanify/crypto"
@@ -38,6 +40,7 @@ func TestLogicFailed(t *testing.T) {
 
 func TestUser(t *testing.T) {
 	l, _ := NewLogic(&Options{Secret: "123"})
+	defer l.Close()
 	if _, err := l.GetUserKey("GEZDG"); err != nil {
 		t.Fatal("Get user key failed")
 	}
@@ -48,6 +51,7 @@ func TestUser(t *testing.T) {
 
 func TestSaveImageFileFailed(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
+	defer l.Close()
 	l.filepath = " "
 	if _, err := l.SaveFile("images", nil); err != ErrInvalidContent {
 		t.Fatal("Check image data failed")
@@ -59,6 +63,7 @@ func TestSaveImageFileFailed(t *testing.T) {
 
 func TestGetAPNS(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
+	defer l.Close()
 	MockPusher = nil
 	if l.getAPNS(false) != l.apnsPClient {
 		t.Error("Get product apns failed")
@@ -78,6 +83,7 @@ func TestFixDataPath(t *testing.T) {
 
 func TestFixSecretKey(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "nosql://?secret=123456"})
+	defer l.Close()
 	if err := l.fixSecretKey(); err != nil {
 		t.Fatal("Fix secret key failed:", err)
 	}
@@ -89,6 +95,7 @@ func TestFixSecretKey(t *testing.T) {
 
 func TestUpsertUserFailed(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "nosql://?secret=123456", Registerable: true})
+	defer l.Close()
 	if _, err := l.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false); err == nil {
 		t.Fatal("Check upsert user serverful failed")
 	}
@@ -106,14 +113,16 @@ func TestUpsertUserFailed(t *testing.T) {
 	randReader = func(b []byte) (n int, err error) {
 		return 0, io.EOF
 	}
-	l, _ = NewLogic(&Options{DBUrl: "sqlite://?mode=memory", Registerable: true})
-	if _, err := l.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false); err == nil {
+	l2, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory", Registerable: true})
+	defer l2.Close()
+	if _, err := l2.UpsertUser("ABOO6TSIXKSEVIJKXLDQSUXQRXUAOXGGYY", "BGaP1ekObDB0bRkmvxkvfFXCLSk46mO7rW8PikP8sWsA_97yij0s0U7ioA9dWEoz41TrUP8Z88XzQ_Tl8AOoJF4", false); err == nil {
 		t.Fatal("Check upsert user serverless failed")
 	}
 }
 
 func TestVerifyToken(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
+	defer l.Close()
 	tk, _ := model.ParseToken("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
 	if l.VerifyToken(tk) {
 		t.Fatal("Check invalid user token failed")
@@ -122,11 +131,47 @@ func TestVerifyToken(t *testing.T) {
 
 func TestLoadFile(t *testing.T) {
 	l, _ := NewLogic(&Options{DBUrl: "sqlite://?mode=memory"})
+	defer l.Close()
 	l.filepath = "."
 	if _, err := l.LoadFile("test", "../."); err != ErrNotFound {
 		t.Error("Check load empty file failed")
 	}
 	if _, err := l.LoadFile("test", "1234"); err == nil {
 		t.Error("Check open empty file failed")
+	}
+}
+
+func TestLoadPluginEmpty(t *testing.T) {
+	l, err := NewLogic(&Options{DBUrl: "sqlite://?mode=memory", PluginPath: os.TempDir() + "/not_exist"})
+	if err != nil {
+		t.Fatal("Check load plugin failed:", err)
+	}
+	defer l.Close()
+	if _, err := l.GetWebhook("github"); err != ErrNotFound {
+		t.Fatal("Check load webhook plugin failed:", err)
+	}
+}
+
+func TestLoadPluginFailed(t *testing.T) {
+	dir := filepath.Join(os.TempDir(), "plugin")
+	whdir := filepath.Join(dir, "webhook")
+	os.MkdirAll(whdir, os.ModePerm) // nolint: errcheck
+	fpath := filepath.Join(whdir, "github.lua")
+	fs, err := os.Create(fpath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+	defer fs.Close()
+	fs.WriteString("func abc()") // nolint: errcheck
+	fs.Sync()                    // nolint: errcheck
+
+	l, err := NewLogic(&Options{DBUrl: "sqlite://?mode=memory", PluginPath: dir})
+	if err != nil {
+		t.Fatal("Check load plugin failed:", err)
+	}
+	defer l.Close()
+	if _, err := l.GetWebhook("github"); err != ErrNotFound {
+		t.Fatal("Check load webhook plugin failed:", err)
 	}
 }

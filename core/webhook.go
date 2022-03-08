@@ -23,5 +23,35 @@ func (c *Core) handlePostWebhook(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{})
+	code, ctype, data := getHttpLuaReturn(l)
+	ctx.DataFromReader(code, int64(len(data)), ctype, strings.NewReader(data), map[string]string{})
+}
+
+func getHttpLuaReturn(l *lua.LState) (int, string, string) {
+	code := http.StatusOK
+	ctype := "text/plain; charset=utf-8"
+	value := ""
+	lv := l.Get(-1)
+	if lv != lua.LNil {
+		if val, ok := lv.(lua.LNumber); ok {
+			code = int(val)
+		} else {
+			value = lv.String()
+			lv = l.Get(-2)
+			if lv != lua.LNil {
+				if val, ok := lv.(lua.LNumber); ok {
+					code = int(val)
+				} else {
+					ctype = lv.String()
+					lv = l.Get(-3)
+					if lv != lua.LNil {
+						if val, ok := lv.(lua.LNumber); ok {
+							code = int(val)
+						}
+					}
+				}
+			}
+		}
+	}
+	return code, ctype, value
 }
