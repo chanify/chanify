@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/chanify/chanify/logic"
@@ -57,7 +58,7 @@ func TestWebHookFailed(t *testing.T) {
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory", PluginPath: dir}) // nolint: errcheck
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	ctx.Request, _ = http.NewRequest("POST", "/v1/webhook/github", nil)
+	ctx.Request, _ = http.NewRequest("POST", "/v1/webhook/github", strings.NewReader(`{}`))
 	c.APIHandler().ServeHTTP(w, ctx.Request)
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Fatal("Check do webhook failed")
@@ -70,7 +71,7 @@ func TestWebHookNotFound(t *testing.T) {
 	c.Init(&logic.Options{DBUrl: "sqlite://?mode=memory"}) // nolint: errcheck
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
-	ctx.Request, _ = http.NewRequest("GET", "/v1/webhook/test", nil)
+	ctx.Request, _ = http.NewRequest("POST", "/v1/webhook/test", nil)
 	c.handlePostWebhook(ctx)
 	if w.Result().StatusCode != http.StatusNotFound {
 		t.Fatal("Check webhook failed")

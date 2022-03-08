@@ -64,7 +64,18 @@ func verifySign(key string, sign []byte, data []byte) bool {
 	return pk.Verify(data, sign)
 }
 
-func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {
+func (c *Core) parseToken(token string) (*model.Token, error) {
+	tk, err := model.ParseToken(token)
+	if err != nil {
+		return nil, err
+	}
+	if !c.logic.VerifyToken(tk) {
+		return nil, model.ErrInvalidToken
+	}
+	return tk, nil
+}
+
+func getToken(ctx *gin.Context) string {
 	token := ctx.GetHeader("token")
 	if len(token) <= 0 {
 		token = ctx.Query("token")
@@ -75,18 +86,7 @@ func (c *Core) getToken(ctx *gin.Context) (*model.Token, error) {
 			}
 		}
 	}
-	return c.parseToken(token)
-}
-
-func (c *Core) parseToken(token string) (*model.Token, error) {
-	tk, err := model.ParseToken(token)
-	if err != nil {
-		return nil, err
-	}
-	if !c.logic.VerifyToken(tk) {
-		return nil, model.ErrInvalidToken
-	}
-	return tk, nil
+	return token
 }
 
 func parsePriority(priority string) int {

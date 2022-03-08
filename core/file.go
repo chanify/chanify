@@ -8,17 +8,17 @@ import (
 )
 
 func (c *Core) handleImageDownload(ctx *gin.Context) {
-	token, _ := c.getToken(ctx)
+	token, _ := c.parseToken(getToken(ctx))
 	c.downloadImageFile(ctx, token)
 }
 
 func (c *Core) handleAudioDownload(ctx *gin.Context) {
-	token, _ := c.getToken(ctx)
+	token, _ := c.parseToken(getToken(ctx))
 	c.downloadAudioFile(ctx, token)
 }
 
 func (c *Core) handleFileDownload(ctx *gin.Context) {
-	token, _ := c.getToken(ctx)
+	token, _ := c.parseToken(getToken(ctx))
 	c.downloadFile(ctx, token)
 }
 

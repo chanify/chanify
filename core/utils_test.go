@@ -74,7 +74,7 @@ func TestGetToken(t *testing.T) {
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
 	ctx.Params = []gin.Param{{Key: "token", Value: "/EgMxMjMiBGNoYW4qBU1GUkdH..c2lnbg"}}
-	if _, err := c.getToken(ctx); err != model.ErrInvalidToken {
+	if _, err := c.parseToken(getToken(ctx)); err != model.ErrInvalidToken {
 		t.Fatal("Check get token failed")
 	}
 }

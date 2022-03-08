@@ -13,7 +13,7 @@ import (
 )
 
 func (c *Core) handleSender(ctx *gin.Context) {
-	token, err := c.getToken(ctx)
+	token, err := c.parseToken(getToken(ctx))
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token"})
 		return
@@ -36,7 +36,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 }
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	params := &MsgParam{}
-	params.Token, _ = c.getToken(ctx)
+	params.Token, _ = c.parseToken(getToken(ctx))
 	params.Link = ctx.Query("link")
 	params.Title = ctx.Query("title")
 	params.Sound = ctx.Query("sound")
