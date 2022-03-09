@@ -14,6 +14,10 @@ end
 
 local data = json.decode(req:body())
 
-local ret = ctx:send("Github " .. data["repository"]["full_name"])
+local ret = ctx:send({
+	"title" = "Github",
+	"text" = data["repository"]["full_name"],
+	"sound" = 1
+})
 
 return 200, ret

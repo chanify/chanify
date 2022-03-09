@@ -46,8 +46,18 @@ func TestLuaWatch(t *testing.T) {
 	l := loadWebhookPlugin("", opts)
 	defer l.Close()
 	l.watcher.Errors <- errors.New("123")
-	time.Sleep(time.Millisecond)
+}
+
+func TestLuaWatchFailed(t *testing.T) {
+	defer func() {
+		recover()
+	}()
+	opts := []map[string]interface{}{}
+	l := loadWebhookPlugin("", opts)
+	defer l.Close()
+	time.Sleep(time.Millisecond * 100)
 	close(l.watcher.Errors)
+	time.Sleep(time.Millisecond * 100)
 }
 
 func TestWebHookDoCall(t *testing.T) {

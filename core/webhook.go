@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -116,25 +117,57 @@ func luaContextSend(l *lua.LState) int {
 		return 1
 	}
 	c := cc.(*Core)
-	text := l.CheckString(2)
+	var text string
+	opts := l.NewTable()
+	switch args := l.Get(2).(type) {
+	case lua.LString:
+		text = string(args)
+	case *lua.LTable:
+		opts = args
+		text = opts.RawGetString("text").String()
+	}
 	if len(text) <= 0 {
 		l.Push(lua.LString("error: invalid message"))
 		return 1
 	}
+
 	token, err := c.parseToken(getToken(ctx))
 	if err != nil {
 		l.Push(lua.LString("error: invalid token"))
 		return 1
 	}
 	msg := model.NewMessage(token)
-	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"), ctx.QueryArray("action"))
+	msg, err = c.makeTextContent(msg, text, luaGetOptsString(opts, "title"), luaGetOptsString(opts, "copy"), luaGetOptsString(opts, "autocopy"), luaGetOptsArray(opts, "action"))
 	if err != nil {
 		l.Push(lua.LString("error: too large text content"))
 		return 1
 	}
-	ret := c.sendMsg(ctx, token, msg.SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority"))).SetInterruptionLevel(ctx.Query("interruption-level")))
+	ret := c.sendMsg(ctx, token, msg.SoundName(luaGetOptsString(opts, "sound")).SetPriority(parsePriority(luaGetOptsString(opts, "priority"))).SetInterruptionLevel(luaGetOptsString(opts, "interruption-level")))
 	l.Push(lua.LString(ret))
 	return 1
+}
+
+func luaGetOptsString(opts *lua.LTable, key string) string {
+	val := opts.RawGetString(key)
+	switch v := val.(type) {
+	default:
+		return ""
+	case lua.LString:
+		return string(v)
+	case lua.LBool, lua.LNumber:
+		return fmt.Sprint(v)
+	}
+}
+
+func luaGetOptsArray(opts *lua.LTable, key string) []string {
+	actions := []string{}
+	val := opts.RawGetString(key)
+	if v, ok := val.(*lua.LTable); ok {
+		v.ForEach(func(idx, value lua.LValue) {
+			actions = append(actions, value.String())
+		})
+	}
+	return actions
 }
 
 func luaContextGetToken(l *lua.LState) int {
