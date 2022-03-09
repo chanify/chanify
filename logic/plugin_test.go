@@ -50,7 +50,7 @@ func TestLuaWatch(t *testing.T) {
 
 func TestLuaWatchFailed(t *testing.T) {
 	defer func() {
-		recover()
+		recover() // nolint: errcheck
 	}()
 	opts := []map[string]interface{}{}
 	l := loadWebhookPlugin("", opts)
