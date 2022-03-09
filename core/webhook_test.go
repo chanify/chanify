@@ -174,3 +174,72 @@ func TestLuaCheckHttpBody(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestLuaContextSend(t *testing.T) {
+	c := New()
+	defer c.Close()
+	c.Init(&logic.Options{DBUrl: "nosql://?secret=123"}) // nolint: errcheck
+	_, err := c.parseToken("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")
+	if err != nil {
+		t.Error(err)
+	}
+
+	l := lua.NewState()
+	defer l.Close()
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Request, _ = http.NewRequest("POST", "/v1/webhook/github?token=CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg", nil)
+	ctx.Set(gin.BodyBytesKey, []byte("{}"))
+	ctx.Set(coreKey, c)
+	initHttpLua(l, ctx)
+
+	if err := l.DoString(`ctx:send("")`); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.DoString(`ctx:send("abc")`); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.DoString(`ctx:send({text="123",sound=1})`); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.DoString(`ctx:send({text="123",token="abc"})`); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.DoString(`ctx:send({text="` + strings.Repeat("A", 4000) + `"})`); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLuaContextSendFailed(t *testing.T) {
+	l := lua.NewState()
+	defer l.Close()
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	ctx.Set(gin.BodyBytesKey, []byte("{}"))
+	initHttpLua(l, ctx)
+	if err := l.DoString(`ctx:send({})`); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLuaSendContext(t *testing.T) {
+	ctx := &luaSendContext{}
+	ctx.DataFromReader(0, 3, "", strings.NewReader("abc"), nil)
+	if ctx.msg != "abc" {
+		t.Error("Check send context failed")
+	}
+}
+
+func TestLuaGetOptsArray(t *testing.T) {
+	l := lua.NewState()
+	defer l.Close()
+	tbl := l.NewTable()
+	arr := l.NewTable()
+	tbl.RawSetString("a", arr)
+	arr.Append(lua.LNumber(10))
+	arr.Append(lua.LNumber(20))
+	ss := luaGetOptsArray(tbl, "a")
+	if len(ss) != 2 && ss[1] == "20" {
+		t.Error("Check opts array failed")
+	}
+}

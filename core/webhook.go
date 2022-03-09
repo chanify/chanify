@@ -1,7 +1,9 @@
 package core
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -109,11 +111,15 @@ func luaContextGetRequest(l *lua.LState) int {
 	return 1
 }
 
+type luaSendContext struct {
+	msg string
+}
+
 func luaContextSend(l *lua.LState) int {
 	ctx := luaCheckContext(l)
 	cc, ok := ctx.Get(coreKey)
 	if !ok {
-		l.Push(lua.LString("error: unknown error"))
+		l.Push(lua.LString(`{"res":500,"msg":"unknown error"}`))
 		return 1
 	}
 	c := cc.(*Core)
@@ -127,24 +133,44 @@ func luaContextSend(l *lua.LState) int {
 		text = opts.RawGetString("text").String()
 	}
 	if len(text) <= 0 {
-		l.Push(lua.LString("error: invalid message"))
+		l.Push(lua.LString(`{"res":204,"msg":"no message content"}`))
 		return 1
 	}
-
-	token, err := c.parseToken(getToken(ctx))
+	tk := luaGetOptsString(opts, "token")
+	if len(tk) <= 0 {
+		tk = getToken(ctx)
+	}
+	token, err := c.parseToken(tk)
 	if err != nil {
-		l.Push(lua.LString("error: invalid token"))
+		l.Push(lua.LString(`{"res":401,"msg":"invalid token"}`))
 		return 1
 	}
 	msg := model.NewMessage(token)
 	msg, err = c.makeTextContent(msg, text, luaGetOptsString(opts, "title"), luaGetOptsString(opts, "copy"), luaGetOptsString(opts, "autocopy"), luaGetOptsArray(opts, "action"))
 	if err != nil {
-		l.Push(lua.LString("error: too large text content"))
+		l.Push(lua.LString(`{"res":413,"msg":"too large text content"}`))
 		return 1
 	}
-	ret := c.sendMsg(ctx, token, msg.SoundName(luaGetOptsString(opts, "sound")).SetPriority(parsePriority(luaGetOptsString(opts, "priority"))).SetInterruptionLevel(luaGetOptsString(opts, "interruption-level")))
-	l.Push(lua.LString(ret))
+	lc := &luaSendContext{}
+	c.sendMsg(lc, token, msg.SoundName(luaGetOptsString(opts, "sound")).SetPriority(parsePriority(luaGetOptsString(opts, "priority"))).SetInterruptionLevel(luaGetOptsString(opts, "interruption-level")))
+	l.Push(lua.LString(lc.String()))
 	return 1
+}
+
+func (l *luaSendContext) String() string {
+	return l.msg
+}
+
+func (l *luaSendContext) JSON(code int, obj interface{}) {
+	if val, err := json.Marshal(obj); err == nil {
+		l.msg = string(val)
+	}
+}
+
+func (l *luaSendContext) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) {
+	if val, err := ioutil.ReadAll(reader); err == nil {
+		l.msg = string(val)
+	}
 }
 
 func luaGetOptsString(opts *lua.LTable, key string) string {

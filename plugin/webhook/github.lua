@@ -13,11 +13,12 @@ if not crypto.equal(crypto.hmac("sha256", seckey, req:body()), sign) then
 end
 
 local data = json.decode(req:body())
+local event = req:header("X-GitHub-Event")
 
 local ret = ctx:send({
-	"title" = "Github",
-	"text" = data["repository"]["full_name"],
-	"sound" = 1
+	title = "Github",
+	text = string.format("%s\n%s %s", data["repository"]["full_name"], event, data["action"])
+	sound = req:query("sound"),
 })
 
 return 200, ret
