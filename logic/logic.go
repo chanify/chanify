@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/chanify/chanify/crypto"
@@ -22,7 +21,6 @@ import (
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/payload"
 	"github.com/sideshow/apns2/token"
-	lua "github.com/yuin/gopher-lua"
 )
 
 // variable define
@@ -50,6 +48,7 @@ type Options struct {
 	Secret       string
 	Registerable bool
 	RegUsers     []string
+	WebHooks     []map[string]interface{}
 }
 
 // Logic instance
@@ -64,11 +63,12 @@ type Logic struct {
 	Endpoint     string
 	Features     []string
 
-	infoData    []byte
-	infoSign    string
-	whitelist   map[string]bool
-	webHooks    map[string]*lua.FunctionProto
-	filepath    string
+	infoData      []byte
+	infoSign      string
+	whitelist     map[string]bool
+	filepath      string
+	webhookManger *pluginManager
+
 	apnsPClient *apns2.Client
 	apnsDClient *apns2.Client
 }
@@ -149,14 +149,18 @@ func NewLogic(opts *Options) (*Logic, error) {
 			log.Println("Files path:", l.filepath)
 		}
 	}
+	l.webhookManger = loadWebhookPlugin(opts.PluginPath, opts.WebHooks)
 	l.InitInfo()
 	log.Printf("Node server name: %s, version: %s, serverless: %v, node-id: %s\n", l.Name, l.Version, l.srvless, l.NodeID)
-	l.loadPlugin(opts.PluginPath)
 	return l, nil
 }
 
 // Close and cleanup logic instance
 func (l *Logic) Close() {
+	if l.webhookManger != nil {
+		l.webhookManger.Close()
+		l.webhookManger = nil
+	}
 	if l.db != nil {
 		l.db.Close()
 		l.db = nil
@@ -294,12 +298,8 @@ func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 }
 
 // GetWebhook with name
-func (l *Logic) GetWebhook(name string) (*lua.FunctionProto, error) {
-	lfunc, ok := l.webHooks[name]
-	if !ok {
-		return nil, ErrNotFound
-	}
-	return lfunc, nil
+func (l *Logic) GetWebhook(name string) (*Webhook, error) {
+	return l.webhookManger.GetWebhook(name)
 }
 
 // SendAPNS send message to APNS
@@ -405,34 +405,4 @@ func (l *Logic) canRegisterUser(uid string) bool {
 	}
 	_, ok := l.whitelist[uid]
 	return ok
-}
-
-func (l *Logic) loadPlugin(path string) {
-	l.webHooks = make(map[string]*lua.FunctionProto)
-	if len(path) <= 0 {
-		return
-	}
-	fpath := filepath.Join(path, "webhook")
-	files, err := ioutil.ReadDir(fpath)
-	if err != nil {
-		log.Println("Can't read webhook plugin:", err)
-		return
-	}
-	for _, f := range files {
-		if !f.IsDir() {
-			name := f.Name()
-			ext := filepath.Ext(name)
-			key := strings.ToLower(strings.TrimRight(name, ext))
-			if len(key) > 0 && strings.ToLower(ext) == ".lua" {
-				fp := filepath.Join(fpath, name)
-				lfunc, err := compileLua(fp)
-				if err != nil {
-					log.Println("Load webhook plugin failed:", err)
-					continue
-				}
-				log.Println("Load webhook plugin:", fp)
-				l.webHooks[key] = lfunc
-			}
-		}
-	}
 }

@@ -51,6 +51,7 @@ func init() {
 					PluginPath: getExpandPath("server.pluginpath"),
 					DBUrl:      viper.GetString("server.dburl"),
 					Secret:     viper.GetString("server.secret"),
+					WebHooks:   getWebhooks(),
 				}
 				opts.Registerable, opts.RegUsers = getUserWhitlist(cmd)
 				if err := c.Init(opts); err != nil {
@@ -83,7 +84,7 @@ func init() {
 	serveCmd.Flags().String("name", "", "Http service name")
 	serveCmd.Flags().String("datapath", "~/.chanify", "Data file path")
 	serveCmd.Flags().String("filepath", "", "Store file path")
-	serveCmd.Flags().String("pluginpath", "", "Plugin file path")
+	serveCmd.Flags().String("pluginpath", "~/.chanify/plugin", "Plugin file path")
 	serveCmd.Flags().String("dburl", "", "Databse dsn uri")
 	serveCmd.Flags().String("secret", "", "Secret key for serverless mode")
 	serveCmd.Flags().String("readtimeout", "10s", "Http restful service read timeout.")
@@ -155,6 +156,30 @@ func getUserWhitlist(cmd *cobra.Command) (bool, []string) {
 		users = strings.Split(wl, ",")
 	}
 	return false, append(users, viper.GetStringSlice("server.register.whitelist")...)
+}
+
+func getWebhooks() []map[string]interface{} {
+	plugin := viper.GetStringMap("server.plugin")
+	if whs, ok := plugin["webhook"]; ok {
+		if whss, ok := whs.([]interface{}); ok {
+			ret := []map[string]interface{}{}
+			for _, wh := range whss {
+				ww := map[string]interface{}{}
+				if webhook, ok := wh.(map[interface{}]interface{}); ok {
+					for k, v := range webhook {
+						if key, ok := k.(string); ok {
+							ww[key] = v
+						}
+					}
+				}
+				if len(ww) > 0 {
+					ret = append(ret, ww)
+				}
+			}
+			return ret
+		}
+	}
+	return nil
 }
 
 func parseDuration(dur string) time.Duration {

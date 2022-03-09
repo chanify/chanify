@@ -2,8 +2,6 @@ package logic
 
 import (
 	"io"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/chanify/chanify/crypto"
@@ -138,40 +136,5 @@ func TestLoadFile(t *testing.T) {
 	}
 	if _, err := l.LoadFile("test", "1234"); err == nil {
 		t.Error("Check open empty file failed")
-	}
-}
-
-func TestLoadPluginEmpty(t *testing.T) {
-	l, err := NewLogic(&Options{DBUrl: "sqlite://?mode=memory", PluginPath: os.TempDir() + "/not_exist"})
-	if err != nil {
-		t.Fatal("Check load plugin failed:", err)
-	}
-	defer l.Close()
-	if _, err := l.GetWebhook("github"); err != ErrNotFound {
-		t.Fatal("Check load webhook plugin failed:", err)
-	}
-}
-
-func TestLoadPluginFailed(t *testing.T) {
-	dir := filepath.Join(os.TempDir(), "plugin")
-	whdir := filepath.Join(dir, "webhook")
-	os.MkdirAll(whdir, os.ModePerm) // nolint: errcheck
-	fpath := filepath.Join(whdir, "github.lua")
-	fs, err := os.Create(fpath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-	defer fs.Close()
-	fs.WriteString("func abc()") // nolint: errcheck
-	fs.Sync()                    // nolint: errcheck
-
-	l, err := NewLogic(&Options{DBUrl: "sqlite://?mode=memory", PluginPath: dir})
-	if err != nil {
-		t.Fatal("Check load plugin failed:", err)
-	}
-	defer l.Close()
-	if _, err := l.GetWebhook("github"); err != ErrNotFound {
-		t.Fatal("Check load webhook plugin failed:", err)
 	}
 }

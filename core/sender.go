@@ -99,60 +99,61 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	c.sendMsg(ctx, params.Token, msg.SoundName(params.Sound).SetPriority(params.Priority).SetInterruptionLevel(params.InterruptionLevel))
 }
 
-func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) {
+func (c *Core) sendDirect(ctx *gin.Context, token *model.Token, msg *model.Message) string {
 	uid := token.GetUserID()
 	key, err := c.logic.GetUserKey(uid)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
-		return
+		return "error: invalid user"
 	}
 	devs, err := c.logic.GetDevices(uid)
 	if err != nil || len(devs) <= 0 {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices found"})
-		return
+		return "error: no devices found"
 	}
 	out := msg.EncryptData(key, uint64(time.Now().UTC().UnixNano()))
 	if len(out) > 4000 {
 		ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{"res": http.StatusRequestEntityTooLarge, "msg": "message body too large"})
-		return
+		return "error: message body too large"
 	}
 	uuid, n := c.logic.SendAPNS(uid, out, devs, int(msg.Priority), "passive", msg.IsTimeline())
 	if n <= 0 {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no devices send success"})
-		return
+		return "error: no devices send success"
 	}
 	ctx.JSON(http.StatusOK, gin.H{"request-uid": uuid})
+	return uuid
 }
 
-func (c *Core) sendForward(ctx *gin.Context, token *model.Token, msg *model.Message) {
+func (c *Core) sendForward(ctx *gin.Context, token *model.Token, msg *model.Message) string {
 	msg.DisableToken()
 	key, err := c.logic.GetUserKey(token.GetUserID())
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
-		return
+		return "error: invalid user"
 	}
 	msg.EncryptContent(key)
 	resp, err := http.Post(logic.APIEndpoint+"/rest/v1/push?token="+token.RawToken(), "application/x-protobuf", bytes.NewReader(msg.Marshal()))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"res": http.StatusInternalServerError, "msg": "send message failed"})
-		return
+		return "error: send message failed"
 	}
 	reader := resp.Body
 	defer reader.Close()
 	ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), reader, map[string]string{})
+	return "ok"
 }
 
-func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg *model.Message) {
+func (c *Core) sendMsg(ctx *gin.Context, token *model.Token, msg *model.Message) string {
 	u, err := c.logic.GetUser(token.GetUserID())
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
-		return
+		return "error: invalid user"
 	}
 	if u.IsServerless() {
-		c.sendForward(ctx, token, msg)
-		return
+		return c.sendForward(ctx, token, msg)
 	}
-	c.sendDirect(ctx, token, msg)
+	return c.sendDirect(ctx, token, msg)
 }
 
 func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte) (*model.Message, error) {

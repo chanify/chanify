@@ -38,6 +38,26 @@ func TestCompileLua(t *testing.T) {
 	}
 }
 
+func TestReadOptString(t *testing.T) {
+	opts := map[string]interface{}{
+		"a": 123,
+	}
+	if val, ok := readOptString(opts, "a"); val != "" || !ok {
+		t.Error("Check read opt string failed")
+	}
+	if val, ok := readOptString(opts, "b"); val != "" || ok {
+		t.Error("Check read opt string failed")
+	}
+}
+
+func TestReadOptTable(t *testing.T) {
+	opts := map[string]interface{}{}
+	opts["a"] = map[interface{}]interface{}{"x": "123"}
+	if val := readOptTable(opts, "a"); val["x"] != "123" {
+		t.Error("Check read opt table failed", val)
+	}
+}
+
 func TestCompileLuaFailed(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "compile_lua_not_exist")
 	if _, err := compileLua(fpath); err == nil {

@@ -5,29 +5,30 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
 	lua "github.com/yuin/gopher-lua"
 )
 
+const coreKey = "_chanify/http/core"
+
 func (c *Core) handlePostWebhook(ctx *gin.Context) {
 	name := strings.ToLower(ctx.Param("name"))
-	whProto, err := c.logic.GetWebhook(name)
+	webhook, err := c.logic.GetWebhook(name)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "no webhook found"})
 		return
 	}
+	ctx.Set(coreKey, c)
 	if ctx.Request.Body != nil {
 		if body, err := ioutil.ReadAll(ctx.Request.Body); err == nil {
 			ctx.Set(gin.BodyBytesKey, body)
 		}
 	}
-
 	l := lua.NewState()
 	defer l.Close()
 	initHttpLua(l, ctx)
-	whFunc := l.NewFunctionFromProto(whProto)
-	l.Push(whFunc)
-	if err := l.PCall(0, lua.MultRet, nil); err != nil {
+	if err := webhook.DoCall(l); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": err.Error()})
 		return
 	}
@@ -36,7 +37,7 @@ func (c *Core) handlePostWebhook(ctx *gin.Context) {
 }
 
 func initHttpLua(l *lua.LState, ctx *gin.Context) {
-	initLua(l)
+	l.SetField(l.NewTypeMetatable("Request"), "__index", l.SetFuncs(l.NewTable(), luaRequestMethods))
 
 	mt := l.NewTypeMetatable("Context")
 	l.SetField(mt, "__index", l.SetFuncs(l.NewTable(), luaContextMethods))
@@ -77,8 +78,15 @@ func getHttpLuaReturn(l *lua.LState) (int, string, string) {
 }
 
 var luaContextMethods = map[string]lua.LGFunction{
+	"request": luaContextGetRequest,
+	"send":    luaContextSend,
+}
+
+var luaRequestMethods = map[string]lua.LGFunction{
 	"token":  luaContextGetToken,
+	"url":    luaContextGetUrl,
 	"body":   luaContextGetBody,
+	"query":  luaContextGetQuery,
 	"header": luaContextGetHeader,
 }
 
@@ -91,9 +99,53 @@ func luaCheckContext(l *lua.LState) *gin.Context {
 	return nil
 }
 
+func luaContextGetRequest(l *lua.LState) int {
+	ctx := luaCheckContext(l)
+	lc := l.NewUserData()
+	lc.Value = ctx
+	lc.Metatable = l.GetTypeMetatable("Request")
+	l.Push(lc)
+	return 1
+}
+
+func luaContextSend(l *lua.LState) int {
+	ctx := luaCheckContext(l)
+	cc, ok := ctx.Get(coreKey)
+	if !ok {
+		l.Push(lua.LString("error: unknown error"))
+		return 1
+	}
+	c := cc.(*Core)
+	text := l.CheckString(2)
+	if len(text) <= 0 {
+		l.Push(lua.LString("error: invalid message"))
+		return 1
+	}
+	token, err := c.parseToken(getToken(ctx))
+	if err != nil {
+		l.Push(lua.LString("error: invalid token"))
+		return 1
+	}
+	msg := model.NewMessage(token)
+	msg, err = c.makeTextContent(msg, text, ctx.Query("title"), ctx.Query("copy"), ctx.Query("autocopy"), ctx.QueryArray("action"))
+	if err != nil {
+		l.Push(lua.LString("error: too large text content"))
+		return 1
+	}
+	ret := c.sendMsg(ctx, token, msg.SoundName(ctx.Query("sound")).SetPriority(parsePriority(ctx.Query("priority"))).SetInterruptionLevel(ctx.Query("interruption-level")))
+	l.Push(lua.LString(ret))
+	return 1
+}
+
 func luaContextGetToken(l *lua.LState) int {
 	ctx := luaCheckContext(l)
 	l.Push(lua.LString(getToken(ctx)))
+	return 1
+}
+
+func luaContextGetUrl(l *lua.LState) int {
+	ctx := luaCheckContext(l)
+	l.Push(lua.LString(ctx.Request.URL.String()))
 	return 1
 }
 
@@ -109,8 +161,28 @@ func luaContextGetBody(l *lua.LState) int {
 	return 1
 }
 
+func luaContextGetQuery(l *lua.LState) int {
+	ctx := luaCheckContext(l)
+	if v, ok := ctx.GetQuery(l.CheckString(2)); ok {
+		l.Push(lua.LString(v))
+	} else {
+		l.Push(lua.LNil)
+	}
+	return 1
+}
+
 func luaContextGetHeader(l *lua.LState) int {
 	ctx := luaCheckContext(l)
-	l.Push(lua.LString(ctx.GetHeader(l.CheckString(2))))
+	key := strings.ToLower(l.CheckString(2))
+	switch key {
+	default:
+		l.Push(lua.LString(ctx.GetHeader(key)))
+	case "host":
+		l.Push(lua.LString(ctx.Request.Host))
+	case "user-agent":
+		l.Push(lua.LString(ctx.Request.UserAgent()))
+	case "content-length":
+		l.Push(lua.LNumber(ctx.Request.ContentLength))
+	}
 	return 1
 }

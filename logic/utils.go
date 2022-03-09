@@ -29,6 +29,35 @@ func saveFile(path string, data []byte) error {
 	return nil
 }
 
+func readOptString(opts map[string]interface{}, key string) (string, bool) {
+	if value, ok := opts[key]; ok {
+		if val, ok := value.(string); ok {
+			return val, true
+		}
+		return "", true
+	}
+	return "", false
+}
+
+func readOptTable(opts map[string]interface{}, key string) map[string]interface{} {
+	m := map[string]interface{}{}
+	if value, ok := opts[key]; ok {
+		switch val := value.(type) {
+		case map[string]interface{}:
+			for k, v := range val {
+				m[k] = v
+			}
+		case map[interface{}]interface{}:
+			for k, v := range val {
+				if key, ok := k.(string); ok {
+					m[key] = v
+				}
+			}
+		}
+	}
+	return m
+}
+
 func compileLua(filePath string) (*lua.FunctionProto, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
