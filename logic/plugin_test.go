@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -46,18 +45,6 @@ func TestLuaWatch(t *testing.T) {
 	l := loadWebhookPlugin("", opts)
 	defer l.Close()
 	l.watcher.Errors <- errors.New("123")
-}
-
-func TestLuaWatchFailed(t *testing.T) {
-	defer func() {
-		recover() // nolint: errcheck
-	}()
-	opts := []map[string]interface{}{}
-	l := loadWebhookPlugin("", opts)
-	defer l.Close()
-	time.Sleep(time.Millisecond * 100)
-	close(l.watcher.Errors)
-	time.Sleep(time.Millisecond * 100)
 }
 
 func TestWebHookDoCall(t *testing.T) {

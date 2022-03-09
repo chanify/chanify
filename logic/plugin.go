@@ -114,10 +114,9 @@ func (p *pluginManager) luaWatch() {
 		for {
 			select {
 			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
+				if ok {
+					log.Println("Watch lua file failed:", err)
 				}
-				log.Println("Watch lua file failed:", err)
 			case event, ok := <-watcher.Events:
 				if !ok {
 					return
