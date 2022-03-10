@@ -47,7 +47,7 @@ func (c *Core) Close() {
 // APIHandler return handler for http
 func (c *Core) APIHandler() http.Handler {
 	r := gin.New()
-	r.SetTrustedProxies([]string{"0.0.0.0/0", "::/0"})
+	r.SetTrustedProxies([]string{"0.0.0.0/0", "::/0"}) // nolint: errcheck
 	r.Use(loggerMiddleware)
 	r.Use(gin.Recovery())
 	r.GET("/", c.handleHome)
