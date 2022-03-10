@@ -15,16 +15,20 @@ end
 
 local data = json.decode(req:body())
 local event = req:header("X-GitHub-Event")
-local title = data["repository"]["full_name"]
+local msg = ""
 
 if event == "push" then
-	msg = string.format("%s - new commit:\n%s", title, data["head_commit"]["message"])
+	msg = string.format("push commit:\n%s", data["head_commit"]["message"])
+elseif event == "release" then
+	msg = string.format("release %s %s", data["release"]["tag_name"], data["action"])
+elseif event == "issues" then
+	msg = string.format("issues %s:\n%s", data["action"], data["issue"]["title"])
 else
-	msg = string.format("%s\n%s %s", title, event, data["action"])
+	msg = string.format("%s %s", event, data["action"])
 end
 
 local ret = ctx:send({
-	title = "Github",
+	title = "Github " .. data["repository"]["full_name"],
 	text = msg,
 	sound = req:query("sound"),
 })

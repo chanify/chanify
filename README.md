@@ -74,6 +74,7 @@ Chanify is a safe and simple notification tools. For developers, system administ
     <li><a href="#chrome-extension">Chrome Extension</a></li>
     <li><a href="#windows-client">Windows Client</a></li>
     <li><a href="#docker-compose">Docker Compose</a></li>
+    <li><a href="#lua-api">Lua API</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
   </ol>
@@ -436,6 +437,7 @@ server:
     name: Node name # Name for node server
     secret: <secret code> # key for serverless node server
     datapath: <data path> # data storage path for serverful node server
+#   pluginpath: <plugin path> # plugin path for lua
     dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # database dsn for serverful node server
     http:
         - readtimeout: 10s  # 10 seconds for http read timeout
@@ -445,6 +447,12 @@ server:
         whitelist: # whitelist for user register
             - <user id 1>
             - <user id 2>
+#   plugin:
+#       webhook:
+#           - name: github  # POST http://my.server/path/v1/webhook/github/<token>
+#             file: webhook/github.lua # <pluginpath>/webhook/github.lua
+#             env:
+#               secret_token: "secret token"
 
 client: # configuration for sender client
     sound: 1    # enable sound
@@ -606,6 +614,43 @@ server:
 | hostname or ip  | Internet hostname or ip for node server. |
 | node name       | Name for node server.                    |
 | user id         | User ids for whitelist.                  |
+
+## Lua API
+
+Usage
+
+```lua
+local hex = require "hex"
+local bytes = hex.decode(hex_string)
+local text = hex.encode(bytes_data)
+
+local json = require "json"
+local obj = json.decode(json_string)
+local str = json.encode(json_object)
+
+local crypto = require "crypto"
+local is_equal = crypto.equal(mac1, mac2)
+local mac = crypto.hmac("sha1", key, message) -- Support md5 sha1 sha256
+
+-- Http request
+local req = ctx:request()
+local token_string = req:token()
+local http_url = req:url()
+local body_string = req:body()
+local query_value = req:query("key")
+local header_value = req:header("key")
+
+-- Send message
+ctx:send({
+    title = "message title", -- Optional
+    text = "message body",
+    sound = "sound or not",  -- Optional
+    copy = "copy",           -- Optional
+    autocopy = "autocopy",   -- Optional 
+})
+```
+
+Example: [Github webhook event](plugin/webhook/github.lua)
 
 ## Contributing
 

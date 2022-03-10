@@ -74,6 +74,7 @@ Chanify 是一个简单的消息推送工具。每一个人都可以利用提供
     <li><a href="#chrome-插件">Chrome 插件</a></li>
     <li><a href="#windows-客户端">Windows 客户端</a></li>
     <li><a href="#docker-compose">Docker Compose</a></li>
+    <li><a href="#lua-api">Lua API</a></li>
     <li><a href="#贡献">贡献</a></li>
     <li><a href="#许可证">许可证</a></li>
   </ol>
@@ -436,6 +437,7 @@ server:
     name: Node name # 节点名称
     secret: <secret code> # 无状态服务器使用的密钥
     datapath: <data path> # 有状态服务器使用的数据存储路径
+#   pluginpath: <plugin path> # Lua 插件路径
     dburl: mysql://root:test@tcp(127.0.0.1:3306)/chanify?charset=utf8mb4&parseTime=true&loc=Local # 有状态服务器使用的数据库链接
     http:
         - readtimeout: 10s  # Http 读取超时时间设置为 10 秒
@@ -445,6 +447,12 @@ server:
         whitelist: # 白名单
             - <user id 1>
             - <user id 2>
+#   plugin:
+#       webhook:
+#           - name: github  # POST http://my.server/path/v1/webhook/github/<token>
+#             file: webhook/github.lua # <pluginpath>/webhook/github.lua
+#             env:
+#               secret_token: "secret token"
 
 client: # 作为客户端发送消息时使用
     sound: 1    # 是否有提示音
@@ -606,6 +614,43 @@ server:
 | hostname or ip  | 节点服务器的外网域名或者 ip 地址。 |
 | node name       | 节点服务器名称。                 |
 | user id         | 用户白名单。                    |
+
+## Lua API
+
+使用方法
+
+```lua
+local hex = require "hex"
+local bytes = hex.decode(hex_string)
+local text = hex.encode(bytes_data)
+
+local json = require "json"
+local obj = json.decode(json_string)
+local str = json.encode(json_object)
+
+local crypto = require "crypto"
+local is_equal = crypto.equal(mac1, mac2)
+local mac = crypto.hmac("sha1", key, message) -- 支持 md5 sha1 sha256
+
+-- Http 请求
+local req = ctx:request()
+local token_string = req:token()
+local http_url = req:url()
+local body_string = req:body()
+local query_value = req:query("key")
+local header_value = req:header("key")
+
+-- 发送消息
+ctx:send({
+    title = "message title", -- 可选
+    text = "message body",
+    sound = "sound or not",  -- 可选
+    copy = "copy",           -- 可选
+    autocopy = "autocopy",   -- 可选 
+})
+```
+
+例子: [Github webhook event](plugin/webhook/github.lua)
 
 ## 贡献
 
