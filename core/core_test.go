@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/chanify/chanify/logic"
-	"github.com/gin-gonic/gin"
 )
 
 func TestHealth(t *testing.T) {
@@ -67,24 +66,5 @@ func TestNotFound(t *testing.T) {
 	resp := w.Result()
 	if resp.StatusCode != http.StatusNotFound {
 		t.Error("Check not found failed")
-	}
-}
-
-func TestClientIP(t *testing.T) {
-	gin.SetMode(gin.ReleaseMode)
-	w := httptest.NewRecorder()
-	ctx, _ := gin.CreateTestContext(w)
-	ctx.Request, _ = http.NewRequest("GET", "", nil)
-	ctx.Request.Header.Set("X-Real-IP", "10.10.10.100,127.0.0.200")
-	if fixClientIP(ctx) != "10.10.10.100" {
-		t.Error("Get client ip failed")
-	}
-	ctx.Request.Header.Set("X-Forwarded-For", "10.10.10.200")
-	if fixClientIP(ctx) != "10.10.10.200" {
-		t.Error("Check client ip order failed")
-	}
-	ctx.Request.Header.Set("X-Forwarded-For", "10.10.10.300")
-	if fixClientIP(ctx) != "10.10.10.100" {
-		t.Error("Check invalid client ip format failed")
 	}
 }

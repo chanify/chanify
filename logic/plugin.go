@@ -144,7 +144,7 @@ func (p *pluginManager) ReloadWebhook(file string) {
 func (lf *luaFunc) Reload(file string) error {
 	if s, err := os.Stat(file); err == nil {
 		modTime := s.ModTime()
-		if !modTime.Equal(lf.modTime) {
+		if modTime.After(lf.modTime) {
 			lfunc, err := compileLua(file)
 			if err != nil {
 				return err

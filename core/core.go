@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"log"
-	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/chanify/chanify/logic"
@@ -49,6 +47,7 @@ func (c *Core) Close() {
 // APIHandler return handler for http
 func (c *Core) APIHandler() http.Handler {
 	r := gin.New()
+	r.SetTrustedProxies([]string{"0.0.0.0/0", "::/0"})
 	r.Use(loggerMiddleware)
 	r.Use(gin.Recovery())
 	r.GET("/", c.handleHome)
@@ -108,47 +107,11 @@ func loggerMiddleware(c *gin.Context) {
 	}
 	log.Printf("%3d | %15s | %s %s %10v \"%s\"%s\n",
 		c.Writer.Status(),
-		fixLog(fixClientIP(c)),
+		fixLog(c.ClientIP()),
 		c.Request.Method,
 		fixLog(path),
 		latency,
 		fixLog(c.Request.UserAgent()),
 		c.Errors.ByType(gin.ErrorTypePrivate).String(),
 	)
-}
-
-var remoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}
-
-func fixClientIP(c *gin.Context) string {
-	// ref: https://github.com/gin-gonic/gin/issues/2697
-	for _, key := range remoteIPHeaders {
-		realIP, valid := validateHeader(c.GetHeader(key))
-		if valid {
-			return realIP
-		}
-	}
-	return c.ClientIP()
-}
-
-func validateHeader(header string) (clientIP string, valid bool) {
-	if header == "" {
-		return "", false
-	}
-	items := strings.Split(header, ",")
-	for i, ipStr := range items {
-		ipStr = strings.TrimSpace(ipStr)
-		ip := net.ParseIP(ipStr)
-		if ip == nil {
-			return "", false
-		}
-
-		// We need to return the first IP in the list, but,
-		// we should not early return since we need to validate that
-		// the rest of the header is syntactically valid
-		if i == 0 {
-			clientIP = ipStr
-			valid = true
-		}
-	}
-	return
 }
