@@ -3,6 +3,7 @@ package model
 import (
 	"crypto/rand"
 	"encoding/binary"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -127,7 +128,7 @@ func (m *Message) ActionContent(text string, title string, actions []string) *Me
 func (m *Message) FileContent(path string, filename string, desc string, size int, actions []string) *Message {
 	ctx := &pb.MsgContent{
 		Type:     pb.MsgType_File,
-		File:     path,
+		File:     filepath.ToSlash(path),
 		Filename: filename,
 		Size:     uint64(size),
 		Actions:  parseActions(actions),
@@ -143,7 +144,7 @@ func (m *Message) FileContent(path string, filename string, desc string, size in
 func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Image,
-		File: path,
+		File: filepath.ToSlash(path),
 		Size: uint64(size),
 	}
 	if t != nil {
@@ -161,7 +162,7 @@ func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 func (m *Message) AudioContent(path string, fname string, title string, duration uint64, size int) *Message {
 	ctx := &pb.MsgContent{
 		Type:     pb.MsgType_Audio,
-		File:     path,
+		File:     filepath.ToSlash(path),
 		Size:     uint64(size),
 		Filename: fname,
 		Title:    title,
@@ -174,7 +175,7 @@ func (m *Message) AudioContent(path string, fname string, title string, duration
 func (m *Message) TextFileContent(path string, filename string, title string, desc string, size int, actions []string) *Message {
 	ctx := &pb.MsgContent{
 		Type:     pb.MsgType_File,
-		File:     path,
+		File:     filepath.ToSlash(path),
 		Filename: filename,
 		Size:     uint64(size),
 		Actions:  parseActions(actions),
