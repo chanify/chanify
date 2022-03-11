@@ -14,6 +14,7 @@ import (
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/image/tiff"
 )
 
 const (
@@ -105,6 +106,8 @@ func parseImageContentType(data []byte) string {
 		return "image/png"
 	} else if len(data) > len(gifHeader) && string(data[:len(gifHeader)]) == gifHeader {
 		return "image/gif"
+	} else if len(data) > 2 && ((data[0] == 0x49 && data[1] == 0x49) || (data[0] == 0x4D && data[1] == 0x4D)) {
+		return "image/tiff"
 	}
 	return "image/jpeg"
 }
@@ -117,6 +120,10 @@ func createThumbnail(data []byte) *model.Thumbnail {
 		}
 	case "image/gif":
 		if cfg, err := gif.DecodeConfig(bytes.NewReader(data)); err == nil {
+			return model.NewThumbnail(cfg.Width, cfg.Height)
+		}
+	case "image/tiff":
+		if cfg, err := tiff.DecodeConfig(bytes.NewReader(data)); err == nil {
 			return model.NewThumbnail(cfg.Width, cfg.Height)
 		}
 	default:
