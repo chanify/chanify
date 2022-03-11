@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/json"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
@@ -17,6 +18,7 @@ import (
 
 const (
 	pngHeader = "\x89PNG\r\n\x1a\n"
+	gifHeader = "GIF"
 )
 
 func (c *Core) bindBodyJSON(ctx *gin.Context, obj interface{}) error {
@@ -101,18 +103,26 @@ func parsePriority(priority string) int {
 func parseImageContentType(data []byte) string {
 	if len(data) > len(pngHeader) && string(data[:len(pngHeader)]) == pngHeader {
 		return "image/png"
+	} else if len(data) > len(gifHeader) && string(data[:len(gifHeader)]) == gifHeader {
+		return "image/gif"
 	}
 	return "image/jpeg"
 }
 
 func createThumbnail(data []byte) *model.Thumbnail {
-	if parseImageContentType(data) == "image/png" {
+	switch parseImageContentType(data) {
+	case "image/png":
 		if cfg, err := png.DecodeConfig(bytes.NewReader(data)); err == nil {
 			return model.NewThumbnail(cfg.Width, cfg.Height)
 		}
-	}
-	if cfg, err := jpeg.DecodeConfig(bytes.NewReader(data)); err == nil {
-		return model.NewThumbnail(cfg.Width, cfg.Height)
+	case "image/gif":
+		if cfg, err := gif.DecodeConfig(bytes.NewReader(data)); err == nil {
+			return model.NewThumbnail(cfg.Width, cfg.Height)
+		}
+	default:
+		if cfg, err := jpeg.DecodeConfig(bytes.NewReader(data)); err == nil {
+			return model.NewThumbnail(cfg.Width, cfg.Height)
+		}
 	}
 	return nil
 }
