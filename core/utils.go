@@ -15,11 +15,14 @@ import (
 	"github.com/chanify/chanify/model"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/image/tiff"
+	"golang.org/x/image/webp"
 )
 
 const (
-	pngHeader = "\x89PNG\r\n\x1a\n"
-	gifHeader = "GIF"
+	pngHeader  = "\x89PNG\r\n\x1a\n"
+	gifHeader  = "GIF"
+	riffHeader = "RIFF"
+	webpHeader = "WEBP"
 )
 
 func (c *Core) bindBodyJSON(ctx *gin.Context, obj interface{}) error {
@@ -102,12 +105,17 @@ func parsePriority(priority string) int {
 }
 
 func parseImageContentType(data []byte) string {
-	if len(data) > len(pngHeader) && string(data[:len(pngHeader)]) == pngHeader {
-		return "image/png"
-	} else if len(data) > len(gifHeader) && string(data[:len(gifHeader)]) == gifHeader {
-		return "image/gif"
-	} else if len(data) > 2 && ((data[0] == 0x49 && data[1] == 0x49) || (data[0] == 0x4D && data[1] == 0x4D)) {
-		return "image/tiff"
+	if len(data) > 12 {
+		str := string(data[:12])
+		if strings.HasPrefix(str, pngHeader) {
+			return "image/png"
+		} else if strings.HasPrefix(str, gifHeader) {
+			return "image/gif"
+		} else if strings.HasPrefix(str, "\x49\x49") || strings.HasPrefix(str, "\x4D\x4D") {
+			return "image/tiff"
+		} else if strings.HasPrefix(str, riffHeader) && strings.HasPrefix(string(str[8:]), webpHeader) {
+			return "image/webp"
+		}
 	}
 	return "image/jpeg"
 }
@@ -124,6 +132,10 @@ func createThumbnail(data []byte) *model.Thumbnail {
 		}
 	case "image/tiff":
 		if cfg, err := tiff.DecodeConfig(bytes.NewReader(data)); err == nil {
+			return model.NewThumbnail(cfg.Width, cfg.Height)
+		}
+	case "image/webp":
+		if cfg, err := webp.DecodeConfig(bytes.NewReader(data)); err == nil {
 			return model.NewThumbnail(cfg.Width, cfg.Height)
 		}
 	default:
