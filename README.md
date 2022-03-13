@@ -340,6 +340,10 @@ Additional params
 | actions            | None     | Actions list.                                    |
 | timeline           | None     | Timeline object.                                 |
 
+`sound`:
+  - 1 enable default sound
+  - sound code, e.g. "bell"
+
 `interruption-level`:
   - `active`: Lights up screen and may play a sound.
   - `passive`: Does not light up screen or play sound.

@@ -340,6 +340,10 @@ Content-Type:
 | actions            | 无       | 动作列表                           |
 | timeline           | 无       | Timeline 对象                     |
 
+`sound`:
+  - 1 使用默认铃声
+  - 使用铃声代码，例如："bell"
+
 `interruption-level`:
   - `active`: 点亮屏幕并可能播放声音。
   - `passive`: 不点亮屏幕或播放声音。

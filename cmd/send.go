@@ -31,7 +31,7 @@ func init() {
 	rootCmd.AddCommand(sendCmd)
 	sendCmd.Flags().String("endpoint", "https://api.chanify.net", "Node server endpoint.")
 	sendCmd.Flags().String("token", "", "Send token.")
-	sendCmd.Flags().String("sound", "", "Message sound.")
+	sendCmd.Flags().String("sound", "", "Message sound code.")
 	sendCmd.Flags().String("text", "", "Text message content.")
 	sendCmd.Flags().String("link", "", "Link message content.")
 	sendCmd.Flags().String("image", "", "Image file path.")

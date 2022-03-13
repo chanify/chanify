@@ -160,7 +160,7 @@ func TestSenderPostFormData(t *testing.T) {
 	writer.WriteField("copy", "copy text")                                                                                                // nolint: errcheck
 	writer.WriteField("autocopy", "1")                                                                                                    // nolint: errcheck
 	writer.WriteField("link", "https://api.chanify.net")                                                                                  // nolint: errcheck
-	writer.WriteField("sound", "false")                                                                                                   // nolint: errcheck
+	writer.WriteField("sound", "bell.caf")                                                                                                // nolint: errcheck
 	writer.WriteField("priority", "5")                                                                                                    // nolint: errcheck
 	writer.WriteField("token", "CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg") // nolint: errcheck
 	writer.WriteField("timeline-code", "test")                                                                                            // nolint: errcheck
