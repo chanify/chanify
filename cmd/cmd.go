@@ -48,7 +48,11 @@ func initConfig() {
 		viper.SetConfigName(".chanify")
 	}
 	viper.AutomaticEnv()
-	if err := viper.ReadInConfig(); err == nil && viper.GetBool("config.verbose") {
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			fmt.Println("Parse config file", viper.ConfigFileUsed(), "failed:", err)
+		}
+	} else if viper.GetBool("config.verbose") {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
 }

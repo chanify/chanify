@@ -34,6 +34,9 @@ func init() {
 				MaxHeaderBytes: 1 << 20,
 			}
 			log.Println("Launching service...")
+			if c := viper.ConfigFileUsed(); len(c) > 0 {
+				log.Println("Using config file:", c)
+			}
 			go func() {
 				c := core.New()
 				if c == nil {
