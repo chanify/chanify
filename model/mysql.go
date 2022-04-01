@@ -62,7 +62,7 @@ func (s *mysql) UpsertUser(u *User) error {
 }
 
 func (s *mysql) BindDevice(uid string, uuid string, key []byte, devType int) error {
-	_, err := s.db.Exec("INSERT INTO `devices`(`uuid`,`uid`,`key`,`type`) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE `uid`=VALUES(`uid`),`type`=VALUES(`type`);", uuid, uid, key, devType)
+	_, err := s.db.Exec("INSERT INTO `devices`(`uuid`,`uid`,`key`,`type`) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE `uid`=VALUES(`uid`),`type`=VALUES(`type`),`lastupdate`=CURRENT_TIMESTAMP;", uuid, uid, key, devType)
 	return err
 
 }
@@ -73,7 +73,7 @@ func (s *mysql) UnbindDevice(uid string, uuid string) error {
 }
 
 func (s *mysql) UpdatePushToken(uid string, uuid string, token []byte, sandbox bool) error {
-	_, err := s.db.Exec("UPDATE `devices` SET `uid`=?,`token`=?,`sandbox`=? WHERE `uuid`=?;", uid, token, sandbox, uuid)
+	_, err := s.db.Exec("UPDATE `devices` SET `uid`=?,`token`=?,`sandbox`=?,`lastupdate`=CURRENT_TIMESTAMP WHERE `uuid`=?;", uid, token, sandbox, uuid)
 	return err
 }
 
