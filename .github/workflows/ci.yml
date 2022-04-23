@@ -21,6 +21,7 @@ jobs:
       uses: golangci/golangci-lint-action@v2
     - name: Test
       run: |
+        go get github.com/wadey/gocovmerge
         go install github.com/wadey/gocovmerge
         make test
     - name: Code coverage
