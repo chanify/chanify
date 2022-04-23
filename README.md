@@ -429,6 +429,12 @@ Send Actions (Up to 4 actions).
 $ curl --form "action=ActionName1|http://<action host>/<action1>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
+URL for script action:
+
+```bash
+chanify://action/run-script/<scipt name>?<arg name 1>=<arg value 1>&<arg name 2>=<arg value 2>
+```
+
 ## Configuration
 
 Chanify can be configured with a yml format file, and the default path is `~/.chanify.yml`.

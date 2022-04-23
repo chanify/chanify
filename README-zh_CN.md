@@ -429,6 +429,12 @@ $ curl --form "file=@<文件路径>" "http://<address>:<port>/v1/sender/<token>"
 $ curl --form "action=动作名称1|http://<action host>/<action1>" "http://<address>:<port>/v1/sender/<token>"
 ```
 
+脚本动作的 URL:
+
+```bash
+chanify://action/run-script/<脚本名称>?<参数名称1>=<参数值1>&<参数名称2>=<参数值2>
+```
+
 ## 配置文件
 
 可以通过 yml 文件来配置 Chanify，默认路径`~/.chanify.yml`。
