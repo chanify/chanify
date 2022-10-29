@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func TestSqliteOpen(t *testing.T) {
-	file, err := ioutil.TempFile("", "db")
+	file, err := os.CreateTemp("", "db")
 	if err != nil {
 		t.Fatal(err)
 	}

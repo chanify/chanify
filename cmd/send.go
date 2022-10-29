@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -167,7 +167,7 @@ func sendMessage(in *bytes.Buffer, content string) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		x, _ := ioutil.ReadAll(resp.Body)
+		x, _ := io.ReadAll(resp.Body)
 		defer resp.Body.Close()
 		return fmt.Errorf("send failed: %d, %s", resp.StatusCode, string(x))
 	}
@@ -184,7 +184,7 @@ func sendMessage(in *bytes.Buffer, content string) error {
 
 func readFile(filePath string) ([]byte, string, error) {
 	if len(filePath) > 0 {
-		in, err := ioutil.ReadFile(filePath)
+		in, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, "", err
 		}
@@ -198,13 +198,13 @@ func readInputFile(path string) ([]byte, string, error) {
 	var data []byte
 	if len(path) > 0 {
 		if path[0] == '-' {
-			in, err := ioutil.ReadAll(os.Stdin)
+			in, err := io.ReadAll(os.Stdin)
 			if err != nil {
 				return nil, "", err
 			}
 			data = in
 		} else {
-			in, err := ioutil.ReadFile(path)
+			in, err := os.ReadFile(path)
 			if err != nil {
 				return nil, "", err
 			}

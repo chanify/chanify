@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -277,7 +277,7 @@ func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 		return nil, err
 	}
 	defer f.Close()
-	return ioutil.ReadAll(f)
+	return io.ReadAll(f)
 }
 
 // SaveFile save with file type & data
