@@ -1,7 +1,7 @@
 FROM golang:alpine
 WORKDIR /build
 COPY ./ /build
-RUN apk add --update --no-cache git make && make build
+RUN apk add --update --no-cache git make build-base && make build
 
 FROM alpine:latest
 COPY --from=0 /build/chanify /usr/local/bin/chanify
