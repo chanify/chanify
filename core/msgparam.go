@@ -1,7 +1,7 @@
 package core
 
 import (
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"strconv"
 	"strings"
@@ -37,7 +37,7 @@ type MsgParam struct {
 // ParsePlainText process text/plain
 func (m *MsgParam) ParsePlainText(ctx *gin.Context) {
 	defer ctx.Request.Body.Close()
-	if d, err := ioutil.ReadAll(ctx.Request.Body); err == nil {
+	if d, err := io.ReadAll(ctx.Request.Body); err == nil {
 		m.Text = string(d)
 	}
 }
@@ -333,7 +333,7 @@ func readFileFromForm(form *multipart.Form, name string) ([]byte, string, error)
 	if len(fs) > 0 {
 		if fp, err := fs[0].Open(); err == nil {
 			defer fp.Close()
-			data, err := ioutil.ReadAll(fp)
+			data, err := io.ReadAll(fp)
 			return data, fs[0].Filename, err
 		}
 	}

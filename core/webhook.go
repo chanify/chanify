@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -24,7 +23,7 @@ func (c *Core) handlePostWebhook(ctx *gin.Context) {
 	}
 	ctx.Set(coreKey, c)
 	if ctx.Request.Body != nil {
-		if body, err := ioutil.ReadAll(ctx.Request.Body); err == nil {
+		if body, err := io.ReadAll(ctx.Request.Body); err == nil {
 			ctx.Set(gin.BodyBytesKey, body)
 		}
 	}
@@ -168,7 +167,7 @@ func (l *luaSendContext) JSON(code int, obj interface{}) {
 }
 
 func (l *luaSendContext) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) {
-	if val, err := ioutil.ReadAll(reader); err == nil {
+	if val, err := io.ReadAll(reader); err == nil {
 		l.msg = string(val)
 	}
 }

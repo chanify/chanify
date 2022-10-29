@@ -6,7 +6,7 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
-	"io/ioutil"
+	"io"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -26,7 +26,7 @@ const (
 )
 
 func (c *Core) bindBodyJSON(ctx *gin.Context, obj interface{}) error {
-	body, err := ioutil.ReadAll(ctx.Request.Body)
+	body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		return err
 	}
