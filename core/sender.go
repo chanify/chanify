@@ -205,7 +205,14 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 	if len(copytext) > 1000 {
 		return nil, ErrTooLargeContent
 	}
-	if len(text)+len(title) < 1200 {
+	l := len(title) + len(text)
+	if len(actions) > 4 {
+		actions = actions[:4]
+	}
+	for _, act := range actions {
+		l += len(act)
+	}
+	if l < 2000 {
 		if len(actions) > 0 {
 			return c.makeActionContent(msg, text, title, actions)
 		}
@@ -241,15 +248,5 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 }
 
 func (c *Core) makeActionContent(msg *model.Message, text string, title string, actions []string) (*model.Message, error) {
-	if len(actions) > 4 {
-		actions = actions[:4]
-	}
-	l := len(title) + len(text)
-	for _, act := range actions {
-		l += len(act)
-	}
-	if l > 2000 {
-		return nil, ErrTooLargeContent
-	}
 	return msg.ActionContent(text, title, actions), nil
 }

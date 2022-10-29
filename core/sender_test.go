@@ -656,7 +656,7 @@ func TestTooLargeSaveTextFailed(t *testing.T) {
 	w := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(w)
 	ctx.Request, _ = http.NewRequest("GET", "/", nil)
-	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 500), strings.Repeat("2", 1000), "", "1", nil); err == nil {
+	if _, err := c.makeTextContent(model.NewMessage(tk), strings.Repeat("1", 500), strings.Repeat("2", 2000), "", "1", nil); err == nil {
 		t.Error("Check save too large text failed")
 	}
 }

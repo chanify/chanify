@@ -432,7 +432,7 @@ $ curl --form "action=ActionName1|http://<action host>/<action1>" "http://<addre
 URL for script action:
 
 ```bash
-chanify://action/run-script/<scipt name>?<arg name 1>=<arg value 1>&<arg name 2>=<arg value 2>
+chanify://action/run-script/<script name>?<arg name 1>=<arg value 1>&<arg name 2>=<arg value 2>
 ```
 
 ## Configuration

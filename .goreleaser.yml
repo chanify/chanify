@@ -53,3 +53,4 @@ archives:
       - README-zh_CN.md
       - SECURITY.md
       - plugin/**/*.lua
+      - example/**/*.js
