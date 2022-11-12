@@ -337,7 +337,7 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
 		res, err := l.getAPNS(dev.Sandbox).Push(notification)
 		if err != nil {
-			log.Println("Send apns failed:", res.StatusCode, res.Reason)
+			log.Println("Send apns failed:", res, err)
 			n--
 		}
 	}
