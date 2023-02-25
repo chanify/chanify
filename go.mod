@@ -15,7 +15,7 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/yuin/gopher-lua v1.1.0
 	golang.org/x/crypto v0.6.0
-	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
+	golang.org/x/image v0.5.0
 	google.golang.org/protobuf v1.28.1
 	modernc.org/sqlite v1.21.0
 )
