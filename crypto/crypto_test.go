@@ -114,3 +114,11 @@ func TestKeyFailed(t *testing.T) {
 	}
 
 }
+
+func TestNoMaybe(t *testing.T) {
+	r := NewNoMaybeReader(bytes.NewReader([]byte{}))
+	var out [1]byte
+	if _, err := r.Read(out[:]); err != nil {
+		t.Error("Skip maybe read failed")
+	}
+}

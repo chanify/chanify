@@ -72,7 +72,7 @@ func LoadSecretKey(key []byte) (*SecretKey, error) {
 func GenerateSecretKey(secret []byte) *SecretKey {
 	var r io.Reader
 	if len(secret) > 0 {
-		r = hkdf.Expand(sha1.New, secret, []byte("chanify"))
+		r = NewNoMaybeReader(hkdf.Expand(sha1.New, secret, []byte("chanify")))
 	} else {
 		r = rand.Reader
 	}
@@ -225,4 +225,26 @@ func calcSharedKey(sec *ecdsa.PrivateKey, pub *ecdsa.PublicKey) ([]byte, error) 
 		key = fixKey
 	}
 	return key, nil
+}
+
+type noMaybeReader struct {
+	reader io.Reader
+	maybe  bool
+}
+
+func NewNoMaybeReader(reader io.Reader) io.Reader {
+	return &noMaybeReader{
+		reader: reader,
+		maybe:  true,
+	}
+}
+
+func (r *noMaybeReader) Read(p []byte) (n int, err error) {
+	if r.maybe {
+		r.maybe = false
+		if len(p) == 1 {
+			return 1, nil
+		}
+	}
+	return r.reader.Read(p)
 }
