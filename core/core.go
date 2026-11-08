@@ -72,6 +72,7 @@ func (c *Core) APIHandler() http.Handler {
 	api.GET("/qrcode", c.handleQRCode)
 	api.POST("/bind-user", c.handleBindUser)
 	api.POST("/unbind-user", c.handleUnbindUser)
+	api.POST("/delete-user", c.handleDeleteUser)
 	api.POST("/push-token", c.handleUpdatePushToken)
 
 	file := r.Group("/files")

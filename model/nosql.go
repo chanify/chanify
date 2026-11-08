@@ -79,3 +79,6 @@ func (s *nosql) GetDeviceKey(uuid string) ([]byte, error) {
 func (s *nosql) GetDevices(uid string) ([]*Device, error) {
 	return nil, ErrNotImplemented
 }
+
+// Stateless mode persists no account or device records.
+func (s *nosql) DeleteUser(uid string) error { return nil }

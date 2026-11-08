@@ -406,3 +406,6 @@ func (l *Logic) canRegisterUser(uid string) bool {
 	_, ok := l.whitelist[uid]
 	return ok
 }
+
+// DeleteUser erases the account and its device registrations.
+func (l *Logic) DeleteUser(uid string) error { return l.db.DeleteUser(uid) }

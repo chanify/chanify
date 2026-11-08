@@ -87,7 +87,7 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 	}
 	if msg == nil {
 		if len(params.Link) > 0 {
-			msg = model.NewMessage(params.Token).LinkContent(params.Link)
+			msg = model.NewMessage(params.Token).LinkContent(params.Link, params.Title)
 		} else if len(params.TimeContent.Code) > 0 {
 			msg = model.NewMessage(params.Token).TimelineContent(params.TimeContent.Code, params.Title, params.TimeContent.Timestamp, params.TimeContent.Items)
 		} else if len(params.Text) <= 0 {

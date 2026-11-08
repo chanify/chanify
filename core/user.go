@@ -3,6 +3,7 @@ package core
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/logic"
@@ -82,4 +83,29 @@ func (c *Core) handleUnbindUser(ctx *gin.Context) {
 		"uuid": params.DeviceID,
 		"uid":  params.UserID,
 	})
+}
+
+func (c *Core) handleDeleteUser(ctx *gin.Context) {
+	var params struct {
+		Nonce int64  `json:"nonce"`
+		User  string `json:"user"`
+		Key   string `json:"key"`
+	}
+	ctx.Request.Body = http.MaxBytesReader(ctx.Writer, ctx.Request.Body, 4096)
+	if err := c.bindBodyJSON(ctx, &params); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"msg": "invalid params"})
+		return
+	}
+	key, err := crypto.Base64Encode.DecodeString(params.Key)
+	pk, keyErr := crypto.LoadPublicKey(key)
+	delta := time.Now().UnixMilli() - params.Nonce
+	if err != nil || keyErr != nil || pk.ToID(0) != params.User || delta < -300000 || delta > 300000 || !verifyUser(ctx, params.Key) {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"msg": "invalid user sign"})
+		return
+	}
+	if err := c.logic.DeleteUser(params.User); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "delete account failed"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"uid": params.User, "deleted": true})
 }

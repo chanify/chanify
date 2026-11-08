@@ -129,3 +129,19 @@ func (s *sqlite) fixDB() error {
 	}
 	return tx.Commit()
 }
+
+// DeleteUser removes all stored account data atomically.
+func (s *sqlite) DeleteUser(uid string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err = tx.Exec("DELETE FROM `devices` WHERE `uid`=?;", uid); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM `users` WHERE `uid`=?;", uid); err != nil {
+		return err
+	}
+	return tx.Commit()
+}

@@ -42,10 +42,11 @@ func (m *Message) DisableToken() *Message {
 }
 
 // LinkContent set link notification
-func (m *Message) LinkContent(link string) *Message {
+func (m *Message) LinkContent(link string, title string) *Message {
 	ctx := &pb.MsgContent{
 		Type: pb.MsgType_Link,
 		Link: link,
+		Title: title,
 	}
 	m.Content, _ = proto.Marshal(ctx)
 	return m
