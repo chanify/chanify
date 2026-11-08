@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/hkdf"
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -16,8 +17,6 @@ import (
 	"errors"
 	"hash"
 	"io"
-
-	"golang.org/x/crypto/hkdf"
 )
 
 // variable define
@@ -70,16 +69,39 @@ func LoadSecretKey(key []byte) (*SecretKey, error) {
 
 // GenerateSecretKey with secret key
 func GenerateSecretKey(secret []byte) *SecretKey {
-	var r io.Reader
+	var key *ecdsa.PrivateKey
+	var err error
 	if len(secret) > 0 {
-		r = NewNoMaybeReader(hkdf.Expand(sha1.New, secret, []byte("chanify")))
+		key, err = deriveLegacySecretKey(secret)
 	} else {
-		r = rand.Reader
+		key, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	}
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), r)
+	if err != nil {
+		panic(err)
+	}
 	k := &SecretKey{}
 	k.PrivateKey = *key
 	return k
+}
+
+// deriveLegacySecretKey preserves cc4bf1b's Go 1.20 P-256 rejection sampling
+// over HKDF-Expand(SHA-1, secret, "chanify"). Do not use GenerateKey here: its
+// random stream consumption is not stable, and Go 1.26+ ignores custom readers.
+func deriveLegacySecretKey(secret []byte) (*ecdsa.PrivateKey, error) {
+	const scalarSize = 32
+	for length := scalarSize; length <= sha1.Size*255; length += scalarSize {
+		stream, err := hkdf.Expand(sha1.New, secret, "chanify", length)
+		if err != nil {
+			return nil, err
+		}
+		// Expanding a longer prefix continues the same legacy stream. Reject
+		// zero and values >= the curve order without reducing them modulo N.
+		key, err := ecdsa.ParseRawPrivateKey(elliptic.P256(), stream[length-scalarSize:])
+		if err == nil {
+			return key, nil
+		}
+	}
+	return nil, ErrInvalidKey
 }
 
 // MarshalPublicKey return binary public key

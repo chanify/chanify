@@ -1,6 +1,6 @@
 module github.com/chanify/chanify
 
-go 1.20
+go 1.27.3
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
