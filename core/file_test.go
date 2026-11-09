@@ -14,7 +14,11 @@ import (
 
 func TestImageFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath+"/images/", os.ModePerm)                      // nolint: errcheck
 	os.WriteFile(fpath+"/images/1234567890", []byte("hello"), 0644) // nolint: errcheck
 	logic.APIEndpoint = "http://127.0.0.1"
@@ -79,7 +83,11 @@ func TestImageFileFailed(t *testing.T) {
 
 func TestAudioFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath+"/audios/", os.ModePerm)                      // nolint: errcheck
 	os.WriteFile(fpath+"/audios/1234567890", []byte("hello"), 0644) // nolint: errcheck
 	logic.APIEndpoint = "http://127.0.0.1"
@@ -144,7 +152,11 @@ func TestAudioFileFailed(t *testing.T) {
 
 func TestFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath+"/files/", os.ModePerm)                      // nolint: errcheck
 	os.WriteFile(fpath+"/files/1234567890", []byte("hello"), 0644) // nolint: errcheck
 	logic.APIEndpoint = "http://127.0.0.1"

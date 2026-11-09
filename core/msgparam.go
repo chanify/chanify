@@ -36,7 +36,7 @@ type MsgParam struct {
 
 // ParsePlainText process text/plain
 func (m *MsgParam) ParsePlainText(ctx *gin.Context) {
-	defer ctx.Request.Body.Close()
+	defer func() { _ = ctx.Request.Body.Close() }()
 	if d, err := io.ReadAll(ctx.Request.Body); err == nil {
 		m.Text = string(d)
 	}
@@ -44,7 +44,7 @@ func (m *MsgParam) ParsePlainText(ctx *gin.Context) {
 
 // ParseJSON process application/json
 func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
-	defer ctx.Request.Body.Close()
+	defer func() { _ = ctx.Request.Body.Close() }()
 	var params struct {
 		Token             string     `json:"token,omitempty"`
 		Title             string     `json:"title,omitempty"`
@@ -332,7 +332,7 @@ func readFileFromForm(form *multipart.Form, name string) ([]byte, string, error)
 	fs := form.File[name]
 	if len(fs) > 0 {
 		if fp, err := fs[0].Open(); err == nil {
-			defer fp.Close()
+			defer func() { _ = fp.Close() }()
 			data, err := io.ReadAll(fp)
 			return data, fs[0].Filename, err
 		}

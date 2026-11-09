@@ -144,7 +144,7 @@ func (c *Core) sendForward(ctx sendContext, token *model.Token, msg *model.Messa
 		return
 	}
 	reader := resp.Body
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 	ctx.DataFromReader(resp.StatusCode, resp.ContentLength, resp.Header.Get("Content-Type"), reader, map[string]string{})
 }
 

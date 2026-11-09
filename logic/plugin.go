@@ -74,7 +74,9 @@ func loadWebhookPlugin(path string, wbOpts []map[string]interface{}) *pluginMana
 
 func (p *pluginManager) Close() {
 	if p.watcher != nil {
-		p.watcher.Close()
+		if err := p.watcher.Close(); err != nil {
+			log.Println("Close failed:", err)
+		}
 		p.watchWG.Wait()
 		p.watcher = nil
 	}

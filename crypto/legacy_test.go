@@ -42,7 +42,7 @@ func TestLegacySecretKeyVectors(t *testing.T) {
 			for i, v := range vectors {
 				t.Run(fmt.Sprint(i), func(t *testing.T) {
 					key := GenerateSecretKey([]byte(v.secret))
-					scalar, err := key.PrivateKey.Bytes()
+					scalar, err := key.Bytes()
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -83,7 +83,7 @@ eSoFkeiKcMHP9UBH1m2sfZFPtEHIke/0rw==
 		t.Fatal(err)
 	}
 	derived := GenerateSecretKey([]byte("123"))
-	if !stored.PrivateKey.Equal(&derived.PrivateKey) {
+	if !stored.Equal(&derived.PrivateKey) {
 		t.Fatal("derived key differs from stored legacy key")
 	}
 	if !bytes.Equal(derived.MarshalSecretKey(), []byte(pemKey)) {

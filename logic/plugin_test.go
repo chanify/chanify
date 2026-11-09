@@ -13,7 +13,11 @@ import (
 
 func TestLoadLuaFile(t *testing.T) {
 	dir := filepath.Join(os.TempDir(), "plugin")
-	defer os.RemoveAll(dir)
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Error(err)
+		}
+	}()
 	whdir := filepath.Join(dir, "webhook")
 	os.MkdirAll(whdir, os.ModePerm) // nolint: errcheck
 	fpath := filepath.Join(whdir, "github.lua")
@@ -21,7 +25,11 @@ func TestLoadLuaFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer fs.Close()
+	defer func() {
+		if err := fs.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	fs.WriteString("-") // nolint: errcheck
 	fs.Sync()           // nolint: errcheck
 

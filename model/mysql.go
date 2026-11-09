@@ -31,7 +31,9 @@ func init() {
 
 func (s *mysql) Close() {
 	if s.db != nil {
-		s.db.Close()
+		if err := s.db.Close(); err != nil {
+			log.Println("Close failed:", err)
+		}
 		s.db = nil
 		log.Println("Close mysql database")
 	}
@@ -90,7 +92,7 @@ func (s *mysql) GetDevices(uid string) ([]*Device, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		d := &Device{}
 		rows.Scan(&d.Token, &d.Sandbox, &d.Type) // nolint: errcheck
@@ -147,7 +149,7 @@ func (s *mysql) DeleteUser(uid string) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	if _, err = tx.Exec("DELETE FROM `devices` WHERE `uid`=?;", uid); err != nil {
 		return err
 	}

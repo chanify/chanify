@@ -22,9 +22,12 @@ func saveFile(path string, data []byte) error {
 		if err != nil {
 			return err
 		}
-		defer f.Close()
 		_, err = f.Write(data)
-		return err
+		closeErr := f.Close()
+		if err != nil {
+			return err
+		}
+		return closeErr
 	}
 	return nil
 }
@@ -63,7 +66,7 @@ func compileLua(filePath string) (*lua.FunctionProto, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	reader := bufio.NewReader(file)
 	chunk, err := parse.Parse(reader, filePath)
 	if err != nil {

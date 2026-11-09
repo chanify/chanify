@@ -8,7 +8,11 @@ import (
 
 func TestFixPath(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	if err := fixPath(fpath + "/tests"); err != nil {
 		t.Error("Fix path failed")
 	}
@@ -26,8 +30,16 @@ func TestCompileLua(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	defer os.RemoveAll(fpath)
-	defer fs.Close()
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
+	defer func() {
+		if err := fs.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	if _, err := compileLua(fpath); err != nil {
 		t.Fatal("Compile lua failed")
 	}

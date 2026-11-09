@@ -22,8 +22,16 @@ func TestWebHook(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
-	defer fs.Close()
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Error(err)
+		}
+	}()
+	defer func() {
+		if err := fs.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	s := `
 		local req=ctx:request()
 		req:token()
@@ -66,8 +74,16 @@ func TestWebHookFailed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
-	defer fs.Close()
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Error(err)
+		}
+	}()
+	defer func() {
+		if err := fs.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	fs.WriteString("a()") // nolint: errcheck
 	fs.Sync()             // nolint: errcheck
 

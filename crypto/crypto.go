@@ -45,7 +45,7 @@ func LoadPublicKey(key []byte) (*PublicKey, error) {
 	if len(key) <= 0 {
 		return nil, ErrInvalidKey
 	}
-	pk.X, pk.Y = elliptic.Unmarshal(pk.Curve, key)
+	pk.X, pk.Y = elliptic.Unmarshal(pk.Curve, key) //nolint:staticcheck // SA1019: preserve legacy ECIES and public-key wire compatibility.
 	if pk.X == nil || pk.Y == nil {
 		return nil, ErrInvalidKey
 	}
@@ -124,7 +124,7 @@ func (k *PublicKey) Verify(msg []byte, sig []byte) bool {
 func (k *PublicKey) Encrypt(data []byte) ([]byte, error) {
 	seckey, _ := ecdsa.GenerateKey(k.Curve, rand.Reader)
 	Z, _ := calcSharedKey(seckey, &k.PublicKey)
-	X := elliptic.Marshal(k.Curve, seckey.X, seckey.Y)
+	X := elliptic.Marshal(k.Curve, seckey.X, seckey.Y) //nolint:staticcheck // SA1019: preserve legacy ECIES and public-key wire compatibility.
 	K := x963KDF(Z, X, sha256.New)
 	key := K[:eciesKeyLen]
 	nonce := K[eciesKeyLen:]
@@ -183,7 +183,7 @@ func (k *SecretKey) Decrypt(data []byte) ([]byte, error) {
 
 	R := ecdsa.PublicKey{}
 	R.Curve = elliptic.P256()
-	R.X, R.Y = elliptic.Unmarshal(R.Curve, data[:rLen])
+	R.X, R.Y = elliptic.Unmarshal(R.Curve, data[:rLen]) //nolint:staticcheck // SA1019: preserve legacy ECIES and public-key wire compatibility.
 
 	Z, _ := calcSharedKey(&k.PrivateKey, &R)
 
@@ -197,7 +197,7 @@ func (k *SecretKey) Decrypt(data []byte) ([]byte, error) {
 }
 
 func marshalPublicKey(key *ecdsa.PublicKey) []byte {
-	return elliptic.Marshal(key.Curve, key.X, key.Y)
+	return elliptic.Marshal(key.Curve, key.X, key.Y) //nolint:staticcheck // SA1019: preserve legacy ECIES and public-key wire compatibility.
 }
 
 func formatToID(code byte, key []byte) string {
@@ -238,7 +238,7 @@ func calcSharedKey(sec *ecdsa.PrivateKey, pub *ecdsa.PublicKey) ([]byte, error) 
 	if pub == nil {
 		return nil, ErrInvalidKey
 	}
-	res, _ := sec.Curve.ScalarMult(pub.X, pub.Y, sec.D.Bytes())
+	res, _ := sec.Curve.ScalarMult(pub.X, pub.Y, sec.D.Bytes()) //nolint:staticcheck // SA1019: preserve legacy ECIES and public-key wire compatibility.
 	byteLen := sec.Params().BitSize / 8
 	key := res.Bytes()
 	if byteLen > len(key) {

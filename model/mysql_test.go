@@ -171,7 +171,12 @@ func TestMySQLFailed(t *testing.T) {
 func TestMySQLOpenFailed(t *testing.T) {
 	open := drivers["mysql"]
 	dbmock, mock, _ := sqlmock.NewWithDSN("sqlmock")
-	defer dbmock.Close()
+	defer func() {
+		mock.ExpectClose()
+		if err := dbmock.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	mock.ExpectExec("CREATE TABLE IF NOT EXISTS `options`").WillReturnError(sql.ErrConnDone)
 	if _, err := open("sqlmock://sqlmock"); err != sql.ErrConnDone {
 		t.Error("Check open mysql failed:", err)

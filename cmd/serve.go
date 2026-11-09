@@ -138,11 +138,12 @@ func getEndpoint() string {
 		}
 		if len(hostname) > 0 {
 			port := viper.GetInt("server.port")
-			if port == 80 {
+			switch port {
+			case 80:
 				endpoint = "http://" + hostname
-			} else if port == 443 {
+			case 443:
 				endpoint = "https://" + hostname
-			} else {
+			default:
 				endpoint = fmt.Sprintf("http://%s:%d", hostname, port)
 			}
 		}

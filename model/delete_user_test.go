@@ -57,7 +57,12 @@ func TestDeleteUserRollsBackOnFailure(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer db.Close()
+			defer func() {
+				mock.ExpectClose()
+				if err := db.Close(); err != nil {
+					t.Error(err)
+				}
+			}()
 			mock.ExpectBegin()
 			mock.ExpectExec("DELETE FROM `devices`").WithArgs("uid").WillReturnResult(sqlmock.NewResult(0, 2))
 			mock.ExpectExec("DELETE FROM `users`").WithArgs("uid").WillReturnError(sql.ErrConnDone)

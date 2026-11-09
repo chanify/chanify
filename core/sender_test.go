@@ -167,7 +167,9 @@ func TestSenderPostFormData(t *testing.T) {
 	writer.WriteField("timeline-timestamp", "2006-01-02T15:04:05Z07:00")                                                                  // nolint: errcheck
 	writer.WriteField("timeline-items[key1]", "123")                                                                                      // nolint: errcheck
 	writer.WriteField("timeline-items[key2]", "123.45")                                                                                   // nolint: errcheck
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest("POST", "/v1/sender", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -217,7 +219,11 @@ func TestSenderPostJSON(t *testing.T) {
 
 func TestSenderPostImage(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
@@ -236,7 +242,11 @@ func TestSenderPostImage(t *testing.T) {
 
 func TestSenderPostFormImage(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
@@ -250,7 +260,9 @@ func TestSenderPostFormImage(t *testing.T) {
 	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
 	partImage, _ := writer.CreateFormFile("image", "image")
 	partImage.Write([]byte("")) // nolint: errcheck
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest("POST", "/v1/sender", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -264,7 +276,11 @@ func TestSenderPostFormImage(t *testing.T) {
 
 func TestSenderPostFormAudio(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
@@ -278,7 +294,9 @@ func TestSenderPostFormAudio(t *testing.T) {
 	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
 	partAudio, _ := writer.CreateFormFile("audio", "audio")
 	partAudio.Write([]byte("")) // nolint: errcheck
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest("POST", "/v1/sender?filename=123.mp3", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -292,7 +310,11 @@ func TestSenderPostFormAudio(t *testing.T) {
 
 func TestSenderPostAudio(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
 	defer c.Close()
@@ -311,7 +333,11 @@ func TestSenderPostAudio(t *testing.T) {
 
 func TestSenderPostFormFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
@@ -325,7 +351,9 @@ func TestSenderPostFormFile(t *testing.T) {
 	partToken.Write([]byte("CNjo6ua-WhIiQUJPTzZUU0lYS1NFVklKS1hMRFFTVVhRUlhVQU9YR0dZWQ..faqRNWqzTW3Fjg4xh9CS_p8IItEHjSQiYzJjxcqf_tg")) // nolint: errcheck
 	partFile, _ := writer.CreateFormFile("file", "test.txt")
 	partFile.Write([]byte("")) // nolint: errcheck
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
 
 	req := httptest.NewRequest("POST", "/v1/sender", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -509,7 +537,11 @@ func TestSendMsg(t *testing.T) {
 
 func TestSaveImageFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath+"/images/", os.ModePerm) // nolint: errcheck
 
 	c := New()
@@ -537,7 +569,11 @@ func TestSaveImageFileFailed(t *testing.T) {
 
 func TestSaveAudioFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath+"/audios/", os.ModePerm) // nolint: errcheck
 
 	c := New()
@@ -565,7 +601,11 @@ func TestSaveIAudioFileFailed(t *testing.T) {
 
 func TestSaveFile(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath+"/files/", os.ModePerm) // nolint: errcheck
 
 	c := New()
@@ -593,7 +633,11 @@ func TestSaveFileFailed(t *testing.T) {
 
 func TestTooLargeText(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath+"/files/", os.ModePerm) // nolint: errcheck
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
@@ -611,7 +655,11 @@ func TestTooLargeText(t *testing.T) {
 
 func TestTooLargeTextNoTitle(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath+"/files/", os.ModePerm) // nolint: errcheck
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()
@@ -642,10 +690,18 @@ func TestTooLargeTextFailed(t *testing.T) {
 
 func TestTooLargeSaveTextFailed(t *testing.T) {
 	fpath := filepath.Join(os.TempDir(), "files")
-	defer os.RemoveAll(fpath)
+	defer func() {
+		if err := os.RemoveAll(fpath); err != nil {
+			t.Error(err)
+		}
+	}()
 	os.MkdirAll(fpath, os.ModePerm) // nolint: errcheck
 	if f, err := os.Create(filepath.Join(fpath, "files")); err != nil {
-		f.Close()
+		t.Fatal(err)
+	} else {
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 	logic.APIEndpoint = "http://127.0.0.1"
 	c := New()

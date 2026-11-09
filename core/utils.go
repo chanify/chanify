@@ -158,7 +158,7 @@ func fileBaseName(path string) string {
 }
 
 func fixLog(s string) string {
-	return strings.Replace(strings.Replace(s, "\n", "", -1), "\r", "", -1)
+	return strings.ReplaceAll(strings.ReplaceAll(s, "\n", ""), "\r", "")
 }
 
 // JSONString define boolean string

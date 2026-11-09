@@ -79,7 +79,9 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	setFieldValue(w, "sound", []byte(sound))
 	setFieldValueInt(w, "priority", priority)
 	setFieldValue(w, "interruption-level", []byte(interruptionLevel))
-	w.Close()
+	if err := w.Close(); err != nil {
+		return err
+	}
 	return sendMessage(&data, w.FormDataContentType())
 }
 
@@ -109,7 +111,7 @@ func parseTimelineMessage(cmd *cobra.Command, code string, w *multipart.Writer) 
 				continue
 			}
 		}
-		return fmt.Errorf("Invalid key or value: %s", arg)
+		return fmt.Errorf("invalid key or value: %s", arg)
 	}
 	return nil
 }
@@ -168,10 +170,10 @@ func sendMessage(in *bytes.Buffer, content string) error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		x, _ := io.ReadAll(resp.Body)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		return fmt.Errorf("send failed: %d, %s", resp.StatusCode, string(x))
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var res struct {
 		UID string `json:"request-uid,omitempty"`
 	}

@@ -13,7 +13,11 @@ func TestSqliteOpen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(file.Name())
+	defer func() {
+		if err := os.Remove(file.Name()); err != nil {
+			t.Error(err)
+		}
+	}()
 	db, err := drivers["sqlite"]("sqlite://" + file.Name())
 	if err != nil {
 		t.Fatal("Open sqlite failed")
