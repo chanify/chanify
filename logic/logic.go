@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/x509"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/url"
@@ -362,8 +364,17 @@ func (l *Logic) loadDB(dburl string) error {
 		return err
 	}
 	var secret []byte
-	if err := l.db.GetOption("secret", &secret); err == nil {
-		l.secKey, _ = crypto.LoadSecretKey(secret)
+	if err := l.db.GetOption("secret", &secret); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			l.Close()
+			return fmt.Errorf("read node secret key: %w", err)
+		}
+	} else {
+		l.secKey, err = crypto.LoadSecretKey(secret)
+		if err != nil {
+			l.Close()
+			return fmt.Errorf("load node secret key: %w", err)
+		}
 	}
 	return l.fixSecretKey()
 }

@@ -20,6 +20,9 @@ func TestDeleteUserPreservesOtherAccounts(t *testing.T) {
 		if err := db.BindDevice(uid, uid+"device", []byte(uid), 0); err != nil {
 			t.Fatal(err)
 		}
+		if err := db.UpdatePushToken(uid, uid+"device", []byte("test-token"), false); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := db.DeleteUser("delete"); err != nil {
 		t.Fatal(err)
@@ -30,11 +33,17 @@ func TestDeleteUserPreservesOtherAccounts(t *testing.T) {
 	if devices, err := db.GetDevices("delete"); err != nil || len(devices) != 0 {
 		t.Fatalf("deleted devices remain: %v", err)
 	}
+	if _, err := db.GetDeviceKey("deletedevice"); err != sql.ErrNoRows {
+		t.Fatalf("deleted device key remains: %v", err)
+	}
 	if _, err := db.GetUser("keep"); err != nil {
 		t.Fatalf("other account lost: %v", err)
 	}
 	if devices, err := db.GetDevices("keep"); err != nil || len(devices) != 1 {
 		t.Fatalf("other devices lost: %v", err)
+	}
+	if key, err := db.GetDeviceKey("keepdevice"); err != nil || string(key) != "keep" {
+		t.Fatalf("other device key changed: %v", err)
 	}
 	if err := db.DeleteUser("delete"); err != nil {
 		t.Fatalf("retry failed: %v", err)

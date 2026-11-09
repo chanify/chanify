@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/fsnotify/fsnotify"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -41,10 +43,35 @@ func TestLoadLuaFile(t *testing.T) {
 }
 
 func TestLuaWatch(t *testing.T) {
-	opts := []map[string]interface{}{}
-	l := loadWebhookPlugin("", opts)
-	defer l.Close()
-	l.watcher.Errors <- errors.New("123")
+	// Own the channels in this test; fsnotify owns and closes its real channels.
+	watcher := &fsnotify.Watcher{
+		Events: make(chan fsnotify.Event),
+		Errors: make(chan error),
+	}
+	l := &pluginManager{}
+	done := make(chan struct{})
+	go func() {
+		l.luaWatch(watcher)
+		close(done)
+	}()
+	watcher.Errors <- errors.New("123")
+	close(watcher.Errors)
+	close(watcher.Events)
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("watch loop did not stop after channels closed")
+	}
+}
+
+func TestPluginCloseWaitsForWatcher(t *testing.T) {
+	l := loadWebhookPlugin("", nil)
+	l.Close()
+	// Closing twice must remain safe after the watch goroutine exits.
+	l.Close()
+	if l.watcher != nil {
+		t.Fatal("watcher remains after close")
+	}
 }
 
 func TestWebHookDoCall(t *testing.T) {

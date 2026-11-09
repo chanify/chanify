@@ -15,7 +15,7 @@ import (
 
 var (
 	// Version number
-	Version = "unknown-version"
+	Version = "1.4.4"
 	// GitCommit code
 	GitCommit = "unknown-gitcommit"
 	// BuildTime RFC3339 UTC

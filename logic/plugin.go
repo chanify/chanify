@@ -26,6 +26,7 @@ type Webhook struct {
 
 type pluginManager struct {
 	watcher  *fsnotify.Watcher
+	watchWG  sync.WaitGroup
 	luaMutex sync.Mutex
 	luaFiles map[string]*luaFunc
 	webHooks map[string]*Webhook
@@ -40,7 +41,11 @@ func loadWebhookPlugin(path string, wbOpts []map[string]interface{}) *pluginMana
 	watcher, err := fsnotify.NewWatcher()
 	if err == nil {
 		plugin.watcher = watcher
-		go plugin.luaWatch()
+		plugin.watchWG.Add(1)
+		go func() {
+			defer plugin.watchWG.Done()
+			plugin.luaWatch(watcher)
+		}()
 	}
 	for _, opts := range wbOpts {
 		if name, ok := readOptString(opts, "name"); ok && len(name) > 0 {
@@ -70,6 +75,7 @@ func loadWebhookPlugin(path string, wbOpts []map[string]interface{}) *pluginMana
 func (p *pluginManager) Close() {
 	if p.watcher != nil {
 		p.watcher.Close()
+		p.watchWG.Wait()
 		p.watcher = nil
 	}
 }
@@ -103,19 +109,23 @@ func (p *pluginManager) loadLuaFile(file string, path string) *luaFunc {
 			log.Println("Load lua failed:", err)
 		}
 		p.luaFiles[file] = lfunc
-		p.watcher.Add(file) // nolint: errcheck
+		if p.watcher != nil {
+			p.watcher.Add(file) // nolint: errcheck
+		}
 	}
 	return lfunc
 }
 
-func (p *pluginManager) luaWatch() {
-	watcher := p.watcher
+func (p *pluginManager) luaWatch(watcher *fsnotify.Watcher) {
 	if watcher != nil {
+		errors := watcher.Errors
 		for {
 			select {
-			case err, ok := <-watcher.Errors:
+			case err, ok := <-errors:
 				if ok {
 					log.Println("Watch lua file failed:", err)
+				} else {
+					errors = nil
 				}
 			case event, ok := <-watcher.Events:
 				if !ok {

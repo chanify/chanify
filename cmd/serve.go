@@ -168,7 +168,10 @@ func getWebhooks() []map[string]interface{} {
 			ret := []map[string]interface{}{}
 			for _, wh := range whss {
 				ww := map[string]interface{}{}
-				if webhook, ok := wh.(map[interface{}]interface{}); ok {
+				switch webhook := wh.(type) {
+				case map[string]interface{}:
+					ww = webhook
+				case map[interface{}]interface{}:
 					for k, v := range webhook {
 						if key, ok := k.(string); ok {
 							ww[key] = v

@@ -44,3 +44,5 @@ Temporary Items
 # Dependency directories (remove the comment below to include it)
 vendor/
 
+# GoReleaser output
+/dist/
