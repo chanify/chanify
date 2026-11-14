@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/chanify/chanify/crypto"
@@ -40,17 +41,20 @@ var (
 
 // Options for init logic
 type Options struct {
-	Name         string
-	Version      string
-	Endpoint     string
-	DataPath     string
-	FilePath     string
-	PluginPath   string
-	DBUrl        string
-	Secret       string
-	Registerable bool
-	RegUsers     []string
-	WebHooks     []map[string]interface{}
+	Name          string
+	Version       string
+	Endpoint      string
+	DataPath      string
+	FilePath      string
+	PluginPath    string
+	DBUrl         string
+	Secret        string
+	Registerable  bool
+	RegUsers      []string
+	WebHooks      []map[string]interface{}
+	MCPEnabled    bool
+	MCPListen     bool
+	AdminPassword string
 }
 
 // Logic instance
@@ -130,9 +134,19 @@ func NewLogic(opts *Options) (*Logic, error) {
 	if err := l.loadDB(opts.DBUrl); err != nil {
 		return nil, err
 	}
+	if opts.MCPEnabled {
+		if _, ok := l.db.(model.MCPTokenStore); !ok || l.srvless {
+			l.Close()
+			return nil, errors.New("MCP requires a persistent self-hosted node")
+		}
+		l.Features = append(l.Features, "mcp")
+	}
 	l.NodeID = l.secKey.ToID(0x01)
 	if !l.srvless {
 		l.Features = append([]string{"store.device"}, l.Features...)
+		if !strings.HasPrefix(strings.ToLower(opts.DBUrl), "nosql://") {
+			l.Features = append(l.Features, "auth.server-token")
+		}
 		key, _ := base64.RawStdEncoding.DecodeString(authKey)
 		akey, _ := x509.ParsePKCS8PrivateKey(key)
 		tk := &token.Token{
@@ -253,15 +267,40 @@ func (l *Logic) Decrypt(data []byte) ([]byte, error) {
 }
 
 // VerifyToken chekc sender token
-func (l *Logic) VerifyToken(tk *model.Token) bool {
-	if tk.IsExpires() {
+func (l *Logic) verifyTokenSignature(tk *model.Token) bool {
+	if tk == nil || tk.IsExpires() {
 		return false
+	}
+	if tk.IsServerToken() {
+		if l.srvless || crypto.Base32Encode.EncodeToString(tk.GetNodeID()) != l.NodeID {
+			return false
+		}
+		user, err := l.GetUser(tk.GetUserID())
+		if err != nil || user.IsServerless() {
+			return false
+		}
 	}
 	key, err := l.GetUserKey(tk.GetUserID())
 	if err != nil {
 		return false
 	}
 	return tk.VerifySign(key)
+}
+
+// VerifyToken requires every server-wide credential to be registered and active.
+func (l *Logic) VerifyToken(tk *model.Token) bool {
+	if !l.verifyTokenSignature(tk) {
+		return false
+	}
+	if !tk.IsServerToken() {
+		return true
+	}
+	store, ok := l.db.(model.ServerTokenStore)
+	if !ok {
+		return false
+	}
+	record, err := store.GetServerToken(tk.GetUserID(), tk.ServerTokenID())
+	return err == nil && !record.Revoked && record.Hash == serverTokenHash(tk.RawToken())
 }
 
 // LoadFile read with file type & data

@@ -26,10 +26,15 @@ type Message struct {
 
 // NewMessage with sender token
 func NewMessage(tk *Token) *Message {
+	return NewMessageDestination(tk.GetNodeID(), tk.GetChannel(), tk.HashValue())
+}
+
+// NewMessageDestination builds a message after transport-specific authorization.
+func NewMessageDestination(from, channel, tokenHash []byte) *Message {
 	m := &Message{}
-	m.From = tk.GetNodeID()
-	m.Channel = tk.GetChannel()
-	m.TokenHash = tk.HashValue()
+	m.From = from
+	m.Channel = channel
+	m.TokenHash = tokenHash
 	m.isTimeline = false
 	return m
 }
@@ -44,8 +49,8 @@ func (m *Message) DisableToken() *Message {
 // LinkContent set link notification
 func (m *Message) LinkContent(link string, title string) *Message {
 	ctx := &pb.MsgContent{
-		Type: pb.MsgType_Link,
-		Link: link,
+		Type:  pb.MsgType_Link,
+		Link:  link,
 		Title: title,
 	}
 	m.Content, _ = proto.Marshal(ctx)
@@ -156,6 +161,22 @@ func (m *Message) ImageContent(path string, t *Thumbnail, size int) *Message {
 		}
 	}
 	m.Content, _ = proto.Marshal(ctx)
+	return m
+}
+
+// AttachmentCaption applies optional presentation fields without changing attachment bytes.
+func (m *Message) AttachmentCaption(title, summary string) *Message {
+	content := &pb.MsgContent{}
+	if proto.Unmarshal(m.Content, content) != nil || (content.Type != pb.MsgType_Image && content.Type != pb.MsgType_File) {
+		return m
+	}
+	if title != "" {
+		content.Title = title
+	}
+	if summary != "" {
+		content.Text = summary
+	}
+	m.Content, _ = proto.Marshal(content)
 	return m
 }
 

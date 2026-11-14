@@ -24,6 +24,13 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token"})
 		return
 	}
+	_, finished := c.beginAdminActivity(ctx.Request, "sending", token.ServerTokenID(), token.GetUserID())
+	defer finished()
+	token, err = token.ForOptionalChannel(queryChannel(ctx))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": err.Error()})
+		return
+	}
 	text := ctx.Param("msg")
 	if len(text) <= 0 {
 		text = ctx.Query("text")
@@ -43,6 +50,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	params := &MsgParam{}
 	params.Token, _ = c.parseToken(getToken(ctx))
+	params.Channel, params.ChannelProvided = queryChannel(ctx)
 	params.Link = ctx.Query("link")
 	params.Title = ctx.Query("title")
 	params.Sound = ctx.Query("sound")
@@ -85,6 +93,11 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
 	}
+	_, finished := c.beginAdminActivity(ctx.Request, "sending", params.Token.ServerTokenID(), params.Token.GetUserID())
+	defer finished()
+	if err := params.resolveChannel(ctx); err != nil {
+		return
+	}
 	if msg == nil {
 		if len(params.Link) > 0 {
 			msg = model.NewMessage(params.Token).LinkContent(params.Link, params.Title)
@@ -102,11 +115,17 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			}
 		}
 	}
+	if parser != nil {
+		msg.AttachmentCaption(params.Title, params.Text)
+	}
 	c.sendMsg(ctx, params.Token, msg.SoundName(params.Sound).SetPriority(params.Priority).SetInterruptionLevel(params.InterruptionLevel))
 }
 
 func (c *Core) sendDirect(ctx sendContext, token *model.Token, msg *model.Message) {
-	uid := token.GetUserID()
+	c.sendDirectForUser(ctx, token.GetUserID(), msg)
+}
+
+func (c *Core) sendDirectForUser(ctx sendContext, uid string, msg *model.Message) {
 	key, err := c.logic.GetUserKey(uid)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})

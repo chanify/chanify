@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chanify · 节点管理</title>
+<link rel="stylesheet" href="admin/style.css"><script src="admin/app.js" defer></script>
+</head>
+<body>
+<div id="login-view" class="login-layout">
+  <section class="login-card" aria-labelledby="login-title">
+    <div class="brand"><span class="brand-mark">C</span><span>Chanify <small>节点管理</small></span></div>
+    <h1 id="login-title">管理你的通知节点</h1><p class="muted">查看令牌、了解客户端使用情况，随时收回访问权限。</p>
+    <form id="login-form" method="post" action="admin/api/login"><label for="password">管理密码</label><input id="password" type="password" autocomplete="current-password" required maxlength="72"><button class="primary" type="submit">登录管理端 <span aria-hidden="true">→</span></button></form>
+    <p id="login-message" role="status" class="message"></p><p class="fine">此密码独立于发送令牌和 MCP 凭据。</p>
+  </section>
+</div>
+<div id="app-view" hidden>
+  <header class="topbar"><div class="brand"><span class="brand-mark">C</span><span>Chanify <small>节点管理</small></span></div><div class="top-actions"><span id="node-version" class="muted"></span><button id="logout" class="quiet">退出登录</button></div></header>
+  <div class="workspace">
+    <aside><div class="side-label">工作区</div><nav aria-label="管理页面"><button data-view="sending" class="nav-button active">发送令牌 <span id="sending-count">0</span></button><button data-view="mcp" class="nav-button">MCP 令牌 <span id="mcp-count">0</span></button><button data-view="clients" class="nav-button">客户端活动 <span id="client-count">0</span></button></nav><div class="aside-note"><span class="dot"></span> 自建节点<br><span id="node-name">Chanify</span></div></aside>
+    <main>
+      <div class="page-heading"><div><p class="eyebrow">访问管理</p><h1 id="page-title">发送令牌</h1><p id="page-description" class="muted"></p></div><div class="heading-actions"><button id="refresh" class="secondary">刷新</button><button id="create-mcp" class="primary" hidden>＋ 创建 MCP 令牌</button></div></div>
+      <div id="page-message" class="message" role="status" aria-live="polite"></div>
+      <section class="stats" aria-label="节点概况"><div><span>有效令牌</span><strong id="active-count">—</strong></div><div><span>当前 SSE 监听</span><strong id="listener-count">—</strong></div><div><span>已吊销</span><strong id="revoked-count">—</strong></div></section>
+      <section class="panel"><div class="panel-toolbar"><div><strong id="table-title">令牌列表</strong><span id="updated-at" class="fine"></span></div><label class="user-filter" for="user-filter">用户 <select id="user-filter"><option value="">全部用户</option></select></label></div>
+        <div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><div id="empty" class="empty" hidden><span class="empty-symbol" aria-hidden="true">◇</span><h2 id="empty-title">暂无令牌</h2><p id="empty-description" class="muted"></p></div>
+      </section><p id="scope-note" class="fine bottom-note"></p>
+    </main>
+  </div>
+</div>
+<dialog id="create-dialog"><form id="create-form"><div class="dialog-heading"><h2>创建 MCP 令牌</h2><button type="button" class="quiet close-dialog" aria-label="关闭">×</button></div><p class="muted">为一个 agent 创建独立凭据，方便单独吊销。</p><label for="create-user">所属用户</label><select id="create-user" required><option value="">选择用户</option></select><label for="create-name">名称</label><input id="create-name" required maxlength="128" placeholder="例如：开发助手"><label for="create-days">有效期（天）</label><input id="create-days" type="number" min="1" max="1825" value="90" required><p class="fine">可向该用户的频道发送。未指定频道时发送到未分类。</p><p class="message dialog-message" role="status"></p><div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button type="submit" class="primary">创建令牌</button></div></form></dialog>
+<dialog id="rename-dialog"><form id="rename-form"><div class="dialog-heading"><h2>修改名称</h2><button type="button" class="quiet close-dialog" aria-label="关闭">×</button></div><label for="rename-name">名称</label><input id="rename-name" required maxlength="128"><p class="fine">仅修改名称。令牌内容、权限与有效期不会改变。</p><p class="message dialog-message" role="status"></p><div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button type="submit" class="primary">保存名称</button></div></form></dialog>
+<dialog id="revoke-dialog"><form id="revoke-form"><div class="dialog-heading"><h2>吊销令牌？</h2><button type="button" class="quiet close-dialog" aria-label="关闭">×</button></div><p id="revoke-description"></p><p class="muted">后续请求将被拒绝。已提交的通知无法撤回；其他令牌不受影响。</p><p class="message dialog-message" role="status"></p><div class="dialog-actions"><button type="button" class="secondary close-dialog">取消</button><button type="submit" class="danger">确认吊销</button></div></form></dialog>
+<dialog id="secret-dialog"><div class="dialog-heading"><h2>令牌已创建</h2><button type="button" class="quiet close-dialog" aria-label="关闭">×</button></div><p class="muted">完整令牌仅展示这一次，请立即复制并妥善保存。</p><label for="new-token">MCP Token</label><textarea id="new-token" readonly rows="4" spellcheck="false"></textarea><p class="message dialog-message" role="status"></p><div class="dialog-actions"><button id="copy-token" class="primary">复制令牌</button><button class="secondary close-dialog">完成</button></div></dialog>
+</body></html>

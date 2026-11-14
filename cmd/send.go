@@ -5,18 +5,18 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/chanify/chanify/sender"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -31,6 +31,7 @@ func init() {
 	rootCmd.AddCommand(sendCmd)
 	sendCmd.Flags().String("endpoint", "https://api.chanify.net", "Node server endpoint.")
 	sendCmd.Flags().String("token", "", "Send token.")
+	sendCmd.Flags().String("channel", "", "Base64url-encoded channel ID; omitted server-wide destination defaults to Uncategorized.")
 	sendCmd.Flags().String("sound", "", "Message sound code.")
 	sendCmd.Flags().String("text", "", "Text message content.")
 	sendCmd.Flags().String("link", "", "Link message content.")
@@ -75,6 +76,13 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
+	channel, _ := cmd.Flags().GetString("channel")
+	if cmd.Flags().Changed("channel") {
+		if channel == "" {
+			return errors.New("--channel cannot be empty")
+		}
+		setFieldValue(w, "channel", []byte(channel))
+	}
 	setFieldValue(w, "token", []byte(token))
 	setFieldValue(w, "sound", []byte(sound))
 	setFieldValueInt(w, "priority", priority)
@@ -82,7 +90,7 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	if err := w.Close(); err != nil {
 		return err
 	}
-	return sendMessage(&data, w.FormDataContentType())
+	return sendMessage(cmd.Context(), &data, w.FormDataContentType())
 }
 
 func parseTimelineMessage(cmd *cobra.Command, code string, w *multipart.Writer) error {
@@ -158,29 +166,16 @@ func parseOtherMessage(cmd *cobra.Command, w *multipart.Writer) error {
 	return nil
 }
 
-func sendMessage(in *bytes.Buffer, content string) error {
-	req, err := http.NewRequest("POST", viper.GetString("client.endpoint")+"/v1/sender", in)
+func sendMessage(ctx context.Context, in *bytes.Buffer, content string) error {
+	client, err := sender.New(viper.GetString("client.endpoint"), Version, nil)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", content)
-	resp, err := http.DefaultClient.Do(req)
+	result, err := client.Send(ctx, in, content, "")
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		x, _ := io.ReadAll(resp.Body)
-		defer func() { _ = resp.Body.Close() }()
-		return fmt.Errorf("send failed: %d, %s", resp.StatusCode, string(x))
-	}
-	defer func() { _ = resp.Body.Close() }()
-	var res struct {
-		UID string `json:"request-uid,omitempty"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return err
-	}
-	fmt.Println("request-uid:", res.UID)
+	fmt.Println("request-uid:", result.RequestID)
 	return nil
 }
 

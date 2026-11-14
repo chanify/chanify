@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -13,6 +14,8 @@ import (
 )
 
 var cfgFile string
+var configLoadErr error
+var executionStarted time.Time
 var rootCmd = &cobra.Command{
 	Use:   "chanify",
 	Short: "Chanify CLI",
@@ -21,7 +24,12 @@ var rootCmd = &cobra.Command{
 
 // Execute command
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	executionStarted = time.Now()
+	command, err := rootCmd.ExecuteC()
+	if err != nil {
+		if isAgentSend(command) {
+			os.Exit(writeAgentError(command.OutOrStdout(), err))
+		}
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -36,23 +44,26 @@ func init() {
 }
 
 func initConfig() {
+	configLoadErr = nil
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println("Error:", err)
-			os.Exit(1)
+			configLoadErr = err
+			fmt.Fprintln(os.Stderr, "Cannot locate the configuration directory.")
+			return
 		}
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".chanify")
 	}
 	viper.AutomaticEnv()
 	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			fmt.Println("Parse config file", viper.ConfigFileUsed(), "failed:", err)
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok || cfgFile != "" {
+			configLoadErr = err
+			fmt.Fprintln(os.Stderr, "Cannot read config file:", viper.ConfigFileUsed())
 		}
 	} else if viper.GetBool("config.verbose") {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
 }

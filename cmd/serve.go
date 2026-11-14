@@ -46,15 +46,18 @@ func init() {
 				defer c.Close()
 				endpoint := getEndpoint()
 				opts := &logic.Options{
-					Name:       getName(),
-					Version:    Version,
-					Endpoint:   endpoint,
-					DataPath:   getExpandPath("server.datapath"),
-					FilePath:   getExpandPath("server.filepath"),
-					PluginPath: getExpandPath("server.pluginpath"),
-					DBUrl:      viper.GetString("server.dburl"),
-					Secret:     viper.GetString("server.secret"),
-					WebHooks:   getWebhooks(),
+					Name:          getName(),
+					Version:       Version,
+					Endpoint:      endpoint,
+					DataPath:      getExpandPath("server.datapath"),
+					FilePath:      getExpandPath("server.filepath"),
+					PluginPath:    getExpandPath("server.pluginpath"),
+					DBUrl:         viper.GetString("server.dburl"),
+					Secret:        viper.GetString("server.secret"),
+					WebHooks:      getWebhooks(),
+					MCPEnabled:    viper.GetBool("server.mcp.enabled"),
+					MCPListen:     viper.GetBool("server.mcp.listen"),
+					AdminPassword: viper.GetString("server.web_admin.password"),
 				}
 				opts.Registerable, opts.RegUsers = getUserWhitlist(cmd)
 				if err := c.Init(opts); err != nil {

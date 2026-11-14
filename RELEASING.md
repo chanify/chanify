@@ -21,7 +21,7 @@ to `dist/` without publishing. Existing archive names and release platforms are
 preserved. Docker additionally supports Linux 386.
 
 After committing the intended changes, push a `v`-prefixed version tag such as
-`v1.4.4` to publish. GitHub Release and Docker publishing run independently after
+`v1.5.0` to publish. GitHub Release and Docker publishing run independently after
 CI passes. The release job uses `GITHUB_TOKEN` with `contents: write`; Docker
 requires the repository secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
 Coverage uploads use `CODECOV_TOKEN` when configured.
@@ -30,7 +30,7 @@ Docker tag behavior is unchanged:
 
 - `main` publishes `wizjin/chanify:latest`.
 - `dev` publishes `wizjin/chanify:dev`.
-- `v1.4.4` publishes `wizjin/chanify:1.4.4`.
+- `v1.5.0` publishes `wizjin/chanify:1.5.0`.
 
 Thus `latest` follows `main`, rather than the latest version tag. Docker builds
 cross-compile on the build host with CGO disabled, without QEMU. CI passes the Go
@@ -42,7 +42,7 @@ docker buildx build --build-arg GO_VERSION=1.27.3 \
   --platform linux/amd64,linux/386,linux/arm64,linux/arm/v7 .
 ```
 
-The source version in `cmd/version.go` is 1.4.4. `go run . version` and
+The source version in `cmd/version.go` is 1.5.0. `go run . version` and
 `make build` use this version; `make build VERSION=...` can override it.
 GoReleaser uses the release tag, which must match the source version.
 

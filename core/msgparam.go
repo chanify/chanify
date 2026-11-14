@@ -1,8 +1,10 @@
 package core
 
 import (
+	"encoding/json"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +23,8 @@ type TimeContent struct {
 // MsgParam parse message parameters
 type MsgParam struct {
 	Token             *model.Token
+	Channel           string
+	ChannelProvided   bool
 	Text              string
 	Link              string
 	Title             string
@@ -46,16 +50,17 @@ func (m *MsgParam) ParsePlainText(ctx *gin.Context) {
 func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 	defer func() { _ = ctx.Request.Body.Close() }()
 	var params struct {
-		Token             string     `json:"token,omitempty"`
-		Title             string     `json:"title,omitempty"`
-		Text              string     `json:"text,omitempty"`
-		Copy              string     `json:"copy,omitempty"`
-		AutoCopy          JSONString `json:"autocopy,omitempty"`
-		Link              string     `json:"link,omitempty"`
-		Sound             JSONString `json:"sound,omitempty"`
-		Priority          int        `json:"priority,omitempty"`
-		InterruptionLevel string     `json:"interruption-level,omitempty"`
-		Actions           []string   `json:"actions,omitempty"`
+		Token             string          `json:"token,omitempty"`
+		Channel           json.RawMessage `json:"channel,omitempty"`
+		Title             string          `json:"title,omitempty"`
+		Text              string          `json:"text,omitempty"`
+		Copy              string          `json:"copy,omitempty"`
+		AutoCopy          JSONString      `json:"autocopy,omitempty"`
+		Link              string          `json:"link,omitempty"`
+		Sound             JSONString      `json:"sound,omitempty"`
+		Priority          int             `json:"priority,omitempty"`
+		InterruptionLevel string          `json:"interruption-level,omitempty"`
+		Actions           []string        `json:"actions,omitempty"`
 		Timeline          struct {
 			Code     string                 `json:"code"`
 			Timstamp interface{}            `json:"timestamp,omitempty"`
@@ -65,6 +70,12 @@ func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 	if err := ctx.BindJSON(&params); err == nil {
 		if m.Token == nil && len(params.Token) > 0 {
 			m.Token, _ = c.parseToken(params.Token)
+		}
+		if !m.ChannelProvided && len(params.Channel) > 0 {
+			m.ChannelProvided = true
+			if string(params.Channel) == "null" || json.Unmarshal(params.Channel, &m.Channel) != nil {
+				m.Channel = ""
+			}
 		}
 		m.Link = tryStringValue(m.Link, params.Link)
 		m.Title = tryStringValue(m.Title, params.Title)
@@ -95,6 +106,15 @@ func (m *MsgParam) ParseJSON(c *Core, ctx *gin.Context) {
 
 // ParseForm process form
 func (m *MsgParam) ParseForm(c *Core, ctx *gin.Context) {
+	_ = ctx.PostForm("channel")
+	if !m.ChannelProvided {
+		if values, ok := ctx.Request.PostForm["channel"]; ok {
+			m.ChannelProvided = true
+			if len(values) > 0 {
+				m.Channel = values[0]
+			}
+		}
+	}
 	m.Text = ctx.PostForm("text")
 	if m.Token == nil {
 		m.Token, _ = c.parseToken(ctx.PostForm("token"))
@@ -141,6 +161,17 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 				m.Token, _ = c.parseToken(tks[0])
 			}
 		}
+		if !m.ChannelProvided {
+			if values, ok := form.Value["channel"]; ok {
+				m.ChannelProvided = true
+				if len(values) > 0 {
+					m.Channel = values[0]
+				}
+			}
+		}
+		if err := m.resolveChannel(ctx); err != nil {
+			return nil, err
+		}
 		m.Title = tryFormValue(form, "title", m.Title)
 		m.Link = tryFormValue(form, "link", m.Link)
 		m.CopyText = tryFormValue(form, "copy", m.CopyText)
@@ -154,6 +185,10 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 		if len(m.TimeContent.Code) > 0 {
 			m.TimeContent.Timestamp = tryFormTimestamp(form, "timeline-timestamp", m.TimeContent.Timestamp)
 			m.TimeContent.Items = tryFormMap(form, "timeline-items", m.TimeContent.Items)
+		}
+		if !c.logic.CanFileStore() && (len(form.File["image"]) > 0 || len(form.File["audio"]) > 0 || len(form.File["file"]) > 0) {
+			ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "attachment storage is unavailable"})
+			return nil, ErrInvalidContent
 		}
 		if m.Token != nil && c.logic.CanFileStore() {
 			if data, _, err := readFileFromForm(form, "image"); err == nil {
@@ -184,6 +219,9 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 
 // ParseImage process image
 func (m *MsgParam) ParseImage(c *Core, ctx *gin.Context) (*model.Message, error) {
+	if err := m.resolveChannel(ctx); err != nil {
+		return nil, err
+	}
 	var msg *model.Message = nil
 	if m.Token != nil && c.logic.CanFileStore() {
 		var err error
@@ -198,6 +236,9 @@ func (m *MsgParam) ParseImage(c *Core, ctx *gin.Context) (*model.Message, error)
 
 // ParseAudio process audio
 func (m *MsgParam) ParseAudio(c *Core, ctx *gin.Context) (*model.Message, error) {
+	if err := m.resolveChannel(ctx); err != nil {
+		return nil, err
+	}
 	var msg *model.Message = nil
 	if m.Token != nil && c.logic.CanFileStore() {
 		var err error
@@ -383,4 +424,17 @@ func tryFormTimestamp(form *multipart.Form, name string, ts *time.Time) *time.Ti
 		ts = parseTimestamp(form.Value[name])
 	}
 	return ts
+}
+
+func (m *MsgParam) resolveChannel(ctx *gin.Context) error {
+	if m.Token == nil {
+		return nil
+	}
+	token, err := m.Token.ForOptionalChannel(m.Channel, m.ChannelProvided)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": err.Error()})
+		return err
+	}
+	m.Token = token
+	return nil
 }

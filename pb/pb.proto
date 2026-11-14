@@ -57,6 +57,11 @@ message Channel {
     string      icon                        = 4;
 }
 
+enum TokenScope {
+    ChannelSend = 0;
+    ServerSend = 1;
+}
+
 message Token {
     uint64      expires                     = 1;
     string      user_id                     = 2;
@@ -64,6 +69,8 @@ message Token {
     bytes       channel                     = 4;
     string      node_id                     = 5;
     bytes       data_hash                   = 6;
+    TokenScope  scope                       = 7;
+    bytes       token_id                    = 8;
 }
 
 message Thumbnail {

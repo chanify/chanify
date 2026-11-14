@@ -177,3 +177,8 @@ func (s *JSONString) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func queryChannel(ctx *gin.Context) (string, bool) {
+	_, provided := ctx.Request.URL.Query()["channel"]
+	return ctx.Query("channel"), provided
+}

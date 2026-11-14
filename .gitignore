@@ -28,6 +28,7 @@ Temporary Items
 
 # Golang
 # Binaries for programs and plugins
+/chanify
 *.exe
 *.exe~
 *.dll

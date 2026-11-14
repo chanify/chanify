@@ -144,6 +144,19 @@ func luaContextSend(l *lua.LState) int {
 		l.Push(lua.LString(`{"res":401,"msg":"invalid token"}`))
 		return 1
 	}
+	_, finished := c.beginAdminActivity(ctx.Request, "sending", token.ServerTokenID(), token.GetUserID())
+	defer finished()
+	channel := luaGetOptsString(opts, "channel")
+	provided := opts.RawGetString("channel") != lua.LNil
+	if !provided {
+		channel, provided = queryChannel(ctx)
+	}
+	token, err = token.ForOptionalChannel(channel, provided)
+	if err != nil {
+		data, _ := json.Marshal(map[string]interface{}{"res": 400, "msg": err.Error()})
+		l.Push(lua.LString(data))
+		return 1
+	}
 	msg := model.NewMessage(token)
 	msg, err = c.makeTextContent(msg, text, luaGetOptsString(opts, "title"), luaGetOptsString(opts, "copy"), luaGetOptsString(opts, "autocopy"), luaGetOptsArray(opts, "action"))
 	if err != nil {
