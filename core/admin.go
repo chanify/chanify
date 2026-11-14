@@ -129,7 +129,7 @@ func adminDecode(w http.ResponseWriter, r *http.Request, value interface{}) erro
 }
 func (c *Core) adminHandler() http.Handler {
 	mux := http.NewServeMux()
-	for _, asset := range []struct{ path, name, mime string }{{"/admin", "index.html", "text/html"}, {"/admin/app.js", "app.js", "text/javascript"}, {"/admin/style.css", "style.css", "text/css"}} {
+	for _, asset := range []struct{ path, name, mime string }{{"/admin", "index.html", "text/html"}, {"/admin/app.js", "app.js", "text/javascript"}, {"/admin/style.css", "style.css", "text/css"}, {"/admin/preferences.js", "preferences.js", "text/javascript"}, {"/admin/logo.png", "logo.png", "image/png"}} {
 		mux.HandleFunc("GET "+asset.path, func(w http.ResponseWriter, r *http.Request) {
 			data, err := adminAssets.ReadFile("adminassets/" + asset.name)
 			if err != nil {

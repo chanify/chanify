@@ -86,7 +86,7 @@ func TestAdminAuthenticationAndAssets(t *testing.T) {
 	c, _, _ := mcpFixture(t, false, false)
 	c.admin = newAdmin(testAdminHash(t), "https://localhost/push")
 	h := c.APIHandler()
-	for _, path := range []string{"/admin", "/admin/app.js", "/admin/style.css"} {
+	for _, path := range []string{"/admin", "/admin/app.js", "/admin/style.css", "/admin/preferences.js", "/admin/logo.png"} {
 		w := adminRequest(h, "GET", path, nil, nil, "")
 		if w.Code != 200 || w.Body.Len() == 0 || w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("Content-Security-Policy") == "" {
 			t.Fatal(path, w.Code)
