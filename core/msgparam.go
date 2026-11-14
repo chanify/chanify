@@ -191,8 +191,8 @@ func (m *MsgParam) ParseFormData(c *Core, ctx *gin.Context) (*model.Message, err
 			return nil, ErrInvalidContent
 		}
 		if m.Token != nil && c.logic.CanFileStore() {
-			if data, _, err := readFileFromForm(form, "image"); err == nil {
-				msg, err = c.saveUploadImage(ctx, m.Token, data)
+			if data, fname, err := readFileFromForm(form, "image"); err == nil {
+				msg, err = c.saveUploadImage(ctx, m.Token, data, fname)
 				if err != nil {
 					return nil, err
 				}
@@ -226,7 +226,7 @@ func (m *MsgParam) ParseImage(c *Core, ctx *gin.Context) (*model.Message, error)
 	if m.Token != nil && c.logic.CanFileStore() {
 		var err error
 		data, _ := ctx.GetRawData()
-		msg, err = c.saveUploadImage(ctx, m.Token, data)
+		msg, err = c.saveUploadImage(ctx, m.Token, data, m.Filename)
 		if err != nil {
 			return nil, err
 		}

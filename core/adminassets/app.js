@@ -5,6 +5,7 @@
   const endpoint = new URL('admin/api/', location.href);
   let csrf = '', state = null, view = 'sending', selected = null;
   const date = seconds => seconds ? new Date(seconds * 1000).toLocaleString(window.adminPreferences.language) : '—';
+  const media = window.createAdminMedia({ api, endpoint, t, date });
   const short = value => value.length > 18 ? value.slice(0, 10) + '…' + value.slice(-6) : value;
   function node(tag, text, className) {
     const el = document.createElement(tag);
@@ -13,7 +14,7 @@
     return el;
   }
   function loginView() {
-    csrf = ''; state = null; selected = null;
+    csrf = ''; state = null; selected = null; media.reset();
     document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
     $('new-token').value = ''; $('table-body').replaceChildren();
     $('app-view').hidden = true; $('login-view').hidden = false;
@@ -43,12 +44,15 @@
       const snapshot = await api('state');
       if (!csrf) return;
       state = snapshot;
+      $('media-nav').hidden = !state.capabilities?.media;
+      if (view === 'media' && !state.capabilities?.media) view = 'sending';
       options($('user-filter'), state.users || [], t("全部用户"));
       options($('create-user'), state.users || [], t("选择用户"));
       $('node-name').textContent = state.node.name || 'Chanify';
       $('node-version').textContent = state.node.version || '';
       $('page-message').textContent = '';
       render();
+      if (view === 'media') await media.refresh();
     } catch (error) { $('page-message').textContent = t(error instanceof TypeError ? '请求失败，请重试' : error.message); }
     finally { $('refresh').disabled = false; }
   }
@@ -64,6 +68,15 @@
   }
   function render() {
     if (!state) return;
+    const isMedia = view === 'media';
+    $('media-view').hidden = !isMedia;
+    $('token-stats').hidden = isMedia; $('token-panel').hidden = isMedia; $('scope-note').hidden = isMedia;
+    if (isMedia) {
+      document.querySelectorAll('[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === view));
+      $('page-title').textContent = t('媒体管理');
+      $('page-description').textContent = t('查找、下载服务器附件，清理存储空间。');
+      $('create-mcp').hidden = true; media.render(); return;
+    }
     const tokens = state.tokens || [], clients = state.clients || [], now = state.now;
     const user = $('user-filter').value;
     const matches = item => !user || item.user === user;
@@ -146,7 +159,7 @@
   }));
   $('refresh').addEventListener('click', refresh);
   $('user-filter').addEventListener('change', render);
-  document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => { view = button.dataset.view; render(); }));
+  document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => { view = button.dataset.view; render(); if (view === 'media') media.refresh(); }));
   document.querySelectorAll('.close-dialog').forEach(button => button.addEventListener('click', () => { const dialog = button.closest('dialog'); if (!dialog.dataset.busy) dialog.close(); }));
   document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('cancel', event => { if (dialog.dataset.busy) event.preventDefault(); }));
   $('secret-dialog').addEventListener('close', () => { $('new-token').value = ''; });

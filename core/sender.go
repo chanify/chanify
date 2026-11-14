@@ -180,12 +180,12 @@ func (c *Core) sendMsg(ctx sendContext, token *model.Token, msg *model.Message) 
 	c.sendDirect(ctx, token, msg)
 }
 
-func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte) (*model.Message, error) {
+func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte, names ...string) (*model.Message, error) {
 	if len(data) <= 0 {
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no image content"})
 		return nil, ErrNoContent
 	}
-	path, err := c.logic.SaveFile("images", data)
+	path, err := c.logic.SaveFile("images", data, names...)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid image content"})
 		return nil, ErrInvalidContent
@@ -198,7 +198,7 @@ func (c *Core) saveUploadAudio(ctx *gin.Context, token *model.Token, fname strin
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no audio content"})
 		return nil, ErrNoContent
 	}
-	path, err := c.logic.SaveFile("audios", data)
+	path, err := c.logic.SaveFile("audios", data, fname)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid audio content"})
 		return nil, ErrInvalidContent
@@ -211,7 +211,7 @@ func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte,
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no file content"})
 		return nil, ErrNoContent
 	}
-	path, err := c.logic.SaveFile("files", data)
+	path, err := c.logic.SaveFile("files", data, filename)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid file content"})
 		return nil, ErrInvalidContent
@@ -249,11 +249,8 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 		txts = append(txts, text)
 	}
 	data := []byte(strings.Join(txts, "\n\n"))
-	path, err := c.logic.SaveFile("files", data)
-	if err != nil {
-		return nil, err
-	}
-	if len(title) > 100 {
+
+	if len([]rune(title)) > 100 {
 		fname = string([]rune(title)[:100])
 		title = fname + "⋯"
 	}
@@ -263,7 +260,11 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 	if len(fname) <= 0 {
 		fname = "text"
 	}
-	return msg.TextFileContent(path, fname+".txt", title, string([]rune(text)[:100])+"⋯", len(data), actions), nil
+	path, err := c.logic.SaveFile("files", data, fname+".txt")
+	if err != nil {
+		return nil, err
+	}
+	return msg.TextFileContent(path, fname+".txt", title, string([]rune(text)[:min(100, len([]rune(text)))])+"⋯", len(data), actions), nil
 }
 
 func (c *Core) makeActionContent(msg *model.Message, text string, title string, actions []string) (*model.Message, error) {

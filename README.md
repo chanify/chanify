@@ -113,6 +113,10 @@ $ make install
 
 ## Usage
 
+### Coding agents: CLI and MCP
+
+Give your coding agent [AGENT_GUIDE.md](AGENT_GUIDE.md), a standalone setup and operating guide with a copyable handoff prompt, credential selection, CLI examples, local/remote MCP setup, result handling, and delivery troubleshooting. It describes the 1.5.0 source interface; check your installed binary's help before use.
+
 ### As Sender Client
 
 Use chanify to send message.
@@ -756,6 +760,12 @@ Open the node's `/admin` and sign in with the original password. Missing or empt
 The page lists both credential types with names, IDs, users, creation/expiry dates, and revocation status. Filter by user, rename credentials, or revoke after confirmation. Sending tokens are still generated manually in iOS. Create MCP credentials for bound users; the full value appears once. Lists exclude raw credentials, digests, and encrypted copies.
 
 Client activity covers authenticated registered sending-token requests (including Webhooks) and MCP requests. Ordinary requests show recent use; SSE listeners have separate live counts. IPs are direct connection addresses and User-Agent values are self-reported. Activity is bounded to 2048 records in memory and resets on restart; credential registration and revocation persist. Legacy channel credentials have no registry and are excluded. Refresh manually for updated activity. Revocation does not affect other credentials or recall submitted notifications.
+
+Nodes with file storage also show **Media management** for finding, downloading, and cleaning up server attachments. It does not synchronize or modify iOS notification records. Search filenames or IDs, filter by type, sort by size/time/name, and browse 50 files per page. New uploads record filenames, detected types, and upload times. Identical content within a storage category shares one physical file; up to 1,024 recent distinct names are retained for search. Legacy files show their ID, size, and filesystem modification time and remain downloadable and deletable.
+
+Delete individual files, select files on the current page, or clear all server files. Confirmations show counts and attachment bytes; results report deleted counts/bytes and failed IDs. Clearing requires typing `CLEAR` and reconfirming if the inventory changes. Deleting a shared file affects every notification referencing it, without removing existing client copies. Capacity counts attachment bytes, excluding filesystem overhead and management metadata; open downloads may delay actual disk reclamation. Without file storage, the navigation entry is hidden and media APIs are unavailable.
+
+Preview images, plain text (up to 256 KiB), and browser-supported audio/video; download for full contents or unsupported formats. Active content such as HTML/SVG is download-only. Back up the storage directory's `.metadata/` alongside attachments to preserve upload details. Inventory is scanned on demand; refresh and clear duration depends on file count.
 
 ### Local stdio MCP (`chanify mcp`)
 

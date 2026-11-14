@@ -162,7 +162,7 @@ func (c *Core) mcpTool(name string) mcp.ToolHandler {
 				if !c.mcpCanFiles() {
 					return mcpFailure("unsupported", "long text storage is unavailable"), nil
 				}
-				path, err := c.logic.SaveFile("files", []byte(args.Text))
+				path, err := c.logic.SaveFile("files", []byte(args.Text), "message.txt")
 				if err != nil {
 					return mcpFailure("storage_failed", "could not save text attachment"), nil
 				}
@@ -176,14 +176,14 @@ func (c *Core) mcpTool(name string) mcp.ToolHandler {
 			}
 			data := args.Bytes
 			if name == "send_image" {
-				path, err := c.logic.SaveFile("images", data)
+				path, err := c.logic.SaveFile("images", data, args.Filename)
 				if err != nil {
 					return mcpFailure("storage_failed", "could not save image"), nil
 				}
 				msg.ImageContent(path, createThumbnail(data), len(data))
 				format = "image"
 			} else {
-				path, err := c.logic.SaveFile("files", data)
+				path, err := c.logic.SaveFile("files", data, args.Filename)
 				if err != nil {
 					return mcpFailure("storage_failed", "could not save attachment"), nil
 				}

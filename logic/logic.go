@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/chanify/chanify/crypto"
@@ -72,6 +73,7 @@ type Logic struct {
 	infoData      []byte
 	infoSign      string
 	whitelist     map[string]bool
+	mediaMu       sync.Mutex
 	filepath      string
 	webhookManger *pluginManager
 
@@ -322,7 +324,12 @@ func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 }
 
 // SaveFile save with file type & data
-func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
+func (l *Logic) SaveFile(tname string, data []byte, names ...string) (string, error) {
+	l.mediaMu.Lock()
+	defer l.mediaMu.Unlock()
+	if tname != "images" && tname != "audios" && tname != "files" {
+		return "", ErrInvalidContent
+	}
 	if len(l.filepath) <= 0 {
 		return "", ErrNoSupportMethod
 	}
@@ -332,7 +339,19 @@ func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 	key := sha1.Sum(data)
 	name := hex.EncodeToString(key[:])
 	path := filepath.Join(l.filepath, tname, name)
-	if err := saveFile(path, data); err != nil {
+	dirInfo, dirErr := os.Lstat(filepath.Join(l.filepath, tname))
+	if dirErr != nil || !dirInfo.IsDir() {
+		return "", ErrInvalidContent
+	}
+	if info, err := os.Lstat(path); err == nil && !info.Mode().IsRegular() {
+		return "", ErrInvalidContent
+	} else if err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	if err := saveMediaBytes(path, data); err != nil {
+		return "", err
+	}
+	if err := l.saveMediaMetadata(tname+"/"+name, data, names); err != nil {
 		return "", err
 	}
 	return filepath.Join("/files/"+tname, name), nil
@@ -360,7 +379,7 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 	if priority == 5 { // only 10 or 5
 		notification.Priority = priority
 	}
-	n := len(devices)
+	n := 0
 	for _, dev := range devices {
 		if dev.Type == 2 { // 1: iOS, 2: watchOS, 3: macOS
 			if isTimeline {
@@ -378,9 +397,18 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
 		res, err := l.getAPNS(dev.Sandbox).Push(notification)
 		if err != nil {
-			log.Println("Send apns failed:", res, err)
-			n--
+			log.Println("Send apns failed:", err)
+			continue
 		}
+		if res == nil || !res.Sent() {
+			if res != nil {
+				log.Printf("APNs rejected notification: status=%d reason=%s", res.StatusCode, res.Reason)
+			} else {
+				log.Println("APNs returned no response")
+			}
+			continue
+		}
+		n++
 	}
 	return uuid, n
 }

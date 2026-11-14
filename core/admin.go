@@ -129,7 +129,7 @@ func adminDecode(w http.ResponseWriter, r *http.Request, value interface{}) erro
 }
 func (c *Core) adminHandler() http.Handler {
 	mux := http.NewServeMux()
-	for _, asset := range []struct{ path, name, mime string }{{"/admin", "index.html", "text/html"}, {"/admin/app.js", "app.js", "text/javascript"}, {"/admin/style.css", "style.css", "text/css"}, {"/admin/preferences.js", "preferences.js", "text/javascript"}, {"/admin/logo.png", "logo.png", "image/png"}} {
+	for _, asset := range []struct{ path, name, mime string }{{"/admin", "index.html", "text/html"}, {"/admin/app.js", "app.js", "text/javascript"}, {"/admin/style.css", "style.css", "text/css"}, {"/admin/preferences.js", "preferences.js", "text/javascript"}, {"/admin/media.js", "media.js", "text/javascript"}, {"/admin/logo.png", "logo.png", "image/png"}} {
 		mux.HandleFunc("GET "+asset.path, func(w http.ResponseWriter, r *http.Request) {
 			data, err := adminAssets.ReadFile("adminassets/" + asset.name)
 			if err != nil {
@@ -163,6 +163,9 @@ func (c *Core) adminHandler() http.Handler {
 		c.adminCookie(w, r, "", -1)
 		adminJSON(w, 200, map[string]bool{"success": true})
 	}))
+	mux.Handle("GET /admin/api/media", c.adminAuthorized(c.adminMediaList))
+	mux.Handle("POST /admin/api/media", c.adminAuthorized(c.adminMediaDelete))
+	mux.Handle("GET /admin/api/media/content", c.adminAuthorized(c.adminMediaContent))
 	mux.Handle("GET /admin/api/state", c.adminAuthorized(c.adminSnapshot))
 	mux.Handle("POST /admin/api/tokens", c.adminAuthorized(c.adminTokens))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -292,7 +295,7 @@ func (c *Core) adminSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 	state.mu.Unlock()
 	sort.Slice(clients, func(i, j int) bool { return clients[i].LastSeen > clients[j].LastSeen })
-	adminJSON(w, 200, map[string]interface{}{"node": map[string]interface{}{"name": c.logic.Name, "version": c.logic.Version, "features": c.logic.Features}, "users": users, "tokens": tokens, "clients": clients, "now": time.Now().Unix()})
+	adminJSON(w, 200, map[string]interface{}{"node": map[string]interface{}{"name": c.logic.Name, "version": c.logic.Version, "features": c.logic.Features}, "capabilities": map[string]bool{"media": c.logic.CanFileStore()}, "users": users, "tokens": tokens, "clients": clients, "now": time.Now().Unix()})
 }
 func (c *Core) adminTokens(w http.ResponseWriter, r *http.Request) {
 	var p struct {

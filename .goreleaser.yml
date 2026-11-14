@@ -41,6 +41,7 @@ archives:
       - LICENSE
       - README.md
       - README-zh_CN.md
+      - AGENT_GUIDE.md
       - SECURITY.md
       - plugin/**/*.lua
       - example/**/*.js
