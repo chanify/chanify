@@ -108,6 +108,8 @@ func (s *sqlite) fixDB() error {
 		"CREATE TABLE IF NOT EXISTS `users`(`uid` TEXT PRIMARY KEY, `pubkey` BLOB UNIQUE, `seckey` BLOB, `flags` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP);",
 		"CREATE TABLE IF NOT EXISTS `devices`(`uuid` TEXT PRIMARY KEY, `uid` TEXT, `key` BLOB, `type` INTEGER DEFAULT 0, `token` BLOB, `sandbox` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP);",
 		"CREATE INDEX IF NOT EXISTS `idx_devices_uid` ON `devices`(`uid`);",
+		"CREATE TABLE IF NOT EXISTS `server_tokens` (`uid` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, `expires` INTEGER NOT NULL, `created` INTEGER NOT NULL, `revoked` INTEGER NOT NULL DEFAULT 0, `encrypted_token` TEXT NOT NULL, `hash` TEXT NOT NULL, PRIMARY KEY(`uid`,`id`));",
+		"CREATE TABLE IF NOT EXISTS `mcp_tokens` (`id` VARCHAR(32) PRIMARY KEY, `uid` VARCHAR(64) NOT NULL, `name` VARCHAR(128) NOT NULL, `expires` BIGINT NOT NULL, `created` BIGINT NOT NULL, `revoked` INTEGER NOT NULL DEFAULT 0, `channels` TEXT NOT NULL, `hash` VARCHAR(64) NOT NULL);",
 	}
 	if _, err := s.db.Exec(strings.Join(sqls, "")); err != nil {
 		return err
@@ -140,6 +142,12 @@ func (s *sqlite) DeleteUser(uid string) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 	if _, err = tx.Exec("DELETE FROM `devices` WHERE `uid`=?;", uid); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM `mcp_tokens` WHERE `uid`=?;", uid); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM `server_tokens` WHERE `uid`=?;", uid); err != nil {
 		return err
 	}
 	if _, err = tx.Exec("DELETE FROM `users` WHERE `uid`=?;", uid); err != nil {

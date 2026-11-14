@@ -24,6 +24,13 @@ func (c *Core) handleSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token"})
 		return
 	}
+	_, finished := c.beginAdminActivity(ctx.Request, "sending", token.ServerTokenID(), token.GetUserID())
+	defer finished()
+	token, err = token.ForOptionalChannel(queryChannel(ctx))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": err.Error()})
+		return
+	}
 	text := ctx.Param("msg")
 	if len(text) <= 0 {
 		text = ctx.Query("text")
@@ -43,6 +50,7 @@ func (c *Core) handleSender(ctx *gin.Context) {
 func (c *Core) handlePostSender(ctx *gin.Context) {
 	params := &MsgParam{}
 	params.Token, _ = c.parseToken(getToken(ctx))
+	params.Channel, params.ChannelProvided = queryChannel(ctx)
 	params.Link = ctx.Query("link")
 	params.Title = ctx.Query("title")
 	params.Sound = ctx.Query("sound")
@@ -85,6 +93,11 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"res": http.StatusUnauthorized, "msg": "invalid token format"})
 		return
 	}
+	_, finished := c.beginAdminActivity(ctx.Request, "sending", params.Token.ServerTokenID(), params.Token.GetUserID())
+	defer finished()
+	if err := params.resolveChannel(ctx); err != nil {
+		return
+	}
 	if msg == nil {
 		if len(params.Link) > 0 {
 			msg = model.NewMessage(params.Token).LinkContent(params.Link, params.Title)
@@ -102,11 +115,17 @@ func (c *Core) handlePostSender(ctx *gin.Context) {
 			}
 		}
 	}
+	if parser != nil {
+		msg.AttachmentCaption(params.Title, params.Text)
+	}
 	c.sendMsg(ctx, params.Token, msg.SoundName(params.Sound).SetPriority(params.Priority).SetInterruptionLevel(params.InterruptionLevel))
 }
 
 func (c *Core) sendDirect(ctx sendContext, token *model.Token, msg *model.Message) {
-	uid := token.GetUserID()
+	c.sendDirectForUser(ctx, token.GetUserID(), msg)
+}
+
+func (c *Core) sendDirectForUser(ctx sendContext, uid string, msg *model.Message) {
 	key, err := c.logic.GetUserKey(uid)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid user"})
@@ -161,12 +180,12 @@ func (c *Core) sendMsg(ctx sendContext, token *model.Token, msg *model.Message) 
 	c.sendDirect(ctx, token, msg)
 }
 
-func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte) (*model.Message, error) {
+func (c *Core) saveUploadImage(ctx *gin.Context, token *model.Token, data []byte, names ...string) (*model.Message, error) {
 	if len(data) <= 0 {
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no image content"})
 		return nil, ErrNoContent
 	}
-	path, err := c.logic.SaveFile("images", data)
+	path, err := c.logic.SaveFile("images", data, names...)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid image content"})
 		return nil, ErrInvalidContent
@@ -179,7 +198,7 @@ func (c *Core) saveUploadAudio(ctx *gin.Context, token *model.Token, fname strin
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no audio content"})
 		return nil, ErrNoContent
 	}
-	path, err := c.logic.SaveFile("audios", data)
+	path, err := c.logic.SaveFile("audios", data, fname)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid audio content"})
 		return nil, ErrInvalidContent
@@ -192,7 +211,7 @@ func (c *Core) saveUploadFile(ctx *gin.Context, token *model.Token, data []byte,
 		ctx.JSON(http.StatusNoContent, gin.H{"res": http.StatusNoContent, "msg": "no file content"})
 		return nil, ErrNoContent
 	}
-	path, err := c.logic.SaveFile("files", data)
+	path, err := c.logic.SaveFile("files", data, filename)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"res": http.StatusBadRequest, "msg": "invalid file content"})
 		return nil, ErrInvalidContent
@@ -230,11 +249,8 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 		txts = append(txts, text)
 	}
 	data := []byte(strings.Join(txts, "\n\n"))
-	path, err := c.logic.SaveFile("files", data)
-	if err != nil {
-		return nil, err
-	}
-	if len(title) > 100 {
+
+	if len([]rune(title)) > 100 {
 		fname = string([]rune(title)[:100])
 		title = fname + "⋯"
 	}
@@ -244,7 +260,11 @@ func (c *Core) makeTextContent(msg *model.Message, text string, title string, co
 	if len(fname) <= 0 {
 		fname = "text"
 	}
-	return msg.TextFileContent(path, fname+".txt", title, string([]rune(text)[:100])+"⋯", len(data), actions), nil
+	path, err := c.logic.SaveFile("files", data, fname+".txt")
+	if err != nil {
+		return nil, err
+	}
+	return msg.TextFileContent(path, fname+".txt", title, string([]rune(text)[:min(100, len([]rune(text)))])+"⋯", len(data), actions), nil
 }
 
 func (c *Core) makeActionContent(msg *model.Message, text string, title string, actions []string) (*model.Message, error) {

@@ -113,6 +113,10 @@ $ make install
 
 ## Usage
 
+### Coding agents: CLI and MCP
+
+Give your coding agent [AGENT_GUIDE.md](AGENT_GUIDE.md), a standalone setup and operating guide with a copyable handoff prompt, credential selection, CLI examples, local/remote MCP setup, result handling, and delivery troubleshooting. It describes the 1.5.0 source interface; check your installed binary's help before use.
+
 ### As Sender Client
 
 Use chanify to send message.
@@ -671,3 +675,155 @@ Contributions are what make the open source community such an amazing place to b
 ## License
 
 Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
+
+### Server-wide sending tokens
+
+Stateful self-hosted nodes advertise `auth.server-token`. Supporting Apple clients can generate a `cst1:` token for one user and node. This is a sending credential, not an MCP credential.
+
+Omitting channel selects Uncategorized (sys.none); explicit empty or invalid values are errors. The current format is an unpadded base64url-encoded protobuf `Channel`, matching Apple channel IDs. `CAE` explicitly selects Uncategorized; `CAIaA2Rldg` selects a user channel whose code is `dev`. Display-name lookup and a server-side channel directory are not implemented. Device-specific channels continue to use existing channel tokens.
+
+```sh
+curl -X POST 'https://your-node.example/v1/sender' \
+  -H 'Token: <server-wide-token>' \
+  -H 'Content-Type: application/json' \
+  --data '{"channel":"CAIaA2Rldg","text":"Tests passed"}'
+
+chanify send --endpoint=https://your-node.example \
+  --token='<server-wide-token>' --channel=CAIaA2Rldg --text='Tests passed'
+```
+
+JSON, query strings, forms, multipart fields and Lua webhook send options support `channel`. Raw image/audio requests use the query string. Existing channel tokens retain their signed destination; external parameters cannot override it.
+
+Explicit empty/invalid channels return HTTP 400. Invalid signatures, expired tokens, mismatched nodes and forwarding users return HTTP 401. A valid request may still fail if no devices are bound; success is not a read receipt. Server-wide tokens do not authorize attachment downloads.
+
+No server-wide token is created by default. Open Sending Tokens in the Apple node detail page, use the add button, and provide a name and expiry. Credentials are displayed only after registration succeeds. Multiple tokens may coexist. Only their names are editable; deleting one revokes it without affecting others. The iOS list supports pull to refresh.
+
+`POST /rest/v1/server-tokens` supports `list`, `create`, `rename`, and `revoke`. It requires the existing account signature (`CHUserSign`), not a sending token. Requests include `user`, a millisecond `nonce` within five minutes, and `action`; creation supplies `name`/`token`, rename supplies `id`/`name`, and revocation supplies `id`. SQLite/MySQL persist metadata, a SHA-256 digest, and a credential copy encrypted to the account public key. Names are not part of the signed token. The registry table is created automatically at startup.
+
+Server-wide credentials must be registered and active. Earlier experimental, unregistered credentials must be recreated through the new flow; existing channel tokens remain compatible. Registration and revocation survive restarts, and account deletion removes its records. See below for Web administration and MCP integration.
+
+### MCP integration (1.5.0)
+
+MCP is opt-in and requires a persistent self-hosted node. Add to the existing node configuration and restart:
+
+```yaml
+server:
+  mcp:
+    enabled: true
+    listen: false # optional SSE notifications; normal tool calls return JSON
+```
+
+Connect to `https://your-node.example/mcp` with `Authorization: Bearer <mcp-token>`. MCP uses independent credentials; neither channel/server-wide sending tokens nor administrator passwords are accepted. No `sender_token` is needed. Clients must support configured authentication headers; OAuth authorization is not implemented.
+
+Manage credentials using local access to the same node database (`server.dburl`, `server.datapath`, or an explicit `--dburl`):
+
+```sh
+chanify --config /path/to/chanify.yml mcp-token create \
+  --user '<user-id>' --name coding-agent \
+  --expires-in 2160h
+chanify --config /path/to/chanify.yml mcp-token list --user '<user-id>'
+chanify --config /path/to/chanify.yml mcp-token rename --user '<user-id>' --id '<credential-id>' --name new-name
+chanify --config /path/to/chanify.yml mcp-token revoke --user '<user-id>' --id '<credential-id>'
+```
+
+The user must already be bound in device-storage mode. Credential creation no longer accepts --channel or restricts channels. Sending tools default to sys.none when channel is omitted. The full credential is returned only at creation; the database stores its SHA-256 digest. Names may change; expiry is immutable. Revocation rejects new requests immediately and closes active streams on the next credential check (approximately one second). Account deletion removes its MCP credentials. Web administration also manages MCP credentials; account-signed `POST /rest/v1/mcp-tokens` also supports create/list/rename/revoke.
+
+Tools are discovered according to effective node capabilities:
+
+| Tool | Behavior |
+| --- | --- |
+| `send_text` | Required `text`; optional `channel`/`title`/`summary`. Up to 100,000 Unicode characters with file storage, otherwise 400. Titles accept 80, summaries 200. Long text becomes a complete UTF-8 attachment; only the notification preview may be shortened |
+| `send_image` | Available with image storage. Required `data_base64`, optional `channel`; PNG/JPEG only, at most 4 MiB decoded and 32 million pixels; optional title/summary |
+| `send_file` | Available with file storage. Required `filename`/`data_base64`, optional `channel`; at most 4 MiB decoded, filename up to 128 characters without directory components; optional title/summary |
+
+Use readable iOS channel codes: 1–64 ASCII letters/digits/underscore/dot/hyphen, starting with a letter or digit. `sys.none` explicitly selects Uncategorized, `sys.timesets` selects Timeline; device-specific channels are unavailable. Omitting channel selects sys.none; explicit empty/null/invalid codes are errors. No channel allowlist or iOS existence check applies. list_channels has been removed; directory synchronization is not implemented. The server converts internal protobuf IDs. Attachments carry standard Base64 bytes, not local paths or fetched URLs. Requests are limited to 6 MiB.
+
+Results include `status: submitted`, actual `format`, and `request_id`, not read receipts. Retrying an ambiguous network failure may duplicate a notification; idempotency is not guaranteed.
+
+The implementation uses official Go MCP SDK 1.8.0 with stateless Streamable HTTP and JSON responses. Optional SSE uses the MCP 2026-07-28 `subscriptions/listen` request; legacy GET SSE/HTTP+SSE are not provided. SSE sends 15-second keepalive comments. Configuration is read only at startup, so no live configuration-change events are promised. Disable proxy buffering for streams and use HTTPS for remote access. Origin validation applies to the MCP endpoint.
+
+
+### Web administration (1.5.0)
+
+Persistent self-hosted nodes can enable `/admin` independently of MCP. Set a management password (12–72 UTF-8 bytes) in the existing configuration and restart:
+
+```yaml
+server:
+  web_admin:
+    password: '<management-password>'
+```
+
+The browser uses Web Crypto to hash the UTF-8 password with SHA-256 and submits only its hexadecimal digest. At startup the server derives a bcrypt verifier from the same digest of the configured password. Neither the original password nor the digest is logged. Open the page over HTTPS or localhost for Web Crypto support; the digest is itself a login credential, so hashing does not replace HTTPS. Restrict read access to the configuration file, which contains the plain password.
+
+Open the node's `/admin` and sign in with the original password. Missing or empty configuration registers neither the page nor its APIs. There is no default password; invalid passwords fail startup. Configuration is read only at startup. Sessions expire after eight hours and are invalidated by logout or restart. Use HTTPS remotely; behind a proxy, configure `server.endpoint` with the external HTTPS address so cookies are marked Secure. Administration uses independent sessions, login rate limits, Origin checks, and CSRF validation. Sending and MCP credentials cannot authenticate as administrators.
+
+The page lists both credential types with names, IDs, users, creation/expiry dates, and revocation status. Filter by user, rename credentials, or revoke after confirmation. Sending tokens are still generated manually in iOS. Create MCP credentials for bound users; the full value appears once. Lists exclude raw credentials, digests, and encrypted copies.
+
+Client activity covers authenticated registered sending-token requests (including Webhooks) and MCP requests. Ordinary requests show recent use; SSE listeners have separate live counts. IPs are direct connection addresses and User-Agent values are self-reported. Activity is bounded to 2048 records in memory and resets on restart; credential registration and revocation persist. Legacy channel credentials have no registry and are excluded. Refresh manually for updated activity. Revocation does not affect other credentials or recall submitted notifications.
+
+Nodes with file storage also show **Media management** for finding, downloading, and cleaning up server attachments. It does not synchronize or modify iOS notification records. Search filenames or IDs, filter by type, sort by size/time/name, and browse 50 files per page. New uploads record filenames, detected types, and upload times. Identical content within a storage category shares one physical file; up to 1,024 recent distinct names are retained for search. Legacy files show their ID, size, and filesystem modification time and remain downloadable and deletable.
+
+Delete individual files, select files on the current page, or clear all server files. Confirmations show counts and attachment bytes; results report deleted counts/bytes and failed IDs. Clearing requires typing `CLEAR` and reconfirming if the inventory changes. Deleting a shared file affects every notification referencing it, without removing existing client copies. Capacity counts attachment bytes, excluding filesystem overhead and management metadata; open downloads may delay actual disk reclamation. Without file storage, the navigation entry is hidden and media APIs are unavailable.
+
+Preview images, plain text (up to 256 KiB), and browser-supported audio/video; download for full contents or unsupported formats. Active content such as HTML/SVG is download-only. Back up the storage directory's `.metadata/` alongside attachments to preserve upload details. Inventory is scanned on demand; refresh and clear duration depends on file count.
+
+### Local stdio MCP (`chanify mcp`)
+
+A coding agent can launch `chanify mcp` locally. The CLI serves MCP over stdio and submits notifications through the existing HTTP sending API. The destination node does not need `/mcp` enabled, and no local listening port is required.
+
+Configure a sending token:
+
+```yaml
+client:
+  endpoint: https://api.chanify.net # optional; use your node URL for self-hosting
+  token: '<sending-token>'
+```
+
+Example stdio agent configuration (the exact format depends on the client; use absolute paths):
+
+```json
+{
+  "mcpServers": {
+    "chanify": {
+      "command": "/path/to/chanify",
+      "args": ["--config", "/path/to/chanify.yml", "mcp"]
+    }
+  }
+}
+```
+
+`chanify mcp --endpoint https://your-node.example` overrides the configured endpoint. The default service exposes only `send_text`, up to 400 Unicode characters, using an ordinary channel token. It does not require node discovery or expose long text, images, or files.
+
+Self-hosted nodes are discovered through `/rest/v1/info`. Their declared capabilities determine tools and limits, using the same definitions and validation as remote MCP. With file support, text accepts up to 100,000 characters and long reports upload their complete UTF-8 contents as `message.txt`. Image/file tools accept actual Base64 bytes with the remote MCP limits above. A 404 from legacy node discovery permits conservative text-only operation with an ordinary channel token; other discovery failures stop startup. Attachment capabilities are rechecked before uploads; missing storage produces an error rather than a preview-only notification. Attachment title/caption rendering on older nodes follows their existing implementation.
+
+Ordinary tokens have a fixed destination described by the tools; `channel` is omitted from their schema and overrides are rejected. Server-wide sending tokens require the matching node and `auth.server-token`; tools accept readable channel codes, defaulting to `sys.none`. The CLI performs wire-format conversion. This local command uses a sending token, not a remote MCP token or an administrator password. Credentials are kept out of tool arguments, URLs, and logs; the destination node validates signatures, registration, expiry, and revocation.
+
+Stdout contains only MCP messages; diagnostics use stderr. Stdin is reserved for the protocol. Closing stdin or terminating the process stops it. HTTP requests support cancellation and have a 30-second timeout; sends are not automatically retried. Results report submission, not delivery or reading. Ambiguous failures may have submitted a notification, so retries can duplicate it.
+
+### One-shot agent sending (`chanify agent send`)
+
+Coding agents can submit a notification with one CLI invocation, using the existing `client.endpoint` / `client.token` configuration. The destination does not need `/mcp`. The existing `chanify send` remains available.
+
+```sh
+chanify --config /path/to/chanify.yml agent send --text 'Task completed'
+chanify --config /path/to/chanify.yml agent send --text-file /path/to/report.md --title 'Validation report'
+chanify --config /path/to/chanify.yml agent send --stdin < /path/to/report.md
+chanify --config /path/to/chanify.yml agent send --image /path/to/screenshot.png --summary 'Test results'
+chanify --config /path/to/chanify.yml agent send --file /path/to/report.pdf --summary 'Full report'
+```
+
+Choose exactly one content input. Text is literal: `@` and `-` do not implicitly read files or stdin. Use `--summary` for an attachment description. Local files must be readable regular files; failed reads or validation stop sending instead of submitting only a preview. Text must be UTF-8; text files/stdin retain their contents and line endings.
+
+The default service accepts only short text, up to 400 characters. Capable self-hosted nodes accept up to 100,000 characters and automatically attach complete long reports. Titles accept 80 characters, summaries 200. Images must be complete, decodable PNG/JPEG files of at most 32 million pixels. Images and files are limited to 4 MiB. Summary does not replace the body of a short text notification.
+
+Server-wide sending tokens accept readable `--channel` codes, defaulting to `sys.none`; ordinary channel tokens reject that option and keep their fixed destination. This differs from the encoded channel argument of the original send command. `--endpoint` overrides the configured URL. `--timeout 45s` sets the operation budget (30s by default; discovery retains a 10-second phase cap). Invalid explicitly selected configuration stops the operation.
+
+Normal stdout is exactly one JSON object; diagnostics use stderr. `--help` prints ordinary help instead. Example success:
+
+```json
+{"schema_version":1,"status":"submitted","format":"text","request_id":"<request-id>"}
+```
+
+Formats are text / text_attachment / image / file. Submitted means confirmed submission, not delivery or reading. Failed indicates a pre-send failure or a definite rejection. Unknown means a notification may have been submitted; do not automatically retry. Errors contain `error.code` and `error.message`, excluding credentials and raw backend response bodies.
+
+Exit codes: 0 confirmed; 1 internal; 2 input/configuration; 3 authorization; 4 capabilities/discovery/pre-send timeout; 5 unknown outcome; 130/143 caught interruption signals. Post-send timeouts, 5xx, missing request IDs, malformed responses, and other send failures without reliable rejection semantics conservatively return unknown. Sends are never automatically retried.

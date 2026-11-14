@@ -114,6 +114,8 @@ func (s *mysql) fixDB() error {
 		"CREATE TABLE IF NOT EXISTS `options`(`key` VARCHAR(255), `value` VARBINARY(255), PRIMARY KEY (`key`));",
 		"CREATE TABLE IF NOT EXISTS `users`(`uid` VARCHAR(255), `pubkey` VARBINARY(255) UNIQUE, `seckey` VARBINARY(255), `flags` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(`uid`));",
 		"CREATE TABLE IF NOT EXISTS `devices`(`uuid` VARCHAR(255), `uid` VARCHAR(255), `key` VARBINARY(255), `type` INTEGER DEFAULT 0, `token` VARBINARY(255), `sandbox` INTEGER DEFAULT 0, `lastupdate` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, `createtime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(`uuid`), INDEX(`uid`));",
+		"CREATE TABLE IF NOT EXISTS `server_tokens` (`uid` VARCHAR(64) NOT NULL, `id` VARCHAR(32) NOT NULL, `name` VARCHAR(128) NOT NULL, `expires` BIGINT UNSIGNED NOT NULL, `created` BIGINT NOT NULL, `revoked` INTEGER NOT NULL DEFAULT 0, `encrypted_token` TEXT NOT NULL, `hash` VARCHAR(64) NOT NULL, PRIMARY KEY(`uid`,`id`));",
+		"CREATE TABLE IF NOT EXISTS `mcp_tokens` (`id` VARCHAR(32) PRIMARY KEY, `uid` VARCHAR(64) NOT NULL, `name` VARCHAR(128) NOT NULL, `expires` BIGINT NOT NULL, `created` BIGINT NOT NULL, `revoked` INTEGER NOT NULL DEFAULT 0, `channels` TEXT NOT NULL, `hash` VARCHAR(64) NOT NULL);",
 	}
 	for _, str := range sqls {
 		if _, err := s.db.Exec(str); err != nil {
@@ -151,6 +153,12 @@ func (s *mysql) DeleteUser(uid string) error {
 	}
 	defer func() { _ = tx.Rollback() }()
 	if _, err = tx.Exec("DELETE FROM `devices` WHERE `uid`=?;", uid); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM `mcp_tokens` WHERE `uid`=?;", uid); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM `server_tokens` WHERE `uid`=?;", uid); err != nil {
 		return err
 	}
 	if _, err = tx.Exec("DELETE FROM `users` WHERE `uid`=?;", uid); err != nil {

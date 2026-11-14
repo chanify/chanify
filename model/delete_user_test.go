@@ -65,6 +65,8 @@ func TestDeleteUserRollsBackOnFailure(t *testing.T) {
 			}()
 			mock.ExpectBegin()
 			mock.ExpectExec("DELETE FROM `devices`").WithArgs("uid").WillReturnResult(sqlmock.NewResult(0, 2))
+			mock.ExpectExec("DELETE FROM `mcp_tokens`").WithArgs("uid").WillReturnResult(sqlmock.NewResult(0, 1))
+			mock.ExpectExec("DELETE FROM `server_tokens`").WithArgs("uid").WillReturnResult(sqlmock.NewResult(0, 1))
 			mock.ExpectExec("DELETE FROM `users`").WithArgs("uid").WillReturnError(sql.ErrConnDone)
 			mock.ExpectRollback()
 			var store DB = &sqlite{db: db}

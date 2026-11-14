@@ -2,9 +2,11 @@ package core
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/chanify/chanify/logic"
@@ -20,7 +22,14 @@ var (
 
 // Core instance
 type Core struct {
-	logic *logic.Logic
+	mcpMu       sync.Mutex
+	mcpStopped  bool
+	mcpRequests sync.WaitGroup
+	admin       *adminState
+	logic       *logic.Logic
+	mcpHandler  http.Handler
+	mcpContext  context.Context
+	mcpCancel   context.CancelFunc
 }
 
 // New core instance
@@ -31,13 +40,34 @@ func New() *Core {
 
 // Init core with option
 func (c *Core) Init(opts *logic.Options) error {
-	var err error
+	hash, err := adminPasswordHash(opts.AdminPassword)
+	if err != nil {
+		return err
+	}
 	c.logic, err = logic.NewLogic(opts)
+	if err == nil && opts.MCPEnabled {
+		c.mcpContext, c.mcpCancel = context.WithCancel(context.Background())
+		c.mcpHandler = c.initMCP(opts.MCPListen)
+	}
+	if err == nil && hash != "" {
+		if !c.logic.AdminAvailable() {
+			c.Close()
+			return errors.New("web administration requires a persistent node")
+		}
+		c.admin = newAdmin(hash, c.logic.Endpoint)
+	}
 	return err
 }
 
 // Close & cleaup for core
 func (c *Core) Close() {
+	c.mcpMu.Lock()
+	c.mcpStopped = true
+	if c.mcpCancel != nil {
+		c.mcpCancel()
+	}
+	c.mcpMu.Unlock()
+	c.mcpRequests.Wait()
 	if c.logic != nil {
 		c.logic.Close()
 		c.logic = nil
@@ -58,6 +88,14 @@ func (c *Core) APIHandler() http.Handler {
 		ctx.JSON(http.StatusNotFound, gin.H{"res": http.StatusNotFound, "msg": "not found"})
 	})
 
+	if c.mcpHandler != nil {
+		r.Any("/mcp", gin.WrapH(c.mcpHandler))
+	}
+	if c.admin != nil {
+		handler := c.adminHandler()
+		r.Any("/admin", gin.WrapH(handler))
+		r.Any("/admin/*path", gin.WrapH(handler))
+	}
 	s := r.Group("/v1")
 	s.GET("/sender/:token/:msg", c.handleSender)
 	s.GET("/sender/:token/", c.handleSender)
@@ -73,6 +111,8 @@ func (c *Core) APIHandler() http.Handler {
 	api.POST("/bind-user", c.handleBindUser)
 	api.POST("/unbind-user", c.handleUnbindUser)
 	api.POST("/delete-user", c.handleDeleteUser)
+	api.POST("/server-tokens", c.handleServerTokens)
+	api.POST("/mcp-tokens", c.handleMCPTokens)
 	api.POST("/push-token", c.handleUpdatePushToken)
 
 	file := r.Group("/files")

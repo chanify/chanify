@@ -15,6 +15,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/chanify/chanify/crypto"
@@ -40,17 +42,20 @@ var (
 
 // Options for init logic
 type Options struct {
-	Name         string
-	Version      string
-	Endpoint     string
-	DataPath     string
-	FilePath     string
-	PluginPath   string
-	DBUrl        string
-	Secret       string
-	Registerable bool
-	RegUsers     []string
-	WebHooks     []map[string]interface{}
+	Name          string
+	Version       string
+	Endpoint      string
+	DataPath      string
+	FilePath      string
+	PluginPath    string
+	DBUrl         string
+	Secret        string
+	Registerable  bool
+	RegUsers      []string
+	WebHooks      []map[string]interface{}
+	MCPEnabled    bool
+	MCPListen     bool
+	AdminPassword string
 }
 
 // Logic instance
@@ -68,6 +73,7 @@ type Logic struct {
 	infoData      []byte
 	infoSign      string
 	whitelist     map[string]bool
+	mediaMu       sync.Mutex
 	filepath      string
 	webhookManger *pluginManager
 
@@ -130,9 +136,19 @@ func NewLogic(opts *Options) (*Logic, error) {
 	if err := l.loadDB(opts.DBUrl); err != nil {
 		return nil, err
 	}
+	if opts.MCPEnabled {
+		if _, ok := l.db.(model.MCPTokenStore); !ok || l.srvless {
+			l.Close()
+			return nil, errors.New("MCP requires a persistent self-hosted node")
+		}
+		l.Features = append(l.Features, "mcp")
+	}
 	l.NodeID = l.secKey.ToID(0x01)
 	if !l.srvless {
 		l.Features = append([]string{"store.device"}, l.Features...)
+		if !strings.HasPrefix(strings.ToLower(opts.DBUrl), "nosql://") {
+			l.Features = append(l.Features, "auth.server-token")
+		}
 		key, _ := base64.RawStdEncoding.DecodeString(authKey)
 		akey, _ := x509.ParsePKCS8PrivateKey(key)
 		tk := &token.Token{
@@ -253,15 +269,40 @@ func (l *Logic) Decrypt(data []byte) ([]byte, error) {
 }
 
 // VerifyToken chekc sender token
-func (l *Logic) VerifyToken(tk *model.Token) bool {
-	if tk.IsExpires() {
+func (l *Logic) verifyTokenSignature(tk *model.Token) bool {
+	if tk == nil || tk.IsExpires() {
 		return false
+	}
+	if tk.IsServerToken() {
+		if l.srvless || crypto.Base32Encode.EncodeToString(tk.GetNodeID()) != l.NodeID {
+			return false
+		}
+		user, err := l.GetUser(tk.GetUserID())
+		if err != nil || user.IsServerless() {
+			return false
+		}
 	}
 	key, err := l.GetUserKey(tk.GetUserID())
 	if err != nil {
 		return false
 	}
 	return tk.VerifySign(key)
+}
+
+// VerifyToken requires every server-wide credential to be registered and active.
+func (l *Logic) VerifyToken(tk *model.Token) bool {
+	if !l.verifyTokenSignature(tk) {
+		return false
+	}
+	if !tk.IsServerToken() {
+		return true
+	}
+	store, ok := l.db.(model.ServerTokenStore)
+	if !ok {
+		return false
+	}
+	record, err := store.GetServerToken(tk.GetUserID(), tk.ServerTokenID())
+	return err == nil && !record.Revoked && record.Hash == serverTokenHash(tk.RawToken())
 }
 
 // LoadFile read with file type & data
@@ -283,7 +324,12 @@ func (l *Logic) LoadFile(tname string, name string) ([]byte, error) {
 }
 
 // SaveFile save with file type & data
-func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
+func (l *Logic) SaveFile(tname string, data []byte, names ...string) (string, error) {
+	l.mediaMu.Lock()
+	defer l.mediaMu.Unlock()
+	if tname != "images" && tname != "audios" && tname != "files" {
+		return "", ErrInvalidContent
+	}
 	if len(l.filepath) <= 0 {
 		return "", ErrNoSupportMethod
 	}
@@ -293,7 +339,19 @@ func (l *Logic) SaveFile(tname string, data []byte) (string, error) {
 	key := sha1.Sum(data)
 	name := hex.EncodeToString(key[:])
 	path := filepath.Join(l.filepath, tname, name)
-	if err := saveFile(path, data); err != nil {
+	dirInfo, dirErr := os.Lstat(filepath.Join(l.filepath, tname))
+	if dirErr != nil || !dirInfo.IsDir() {
+		return "", ErrInvalidContent
+	}
+	if info, err := os.Lstat(path); err == nil && !info.Mode().IsRegular() {
+		return "", ErrInvalidContent
+	} else if err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	if err := saveMediaBytes(path, data); err != nil {
+		return "", err
+	}
+	if err := l.saveMediaMetadata(tname+"/"+name, data, names); err != nil {
 		return "", err
 	}
 	return filepath.Join("/files/"+tname, name), nil
@@ -321,7 +379,7 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 	if priority == 5 { // only 10 or 5
 		notification.Priority = priority
 	}
-	n := len(devices)
+	n := 0
 	for _, dev := range devices {
 		if dev.Type == 2 { // 1: iOS, 2: watchOS, 3: macOS
 			if isTimeline {
@@ -339,9 +397,18 @@ func (l *Logic) SendAPNS(uid string, data []byte, devices []*model.Device, prior
 		notification.DeviceToken = hex.EncodeToString(dev.Token)
 		res, err := l.getAPNS(dev.Sandbox).Push(notification)
 		if err != nil {
-			log.Println("Send apns failed:", res, err)
-			n--
+			log.Println("Send apns failed:", err)
+			continue
 		}
+		if res == nil || !res.Sent() {
+			if res != nil {
+				log.Printf("APNs rejected notification: status=%d reason=%s", res.StatusCode, res.Reason)
+			} else {
+				log.Println("APNs returned no response")
+			}
+			continue
+		}
+		n++
 	}
 	return uuid, n
 }

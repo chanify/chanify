@@ -370,7 +370,7 @@ type MockAPNSPusher struct {
 }
 
 func (m *MockAPNSPusher) Push(n *apns2.Notification) (*apns2.Response, error) {
-	return &apns2.Response{}, m.Error
+	return &apns2.Response{StatusCode: apns2.StatusSent}, m.Error
 }
 
 func TestSendDirect(t *testing.T) {
