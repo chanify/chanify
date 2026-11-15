@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"net/http"
 	"net/url"
@@ -58,6 +59,8 @@ type adminState struct {
 	loginSlots   chan struct{}
 	cookiePath   string
 	secure       bool
+	random       func() (string, error)
+	assets       fs.FS
 }
 
 // Derive the login verifier once at startup; never retain the plain password here.
@@ -80,11 +83,13 @@ func newAdmin(hash, endpoint string) *adminState {
 		path = strings.TrimRight(u.Path, "/") + "/admin"
 		secure = u.Scheme == "https"
 	}
-	return &adminState{passwordHash: []byte(hash), sessions: map[string]adminSession{}, attempts: map[string]adminAttempt{}, clients: map[string]*adminClient{}, loginSlots: make(chan struct{}, 2), cookiePath: path, secure: secure}
+	return &adminState{passwordHash: []byte(hash), sessions: map[string]adminSession{}, attempts: map[string]adminAttempt{}, clients: map[string]*adminClient{}, loginSlots: make(chan struct{}, 2), cookiePath: path, secure: secure, random: adminRandom, assets: adminAssets}
 }
-func adminRandom() (string, error) {
+func adminRandom() (string, error) { return adminRandomFrom(rand.Reader) }
+
+func adminRandomFrom(reader io.Reader) (string, error) {
 	data := make([]byte, 32)
-	if _, err := rand.Read(data); err != nil {
+	if _, err := io.ReadFull(reader, data); err != nil {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(data), nil
@@ -131,7 +136,7 @@ func (c *Core) adminHandler() http.Handler {
 	mux := http.NewServeMux()
 	for _, asset := range []struct{ path, name, mime string }{{"/admin", "index.html", "text/html"}, {"/admin/app.js", "app.js", "text/javascript"}, {"/admin/style.css", "style.css", "text/css"}, {"/admin/preferences.js", "preferences.js", "text/javascript"}, {"/admin/media.js", "media.js", "text/javascript"}, {"/admin/logo.png", "logo.png", "image/png"}} {
 		mux.HandleFunc("GET "+asset.path, func(w http.ResponseWriter, r *http.Request) {
-			data, err := adminAssets.ReadFile("adminassets/" + asset.name)
+			data, err := fs.ReadFile(c.admin.assets, "adminassets/"+asset.name)
 			if err != nil {
 				http.NotFound(w, r)
 				return
@@ -236,12 +241,12 @@ func (c *Core) adminLogin(w http.ResponseWriter, r *http.Request) {
 		adminJSON(w, 401, map[string]string{"error": "密码不正确"})
 		return
 	}
-	token, err := adminRandom()
+	token, err := state.random()
 	if err != nil {
 		adminJSON(w, 500, map[string]string{"error": "无法创建会话"})
 		return
 	}
-	csrf, err := adminRandom()
+	csrf, err := state.random()
 	if err != nil {
 		adminJSON(w, 500, map[string]string{"error": "无法创建会话"})
 		return

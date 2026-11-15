@@ -5,6 +5,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"github.com/spf13/viper"
 	"io"
 	"net/http"
 	"os"
@@ -103,5 +104,37 @@ func TestMCPBadConfigDoesNotLeakToStdout(t *testing.T) {
 	}
 	if len(stdout) != 0 || strings.Contains(stderr.String(), secret) {
 		t.Fatal("configuration diagnostics polluted protocol or exposed secrets")
+	}
+}
+
+func TestMCPCommandEndpointAndCancellation(t *testing.T) {
+	resetConfig(t)
+	c := commandForTest(t, "mcp")
+	setFlag(t, c, "endpoint", "https://node.example")
+	if err := runMCPCmd(c, nil); err == nil {
+		t.Fatal("invalid token accepted")
+	}
+	setFlag(t, c, "endpoint", "")
+	if err := runMCPCmd(c, nil); err == nil {
+		t.Fatal("invalid token accepted")
+	}
+	path := agentConfig(t)
+	viper.SetConfigFile(path)
+	if err := viper.ReadInConfig(); err != nil {
+		t.Fatal(err)
+	}
+	original := os.Stdin
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = w.Close()
+	os.Stdin = r
+	t.Cleanup(func() { os.Stdin = original; _ = r.Close() })
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	c.SetContext(ctx)
+	if err := runMCPCmd(c, nil); err != nil {
+		t.Fatal(err)
 	}
 }

@@ -61,6 +61,16 @@ func (c *Core) Init(opts *logic.Options) error {
 
 // Close & cleaup for core
 func (c *Core) Close() {
+	c.StopMCP()
+	if c.logic != nil {
+		c.logic.Close()
+		c.logic = nil
+	}
+}
+
+// StopMCP cancels streaming requests before HTTP shutdown, keeping storage open
+// for finite HTTP requests until Close is called.
+func (c *Core) StopMCP() {
 	c.mcpMu.Lock()
 	c.mcpStopped = true
 	if c.mcpCancel != nil {
@@ -68,10 +78,6 @@ func (c *Core) Close() {
 	}
 	c.mcpMu.Unlock()
 	c.mcpRequests.Wait()
-	if c.logic != nil {
-		c.logic.Close()
-		c.logic = nil
-	}
 }
 
 // APIHandler return handler for http

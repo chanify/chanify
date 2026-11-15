@@ -43,12 +43,14 @@ func init() {
 	viper.BindPFlag("config.verbose", rootCmd.PersistentFlags().Lookup("verbose")) // nolint: errcheck
 }
 
-func initConfig() {
+func initConfig() { loadConfig(homedir.Dir) }
+
+func loadConfig(homeDirectory func() (string, error)) {
 	configLoadErr = nil
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		home, err := homedir.Dir()
+		home, err := homeDirectory()
 		if err != nil {
 			configLoadErr = err
 			fmt.Fprintln(os.Stderr, "Cannot locate the configuration directory.")

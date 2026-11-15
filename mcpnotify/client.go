@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"slices"
@@ -20,11 +21,12 @@ import (
 )
 
 type Client struct {
-	http   *sender.Client
-	token  string
-	parsed *model.Token
-	caps   Capabilities
-	nodeID string
+	http      *sender.Client
+	token     string
+	parsed    *model.Token
+	caps      Capabilities
+	nodeID    string
+	newWriter func(io.Writer) *multipart.Writer
 }
 
 func NewClient(ctx context.Context, endpoint, token, version string, transport *http.Client) (*Client, error) {
@@ -95,7 +97,7 @@ func NewClientWithTimeout(ctx context.Context, endpoint, token, version string, 
 			return nil, rejected("invalid_token", "device-specific sending tokens are not supported")
 		}
 	}
-	return &Client{http: client, token: token, parsed: parsed, caps: caps, nodeID: info.NodeID}, nil
+	return &Client{http: client, token: token, parsed: parsed, caps: caps, nodeID: info.NodeID, newWriter: multipart.NewWriter}, nil
 }
 func (c *Client) Server(version string) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "chanify", Version: version}, nil)
@@ -110,17 +112,21 @@ func (c *Client) Server(version string) *mcp.Server {
 func (c *Client) Call(ctx context.Context, name string, raw json.RawMessage) *mcp.CallToolResult {
 	result, err := c.Send(ctx, name, raw)
 	if err != nil {
-		var failure *SendError
-		if errors.As(err, &failure) {
-			code := failure.Code
-			if code == "invalid_token" {
-				code = "unauthorized"
-			}
-			return Result(map[string]interface{}{"code": code, "message": failure.Message, "status": failure.Status}, true)
-		}
-		return Failure("send_failed", "Cannot submit notification.")
+		return callFailure(err)
 	}
 	return Result(map[string]interface{}{"status": "submitted", "format": result.Format, "request_id": result.RequestID}, false)
+}
+
+func callFailure(err error) *mcp.CallToolResult {
+	var failure *SendError
+	if errors.As(err, &failure) {
+		code := failure.Code
+		if code == "invalid_token" {
+			code = "unauthorized"
+		}
+		return Result(map[string]interface{}{"code": code, "message": failure.Message, "status": failure.Status}, true)
+	}
+	return Failure("send_failed", "Cannot submit notification.")
 }
 
 func (c *Client) Send(ctx context.Context, name string, raw json.RawMessage) (*Submission, error) {
@@ -132,15 +138,7 @@ func (c *Client) Send(ctx context.Context, name string, raw json.RawMessage) (*S
 	}
 	args, err := Parse(name, raw, c.caps)
 	if err != nil {
-		var validation *ValidationError
-		if errors.As(err, &validation) {
-			code := validation.Code
-			if code == "invalid_text" {
-				code = "invalid_arguments"
-			}
-			return nil, rejected(code, validation.Message)
-		}
-		return nil, rejected("invalid_arguments", "Invalid sending arguments.")
+		return nil, sendingValidationError(err)
 	}
 	// Keep discovery stable for this MCP session, but recheck attachments before sending.
 	// Older sending APIs may otherwise ignore file parts and submit only their preview.
@@ -161,7 +159,20 @@ func (c *Client) Send(ctx context.Context, name string, raw json.RawMessage) (*S
 		}
 	}
 	var body bytes.Buffer
-	writer := multipart.NewWriter(&body)
+	writer := c.newWriter(&body)
+	format, err := encodeNotification(writer, name, args, c.caps.SelectableChannel)
+	if err != nil {
+		return nil, err
+	}
+	result, err := c.http.Submit(ctx, &body, writer.FormDataContentType(), c.token)
+	if err != nil {
+		return nil, sendingError(err)
+	}
+	return &Submission{Format: format, RequestID: result.RequestID}, nil
+}
+
+func encodeNotification(writer *multipart.Writer, name string, args *Arguments, selectableChannel bool) (string, error) {
+	var err error
 	field := func(key, value string) error {
 		if value == "" {
 			return nil
@@ -176,15 +187,15 @@ func (c *Client) Send(ctx context.Context, name string, raw json.RawMessage) (*S
 		_, err = part.Write(data)
 		return err
 	}
-	if c.caps.SelectableChannel {
+	if selectableChannel {
 		channel, _ := ChannelData(args.Channel)
 		if err := field("channel", crypto.Base64Encode.EncodeToString(channel)); err != nil {
-			return nil, rejected("internal_error", "cannot encode channel")
+			return "", rejected("internal_error", "cannot encode channel")
 		}
 	}
 	format := "text"
 	if err := field("title", args.Title); err != nil {
-		return nil, rejected("internal_error", "cannot encode title")
+		return "", rejected("internal_error", "cannot encode title")
 	}
 	switch name {
 	case "send_text":
@@ -211,11 +222,19 @@ func (c *Client) Send(ctx context.Context, name string, raw json.RawMessage) (*S
 		err = writer.Close()
 	}
 	if err != nil {
-		return nil, rejected("internal_error", "cannot encode notification")
+		return "", rejected("internal_error", "cannot encode notification")
 	}
-	result, err := c.http.Submit(ctx, &body, writer.FormDataContentType(), c.token)
-	if err != nil {
-		return nil, sendingError(err)
+	return format, nil
+}
+
+func sendingValidationError(err error) error {
+	var validation *ValidationError
+	if errors.As(err, &validation) {
+		code := validation.Code
+		if code == "invalid_text" {
+			code = "invalid_arguments"
+		}
+		return rejected(code, validation.Message)
 	}
-	return &Submission{Format: format, RequestID: result.RequestID}, nil
+	return rejected("invalid_arguments", "Invalid sending arguments.")
 }

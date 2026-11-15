@@ -26,61 +26,10 @@ func init() {
 		Use:   "serve",
 		Short: "Launch chanify api server",
 		Long:  `Launch service for chanify api server.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			srv := &http.Server{
-				Addr:           fmt.Sprintf("%s:%d", viper.GetString("server.host"), viper.GetInt("server.port")),
-				ReadTimeout:    parseDuration(viper.GetString("server.http.readtimeout")),
-				WriteTimeout:   parseDuration(viper.GetString("server.http.writetimeout")),
-				MaxHeaderBytes: 1 << 20,
-			}
-			log.Println("Launching service...")
-			if c := viper.ConfigFileUsed(); len(c) > 0 {
-				log.Println("Using config file:", c)
-			}
-			go func() {
-				c := core.New()
-				if c == nil {
-					log.Fatalln("Create service failed!")
-					return
-				}
-				defer c.Close()
-				endpoint := getEndpoint()
-				opts := &logic.Options{
-					Name:          getName(),
-					Version:       Version,
-					Endpoint:      endpoint,
-					DataPath:      getExpandPath("server.datapath"),
-					FilePath:      getExpandPath("server.filepath"),
-					PluginPath:    getExpandPath("server.pluginpath"),
-					DBUrl:         viper.GetString("server.dburl"),
-					Secret:        viper.GetString("server.secret"),
-					WebHooks:      getWebhooks(),
-					MCPEnabled:    viper.GetBool("server.mcp.enabled"),
-					MCPListen:     viper.GetBool("server.mcp.listen"),
-					AdminPassword: viper.GetString("server.web_admin.password"),
-				}
-				opts.Registerable, opts.RegUsers = getUserWhitlist(cmd)
-				if err := c.Init(opts); err != nil {
-					log.Fatalln("Init service failed:", err)
-					return
-				}
-				srv.Handler = c.APIHandler()
-				log.Println("Launch service", srv.Addr)
-				log.Println("Node server endpoint:", endpoint)
-				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					log.Println("Launch service failed:", err)
-				}
-			}()
-			quit := make(chan os.Signal, 1)
-			signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-			<-quit
-			log.Println("Shutting down server...")
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := srv.Shutdown(ctx); err != nil {
-				log.Println("Shutdown service failed:", err)
-			}
-			log.Println("Shutdown service success.")
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			return runServe(ctx, cmd)
 		},
 	}
 	rootCmd.AddCommand(serveCmd)
@@ -109,6 +58,68 @@ func init() {
 	viper.BindPFlag("server.http.readtimeout", serveCmd.Flags().Lookup("readtimeout"))   // nolint: errcheck
 	viper.BindPFlag("server.http.writetimeout", serveCmd.Flags().Lookup("writetimeout")) // nolint: errcheck
 	viper.BindPFlag("server.register.enable", serveCmd.Flags().Lookup("registerable"))   // nolint: errcheck
+}
+
+// Initialize before accepting traffic, and keep the core alive until HTTP shutdown completes.
+func runServe(ctx context.Context, cmd *cobra.Command) error {
+	c := core.New()
+	defer c.Close()
+	endpoint := getEndpoint()
+	opts := &logic.Options{
+		Name: getName(), Version: Version, Endpoint: endpoint,
+		DataPath: getExpandPath("server.datapath"), FilePath: getExpandPath("server.filepath"),
+		PluginPath: getExpandPath("server.pluginpath"), DBUrl: viper.GetString("server.dburl"),
+		Secret: viper.GetString("server.secret"), WebHooks: getWebhooks(),
+		MCPEnabled: viper.GetBool("server.mcp.enabled"), MCPListen: viper.GetBool("server.mcp.listen"),
+		AdminPassword: viper.GetString("server.web_admin.password"),
+	}
+	opts.Registerable, opts.RegUsers = getUserWhitlist(cmd)
+	if err := c.Init(opts); err != nil {
+		return fmt.Errorf("init service: %w", err)
+	}
+	srv := &http.Server{
+		Addr:           fmt.Sprintf("%s:%d", viper.GetString("server.host"), viper.GetInt("server.port")),
+		ReadTimeout:    parseDuration(viper.GetString("server.http.readtimeout")),
+		WriteTimeout:   parseDuration(viper.GetString("server.http.writetimeout")),
+		MaxHeaderBytes: 1 << 20, Handler: c.APIHandler(),
+	}
+	srv.RegisterOnShutdown(c.StopMCP)
+	log.Println("Launching service", srv.Addr)
+	if file := viper.ConfigFileUsed(); file != "" {
+		log.Println("Using config file:", file)
+	}
+	log.Println("Node server endpoint:", endpoint)
+	return serveHTTP(ctx, srv)
+}
+
+type httpService interface {
+	ListenAndServe() error
+	Shutdown(context.Context) error
+	Close() error
+}
+
+func serveHTTP(ctx context.Context, srv httpService) error {
+	stopped := make(chan error, 1)
+	go func() { stopped <- srv.ListenAndServe() }()
+	var err error
+	select {
+	case err = <-stopped:
+	case <-ctx.Done():
+		log.Println("Shutting down server...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			_ = srv.Close()
+			<-stopped //nolint:errcheck // Return the shutdown error after the listener has exited.
+			return fmt.Errorf("shutdown service: %w", err)
+		}
+		err = <-stopped
+		log.Println("Shutdown service success.")
+	}
+	if err == http.ErrServerClosed {
+		return nil
+	}
+	return err
 }
 
 func getName() string {

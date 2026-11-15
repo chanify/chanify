@@ -6,6 +6,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"github.com/spf13/viper"
 	"io"
 	"net/http"
 	"os"
@@ -269,4 +271,35 @@ func TestAgentProcessStdinTimeoutBeforeSend(t *testing.T) {
 func TestAgentProcessSignalsAfterSend(t *testing.T) {
 	t.Run("SIGINT", func(t *testing.T) { testAgentProcessSignalAfterSend(t, os.Interrupt, 130) })
 	t.Run("SIGTERM", func(t *testing.T) { testAgentProcessSignalAfterSend(t, syscall.SIGTERM, 143) })
+}
+
+func TestAgentDirectOutputAndEndpoint(t *testing.T) {
+	resetConfig(t)
+	path := agentConfig(t)
+	viper.SetConfigFile(path)
+	if err := viper.ReadInConfig(); err != nil {
+		t.Fatal(err)
+	}
+	previousStart, previousErr := executionStarted, configLoadErr
+	executionStarted = time.Time{}
+	configLoadErr = nil
+	t.Cleanup(func() { executionStarted = previousStart; configLoadErr = previousErr })
+	previousTransport := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = previousTransport })
+	http.DefaultTransport = mcpTestTransport(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"request-uid":"receipt"}`))}, nil
+	})
+	c := commandForTest(t, "agent", "send")
+	setFlag(t, c, "text", "message")
+	setFlag(t, c, "endpoint", "")
+	if err := runAgentSend(c, nil); err == nil {
+		t.Fatal("explicit empty endpoint accepted")
+	}
+	setFlag(t, c, "endpoint", "https://api.chanify.net")
+	c.SetOut(outputFailure{})
+	err := runAgentSend(c, nil)
+	var output *agentOutputError
+	if !errors.As(err, &output) {
+		t.Fatal(err)
+	}
 }

@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"crypto/rand"
 	"crypto/subtle"
 	"encoding/hex"
 	"errors"
@@ -31,10 +30,10 @@ func (l *Logic) CreateMCPToken(uid, name string, expires int64) (*model.MCPToken
 	}
 	id := make([]byte, 16)
 	secret := make([]byte, 32)
-	if _, err := rand.Read(id); err != nil {
+	if _, err := randReader(id); err != nil {
 		return nil, "", err
 	}
-	if _, err := rand.Read(secret); err != nil {
+	if _, err := randReader(secret); err != nil {
 		return nil, "", err
 	}
 	raw := "cmcp1." + hex.EncodeToString(id) + "." + crypto.Base64Encode.EncodeToString(secret)

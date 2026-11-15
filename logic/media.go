@@ -60,7 +60,7 @@ func (l *Logic) mediaPath(id string) (string, error) {
 	if !ok {
 		return "", ErrInvalidContent
 	}
-	info, err := os.Lstat(filepath.Join(l.filepath, dir))
+	info, err := l.files().Lstat(filepath.Join(l.filepath, dir))
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +68,7 @@ func (l *Logic) mediaPath(id string) (string, error) {
 		return "", ErrInvalidContent
 	}
 	path := filepath.Join(l.filepath, dir, name)
-	info, err = os.Lstat(path)
+	info, err = l.files().Lstat(path)
 	if err != nil {
 		return "", err
 	}
@@ -82,16 +82,16 @@ func (l *Logic) metadataPath(id string) string {
 }
 func (l *Logic) mediaMetadata(id string) (MediaFile, error) {
 	var m MediaFile
-	dirInfo, dirErr := os.Lstat(filepath.Join(l.filepath, ".metadata"))
+	dirInfo, dirErr := l.files().Lstat(filepath.Join(l.filepath, ".metadata"))
 	if dirErr != nil || !dirInfo.IsDir() {
 		return m, ErrNotFound
 	}
 	path := l.metadataPath(id)
-	info, err := os.Lstat(path)
+	info, err := l.files().Lstat(path)
 	if err != nil || !info.Mode().IsRegular() {
 		return m, ErrNotFound
 	}
-	f, err := os.Open(path)
+	f, err := l.files().Open(path)
 	if err != nil {
 		return m, err
 	}
@@ -160,22 +160,20 @@ func (l *Logic) saveMediaMetadata(id string, data []byte, names []string) error 
 		m.Names = []string{strings.Split(id, "/")[1]}
 	}
 	dir := filepath.Join(l.filepath, ".metadata")
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := l.files().MkdirAll(dir, 0700); err != nil {
 		return err
 	}
-	info, err := os.Lstat(dir)
+	info, err := l.files().Lstat(dir)
 	if err != nil || !info.IsDir() {
 		return ErrInvalidContent
 	}
-	encoded, err := json.Marshal(m)
+	// MediaFile contains only JSON-encodable scalar fields and string slices.
+	encoded, _ := json.Marshal(m)
+	f, err := l.files().CreateTemp(dir, ".upload-")
 	if err != nil {
 		return err
 	}
-	f, err := os.CreateTemp(dir, ".upload-")
-	if err != nil {
-		return err
-	}
-	defer func() { _ = os.Remove(f.Name()) }()
+	defer func() { _ = l.files().Remove(f.Name()) }()
 	if _, err = f.Write(encoded); err != nil {
 		_ = f.Close()
 		return err
@@ -183,14 +181,14 @@ func (l *Logic) saveMediaMetadata(id string, data []byte, names []string) error 
 	if err = f.Close(); err != nil {
 		return err
 	}
-	return os.Rename(f.Name(), l.metadataPath(id))
+	return l.files().Rename(f.Name(), l.metadataPath(id))
 }
 func (l *Logic) mediaInventory() (MediaInventory, error) {
 	result := MediaInventory{Items: []MediaFile{}}
 	hash := sha256.New()
 	for _, dir := range []string{"images", "audios", "files"} {
 		path := filepath.Join(l.filepath, dir)
-		info, err := os.Lstat(path)
+		info, err := l.files().Lstat(path)
 		if os.IsNotExist(err) {
 			continue
 		}
@@ -200,7 +198,7 @@ func (l *Logic) mediaInventory() (MediaInventory, error) {
 		if !info.IsDir() {
 			return result, ErrInvalidContent
 		}
-		entries, err := os.ReadDir(path)
+		entries, err := l.files().ReadDir(path)
 		if err != nil {
 			return result, err
 		}
@@ -260,7 +258,7 @@ func (l *Logic) OpenMedia(id string) (*os.File, MediaFile, error) {
 	if err != nil {
 		return nil, MediaFile{}, err
 	}
-	f, err := os.Open(path)
+	f, err := l.files().Open(path)
 	if err != nil {
 		return nil, MediaFile{}, err
 	}
@@ -308,35 +306,39 @@ func (l *Logic) DeleteMedia(ids []string, snapshot string) (MediaDeleteResult, e
 			result.Failed = append(result.Failed, id)
 			continue
 		}
-		info, err := os.Stat(path)
+		info, err := l.files().Stat(path)
 		if err != nil {
 			result.Failed = append(result.Failed, id)
 			continue
 		}
-		if err = os.Remove(path); err != nil {
+		if err = l.files().Remove(path); err != nil {
 			result.Failed = append(result.Failed, id)
 			continue
 		}
 		result.Deleted++
 		result.Bytes += info.Size()
 		// Stale metadata never makes a deleted attachment visible in the inventory.
-		_ = os.Remove(l.metadataPath(id))
+		_ = l.files().Remove(l.metadataPath(id))
 	}
 	return result, nil
 }
 
 // Publish complete files atomically so a failed write cannot leave a truncated attachment.
 func saveMediaBytes(path string, data []byte) error {
-	if _, err := os.Stat(path); err == nil {
+	return saveMediaBytesWithFiles(&systemFiles, path, data)
+}
+
+func saveMediaBytesWithFiles(files *fileOperations, path string, data []byte) error {
+	if _, err := files.Stat(path); err == nil {
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
 	}
-	f, err := os.CreateTemp(filepath.Dir(path), ".upload-")
+	f, err := files.CreateTemp(filepath.Dir(path), ".upload-")
 	if err != nil {
 		return err
 	}
-	defer func() { _ = os.Remove(f.Name()) }()
+	defer func() { _ = files.Remove(f.Name()) }()
 	if _, err = f.Write(data); err != nil {
 		_ = f.Close()
 		return err
@@ -344,5 +346,5 @@ func saveMediaBytes(path string, data []byte) error {
 	if err = f.Close(); err != nil {
 		return err
 	}
-	return os.Rename(f.Name(), path)
+	return files.Rename(f.Name(), path)
 }

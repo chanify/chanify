@@ -25,11 +25,11 @@ TEST_FLAGS?=-race
 
 test:
 	@echo Test ${PACKAGE}
-	@go test $(TEST_FLAGS) ./cmd
-	@go test $(TEST_FLAGS) -tags test -covermode atomic -coverprofile coverage.raw.out -coverpkg ./... ./...
+	@go test $(TEST_FLAGS) -covermode atomic -coverprofile coverage.raw.out -coverpkg ./... ./...
 	@awk '!/\.pb\.go:/' coverage.raw.out > coverage.out
 	@rm coverage.raw.out
 	@go tool cover -func coverage.out
+	@awk -f scripts/check-coverage.awk coverage.out
 
 cover: test
 	@go tool cover -html coverage.out

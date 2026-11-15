@@ -17,8 +17,12 @@ func fixPath(path string) error {
 }
 
 func saveFile(path string, data []byte) error {
-	if _, err := os.Stat(path); err != nil {
-		f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	return saveFileWithFiles(&systemFiles, path, data)
+}
+
+func saveFileWithFiles(files *fileOperations, path string, data []byte) error {
+	if _, err := files.Stat(path); err != nil {
+		f, err := files.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
 		}

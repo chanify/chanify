@@ -87,9 +87,8 @@ func runSendCmd(cmd *cobra.Command, args []string) error {
 	setFieldValue(w, "sound", []byte(sound))
 	setFieldValueInt(w, "priority", priority)
 	setFieldValue(w, "interruption-level", []byte(interruptionLevel))
-	if err := w.Close(); err != nil {
-		return err
-	}
+	// This writer targets bytes.Buffer, whose writes cannot fail.
+	_ = w.Close()
 	return sendMessage(cmd.Context(), &data, w.FormDataContentType())
 }
 

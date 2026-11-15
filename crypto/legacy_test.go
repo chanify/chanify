@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -137,4 +139,51 @@ func TestLegacyClientSignature(t *testing.T) {
 	if key.Verify([]byte("tampered"), signature) {
 		t.Fatal("tampered message accepted")
 	}
+}
+
+func TestNoMaybeReaderForwardsInitialBulkRead(t *testing.T) {
+	reader := NewNoMaybeReader(strings.NewReader("abc"))
+	data := make([]byte, 3)
+	n, err := reader.Read(data)
+	if err != nil || n != 3 || string(data) != "abc" {
+		t.Fatal(n, string(data), err)
+	}
+}
+
+func TestLegacyKeyStreamFailuresAndRejection(t *testing.T) {
+	want := errors.New("key stream failed")
+	if _, err := deriveLegacyKeyFromStream(func(int) ([]byte, error) { return nil, want }); !errors.Is(err, want) {
+		t.Fatal(err)
+	}
+	calls := 0
+	key, err := deriveLegacyKeyFromStream(func(length int) ([]byte, error) {
+		calls++
+		data := make([]byte, length)
+		if calls == 2 {
+			data[length-1] = 1
+		}
+		return data, nil
+	})
+	if err != nil || calls != 2 {
+		t.Fatal(key, calls, err)
+	}
+	expected := make([]byte, 32)
+	expected[31] = 1
+	raw, keyErr := key.Bytes()
+	if keyErr != nil || !bytes.Equal(raw, expected) {
+		t.Fatal(raw, keyErr)
+	}
+	if _, err := deriveLegacyKeyFromStream(func(length int) ([]byte, error) { return make([]byte, length), nil }); !errors.Is(err, ErrInvalidKey) {
+		t.Fatal(err)
+	}
+}
+
+func TestSecretKeyConstructionPanicsOnFailure(t *testing.T) {
+	want := errors.New("generation failed")
+	defer func() {
+		if got := recover(); got != want {
+			t.Fatal(got)
+		}
+	}()
+	newSecretKey(nil, want)
 }

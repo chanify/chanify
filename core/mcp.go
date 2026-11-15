@@ -26,22 +26,7 @@ type mcpAuthorization struct {
 }
 
 func (c *Core) initMCP(listen bool) http.Handler {
-	var mu sync.Mutex
-	servers := map[string]*mcp.Server{}
-	transport := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server {
-		auth, _ := req.Context().Value(mcpAuthKey{}).(*mcpAuthorization)
-		if auth == nil {
-			return nil
-		}
-		mu.Lock()
-		defer mu.Unlock()
-		if server := servers[auth.record.ID]; server != nil {
-			return server
-		}
-		server := c.newMCPServer(listen)
-		servers[auth.record.ID] = server
-		return server
-	}, &mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true, MaxRequestBodyBytes: 6 << 20, PropagateRequestCancellation: true})
+	transport := mcp.NewStreamableHTTPHandler(c.mcpServerFactory(listen), &mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true, MaxRequestBodyBytes: 6 << 20, PropagateRequestCancellation: true})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c.mcpMu.Lock()
 		if c.mcpStopped {
@@ -94,30 +79,54 @@ func (c *Core) initMCP(listen bool) http.Handler {
 		defer func() { close(done); <-monitorDone }()
 		go func() {
 			defer close(monitorDone)
-			ticks := 0
 			ticker := time.NewTicker(time.Second)
 			defer ticker.Stop()
-			for {
-				select {
-				case <-done:
-					return
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-					ticks++
-					if listen && ticks%15 == 0 {
-						writer.heartbeat()
-					}
-					if _, err := c.logic.AuthenticateMCP(fields[1]); err != nil {
-						cancel()
-						return
-					}
-				}
-			}
+			c.monitorMCP(ctx, done, ticker.C, fields[1], listen, writer.heartbeat, cancel)
 		}()
 		transport.ServeHTTP(writer, r.WithContext(ctx))
 	})
 }
+
+func (c *Core) mcpServerFactory(listen bool) func(*http.Request) *mcp.Server {
+	var mu sync.Mutex
+	servers := map[string]*mcp.Server{}
+	return func(req *http.Request) *mcp.Server {
+		auth, _ := req.Context().Value(mcpAuthKey{}).(*mcpAuthorization)
+		if auth == nil {
+			return nil
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		if server := servers[auth.record.ID]; server != nil {
+			return server
+		}
+		server := c.newMCPServer(listen)
+		servers[auth.record.ID] = server
+		return server
+	}
+}
+
+func (c *Core) monitorMCP(ctx context.Context, done <-chan struct{}, clock <-chan time.Time, raw string, listen bool, heartbeat func(), cancel context.CancelFunc) {
+	ticks := 0
+	for {
+		select {
+		case <-done:
+			return
+		case <-ctx.Done():
+			return
+		case <-clock:
+			ticks++
+			if listen && ticks%15 == 0 {
+				heartbeat()
+			}
+			if _, err := c.logic.AuthenticateMCP(raw); err != nil {
+				cancel()
+				return
+			}
+		}
+	}
+}
+
 func (c *Core) newMCPServer(listen bool) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "chanify", Version: c.logic.Version}, &mcp.ServerOptions{Capabilities: &mcp.ServerCapabilities{Tools: &mcp.ToolCapabilities{ListChanged: listen}}})
 	for _, tool := range mcpnotify.Tools(c.mcpCapabilities()) {
@@ -148,64 +157,76 @@ func (c *Core) mcpTool(name string) mcp.ToolHandler {
 			return mcpnotify.ValidationFailure(err), nil
 		}
 
-		channel, err := logic.MCPChannelData(args.Channel)
-		if err != nil {
-			return mcpFailure("invalid_channel", "invalid configured channel"), nil
+		msg, format, failure := c.prepareMCPMessage(name, args)
+		if failure != nil {
+			return failure, nil
 		}
-		node, _ := crypto.Base32Encode.DecodeString(c.logic.NodeID)
-		msg := model.NewMessageDestination(node, channel, nil)
-		format := "text"
-		if name == "send_text" {
-			if len(args.Text)+len(args.Title) < 2000 {
-				msg.TextContent(args.Text, args.Title, "", "")
-			} else {
-				if !c.mcpCanFiles() {
-					return mcpFailure("unsupported", "long text storage is unavailable"), nil
-				}
-				path, err := c.logic.SaveFile("files", []byte(args.Text), "message.txt")
-				if err != nil {
-					return mcpFailure("storage_failed", "could not save text attachment"), nil
-				}
-				summary := mcpnotify.Preview(args)
-				msg.TextFileContent(path, "message.txt", args.Title, summary, len([]byte(args.Text)), nil)
-				format = "text_attachment"
-			}
-		} else {
-			if !c.logic.CanFileStore() || (name == "send_file" && !c.mcpCanFiles()) || (name == "send_image" && !slices.Contains(c.logic.Features, "msg.image")) {
-				return mcpFailure("unsupported", "attachment storage is unavailable"), nil
-			}
-			data := args.Bytes
-			if name == "send_image" {
-				path, err := c.logic.SaveFile("images", data, args.Filename)
-				if err != nil {
-					return mcpFailure("storage_failed", "could not save image"), nil
-				}
-				msg.ImageContent(path, createThumbnail(data), len(data))
-				format = "image"
-			} else {
-				path, err := c.logic.SaveFile("files", data, args.Filename)
-				if err != nil {
-					return mcpFailure("storage_failed", "could not save attachment"), nil
-				}
-				msg.FileContent(path, args.Filename, args.Summary, len(data), nil)
-				format = "file"
-			}
-		}
-		if name != "send_text" {
-			msg.AttachmentCaption(args.Title, args.Summary)
-		}
-
-		// Recheck after storage work before producing an external notification.
-		if _, err := c.currentMCPAuth(ctx); err != nil {
-			return mcpFailure("unauthorized", err.Error()), nil
-		}
-		result := &mcpSendResult{}
-		c.sendDirectForUser(result, auth.record.UserID, msg)
-		if result.code != 200 {
-			return mcpFailure("send_failed", result.message()), nil
-		}
-		return mcpResult(map[string]interface{}{"status": "submitted", "format": format, "request_id": result.data["request-uid"]}, false), nil
+		return c.submitMCPMessage(ctx, auth, msg, format)
 	}
+}
+
+func (c *Core) prepareMCPMessage(name string, args *mcpnotify.Arguments) (*model.Message, string, *mcp.CallToolResult) {
+	channel, err := logic.MCPChannelData(args.Channel)
+	if err != nil {
+		return nil, "", mcpFailure("invalid_channel", "invalid configured channel")
+	}
+	node, _ := crypto.Base32Encode.DecodeString(c.logic.NodeID)
+	msg := model.NewMessageDestination(node, channel, nil)
+	format := "text"
+	if name == "send_text" {
+		if len(args.Text)+len(args.Title) < 2000 {
+			msg.TextContent(args.Text, args.Title, "", "")
+		} else {
+			if !c.mcpCanFiles() {
+				return nil, "", mcpFailure("unsupported", "long text storage is unavailable")
+			}
+			path, err := c.logic.SaveFile("files", []byte(args.Text), "message.txt")
+			if err != nil {
+				return nil, "", mcpFailure("storage_failed", "could not save text attachment")
+			}
+			summary := mcpnotify.Preview(args)
+			msg.TextFileContent(path, "message.txt", args.Title, summary, len([]byte(args.Text)), nil)
+			format = "text_attachment"
+		}
+	} else {
+		if !c.logic.CanFileStore() || (name == "send_file" && !c.mcpCanFiles()) || (name == "send_image" && !slices.Contains(c.logic.Features, "msg.image")) {
+			return nil, "", mcpFailure("unsupported", "attachment storage is unavailable")
+		}
+		data := args.Bytes
+		if name == "send_image" {
+			path, err := c.logic.SaveFile("images", data, args.Filename)
+			if err != nil {
+				return nil, "", mcpFailure("storage_failed", "could not save image")
+			}
+			msg.ImageContent(path, createThumbnail(data), len(data))
+			format = "image"
+		} else {
+			path, err := c.logic.SaveFile("files", data, args.Filename)
+			if err != nil {
+				return nil, "", mcpFailure("storage_failed", "could not save attachment")
+			}
+			msg.FileContent(path, args.Filename, args.Summary, len(data), nil)
+			format = "file"
+		}
+	}
+	if name != "send_text" {
+		msg.AttachmentCaption(args.Title, args.Summary)
+	}
+
+	return msg, format, nil
+}
+
+func (c *Core) submitMCPMessage(ctx context.Context, auth *mcpAuthorization, msg *model.Message, format string) (*mcp.CallToolResult, error) {
+	// Recheck after storage work before producing an external notification.
+	if _, err := c.currentMCPAuth(ctx); err != nil {
+		return mcpFailure("unauthorized", err.Error()), nil
+	}
+	result := &mcpSendResult{}
+	c.sendDirectForUser(result, auth.record.UserID, msg)
+	if result.code != 200 {
+		return mcpFailure("send_failed", result.message()), nil
+	}
+	return mcpResult(map[string]interface{}{"status": "submitted", "format": format, "request_id": result.data["request-uid"]}, false), nil
 }
 func mcpResult(data map[string]interface{}, failed bool) *mcp.CallToolResult {
 	return mcpnotify.Result(data, failed)

@@ -76,6 +76,10 @@ func GenerateSecretKey(secret []byte) *SecretKey {
 	} else {
 		key, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	}
+	return newSecretKey(key, err)
+}
+
+func newSecretKey(key *ecdsa.PrivateKey, err error) *SecretKey {
 	if err != nil {
 		panic(err)
 	}
@@ -88,9 +92,13 @@ func GenerateSecretKey(secret []byte) *SecretKey {
 // over HKDF-Expand(SHA-1, secret, "chanify"). Do not use GenerateKey here: its
 // random stream consumption is not stable, and Go 1.26+ ignores custom readers.
 func deriveLegacySecretKey(secret []byte) (*ecdsa.PrivateKey, error) {
+	return deriveLegacyKeyFromStream(func(length int) ([]byte, error) { return hkdf.Expand(sha1.New, secret, "chanify", length) })
+}
+
+func deriveLegacyKeyFromStream(expand func(int) ([]byte, error)) (*ecdsa.PrivateKey, error) {
 	const scalarSize = 32
 	for length := scalarSize; length <= sha1.Size*255; length += scalarSize {
-		stream, err := hkdf.Expand(sha1.New, secret, "chanify", length)
+		stream, err := expand(length)
 		if err != nil {
 			return nil, err
 		}

@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"mime"
 	"net/http"
 	"sort"
@@ -128,6 +129,13 @@ func (c *Core) adminMediaContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = f.Close() }()
+	serveAdminMedia(w, r, f, m)
+}
+
+func serveAdminMedia(w http.ResponseWriter, r *http.Request, f interface {
+	io.ReadSeeker
+	Stat() (fs.FileInfo, error)
+}, m logic.MediaFile) {
 	info, err := f.Stat()
 	if err != nil {
 		http.NotFound(w, r)

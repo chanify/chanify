@@ -63,6 +63,7 @@ func TestLuaWatch(t *testing.T) {
 		close(done)
 	}()
 	watcher.Errors <- errors.New("123")
+	watcher.Events <- fsnotify.Event{Name: "synthetic.lua", Op: fsnotify.Write}
 	close(watcher.Errors)
 	close(watcher.Events)
 	select {
@@ -94,5 +95,15 @@ func TestWebHookDoCall(t *testing.T) {
 	}
 	if w.DoCall(l) != ErrNotFound {
 		t.Error("Check do call failed")
+	}
+}
+
+func TestClosedWatchErrorsAreDisabled(t *testing.T) {
+	stream := make(chan error)
+	if nextWatchErrors(stream, errors.New("synthetic"), true) != stream {
+		t.Fatal("open error stream replaced")
+	}
+	if nextWatchErrors(stream, nil, false) != nil {
+		t.Fatal("closed error stream would spin")
 	}
 }

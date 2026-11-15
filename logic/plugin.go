@@ -25,7 +25,10 @@ type Webhook struct {
 }
 
 type pluginManager struct {
-	watcher  *fsnotify.Watcher
+	watcher interface {
+		Add(string) error
+		Close() error
+	}
 	watchWG  sync.WaitGroup
 	luaMutex sync.Mutex
 	luaFiles map[string]*luaFunc
@@ -120,15 +123,11 @@ func (p *pluginManager) loadLuaFile(file string, path string) *luaFunc {
 
 func (p *pluginManager) luaWatch(watcher *fsnotify.Watcher) {
 	if watcher != nil {
-		errors := watcher.Errors
+		var errors <-chan error = watcher.Errors
 		for {
 			select {
 			case err, ok := <-errors:
-				if ok {
-					log.Println("Watch lua file failed:", err)
-				} else {
-					errors = nil
-				}
+				errors = nextWatchErrors(errors, err, ok)
 			case event, ok := <-watcher.Events:
 				if !ok {
 					return
@@ -139,6 +138,15 @@ func (p *pluginManager) luaWatch(watcher *fsnotify.Watcher) {
 			}
 		}
 	}
+}
+
+// Disable a closed error stream while allowing the event stream to drain.
+func nextWatchErrors(stream <-chan error, err error, open bool) <-chan error {
+	if !open {
+		return nil
+	}
+	log.Println("Watch lua file failed:", err)
+	return stream
 }
 
 func (p *pluginManager) ReloadWebhook(file string) {

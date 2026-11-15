@@ -75,6 +75,7 @@ type Logic struct {
 	whitelist     map[string]bool
 	mediaMu       sync.Mutex
 	filepath      string
+	fileOps       *fileOperations
 	webhookManger *pluginManager
 
 	apnsPClient *apns2.Client
@@ -339,16 +340,16 @@ func (l *Logic) SaveFile(tname string, data []byte, names ...string) (string, er
 	key := sha1.Sum(data)
 	name := hex.EncodeToString(key[:])
 	path := filepath.Join(l.filepath, tname, name)
-	dirInfo, dirErr := os.Lstat(filepath.Join(l.filepath, tname))
+	dirInfo, dirErr := l.files().Lstat(filepath.Join(l.filepath, tname))
 	if dirErr != nil || !dirInfo.IsDir() {
 		return "", ErrInvalidContent
 	}
-	if info, err := os.Lstat(path); err == nil && !info.Mode().IsRegular() {
+	if info, err := l.files().Lstat(path); err == nil && !info.Mode().IsRegular() {
 		return "", ErrInvalidContent
 	} else if err != nil && !os.IsNotExist(err) {
 		return "", err
 	}
-	if err := saveMediaBytes(path, data); err != nil {
+	if err := saveMediaBytesWithFiles(l.files(), path, data); err != nil {
 		return "", err
 	}
 	if err := l.saveMediaMetadata(tname+"/"+name, data, names); err != nil {
@@ -430,6 +431,10 @@ func (l *Logic) loadDB(dburl string) error {
 		log.Println("Open database failed:", err)
 		return err
 	}
+	return l.loadNodeSecret()
+}
+
+func (l *Logic) loadNodeSecret() error {
 	var secret []byte
 	if err := l.db.GetOption("secret", &secret); err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {

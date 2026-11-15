@@ -16,7 +16,6 @@ import (
 
 	"github.com/chanify/chanify/mcpnotify"
 	"github.com/chanify/chanify/model"
-	"github.com/mattn/go-isatty"
 )
 
 type Detail struct {
@@ -104,19 +103,27 @@ func readBounded(ctx context.Context, reader io.Reader, limit int) ([]byte, erro
 		}
 		return nil, contextError(ctx.Err())
 	case read := <-ready:
-		if err := ctx.Err(); err != nil {
-			return nil, contextError(err)
-		}
-		if read.err != nil {
-			return nil, inputError("file_read_failed", "Cannot read the input file.")
-		}
-		if len(read.data) > limit {
-			return nil, inputError("too_large", "Input exceeds the size limit.")
-		}
-		return read.data, nil
+		return boundedResult(ctx, read.data, read.err, limit)
 	}
 }
+func boundedResult(ctx context.Context, data []byte, readErr error, limit int) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, contextError(err)
+	}
+	if readErr != nil {
+		return nil, inputError("file_read_failed", "Cannot read the input file.")
+	}
+	if len(data) > limit {
+		return nil, inputError("too_large", "Input exceeds the size limit.")
+	}
+	return data, nil
+}
+
 func readInput(ctx context.Context, opts Options, stdin io.Reader) ([]byte, error) {
+	return readInputWithFiles(ctx, opts, stdin, &systemInputs)
+}
+
+func readInputWithFiles(ctx context.Context, opts Options, stdin io.Reader, files *inputFiles) ([]byte, error) {
 	limit := mcpnotify.FileLimit
 	if opts.Mode == "text" || opts.Mode == "text-file" || opts.Mode == "stdin" {
 		limit = 400000
@@ -128,19 +135,19 @@ func readInput(ctx context.Context, opts Options, stdin io.Reader) ([]byte, erro
 		return []byte(opts.Source), nil
 	}
 	if opts.Mode == "stdin" {
-		if file, ok := stdin.(*os.File); ok && (isatty.IsTerminal(file.Fd()) || isatty.IsCygwinTerminal(file.Fd())) {
+		if file, ok := stdin.(*os.File); ok && files.Terminal(file) {
 			return nil, inputError("invalid_arguments", "--stdin requires redirected input, not a terminal.")
 		}
 		return readBounded(ctx, stdin, limit)
 	}
-	info, err := os.Stat(opts.Source)
+	info, err := files.Stat(opts.Source)
 	if err != nil || !info.Mode().IsRegular() {
 		return nil, inputError("file_read_failed", "Input must be a readable regular file.")
 	}
 	if info.Size() > int64(limit) {
 		return nil, inputError("too_large", "Input file exceeds the size limit.")
 	}
-	file, err := os.Open(opts.Source)
+	file, err := files.Open(opts.Source)
 	if err != nil {
 		return nil, inputError("file_read_failed", "Cannot open the input file.")
 	}
@@ -218,10 +225,8 @@ func Run(ctx context.Context, opts Options, stdin io.Reader, transport *http.Cli
 	if err != nil {
 		return FromError(err)
 	}
-	raw, err := json.Marshal(args)
-	if err != nil {
-		return Failed("internal_error", "Cannot encode notification.")
-	}
+	// Arguments contain only string values, which JSON can always encode.
+	raw, _ := json.Marshal(args)
 	submission, err := client.Send(ctx, name, raw)
 	if err != nil {
 		return FromError(err)
