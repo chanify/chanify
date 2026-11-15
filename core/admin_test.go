@@ -73,7 +73,7 @@ func TestAdminDisabledAndConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Close()
-	for _, path := range []string{"/admin", "/admin/api/state", "/admin/api/login"} {
+	for _, path := range []string{"/admin", "/admin/api/state", "/admin/api/login", "/admin/api/config", "/admin/password.js"} {
 		if w := adminRequest(c.APIHandler(), "GET", path, nil, nil, ""); w.Code != 404 {
 			t.Fatal("disabled admin route exposed", path, w.Code)
 		}
@@ -85,6 +85,7 @@ func TestAdminDisabledAndConfiguration(t *testing.T) {
 func TestAdminAuthenticationAndAssets(t *testing.T) {
 	c, _, _ := mcpFixture(t, false, false)
 	c.admin = newAdmin(testAdminHash(t), "https://localhost/push")
+	c.admin.allowInsecureHTTP = false
 	h := c.APIHandler()
 	for _, path := range []string{"/admin", "/admin/app.js", "/admin/style.css", "/admin/preferences.js", "/admin/logo.png", "/admin/media.js"} {
 		w := adminRequest(h, "GET", path, nil, nil, "")

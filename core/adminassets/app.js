@@ -140,11 +140,15 @@
     event.preventDefault(); const button = event.submitter; button.disabled = true;
     $('login-message').textContent = '';
     try {
-      if (!globalThis.crypto || !globalThis.crypto.subtle) throw new Error(t("请使用 HTTPS 或 localhost 打开管理页"));
+      const nativeDigest = globalThis.crypto && globalThis.crypto.subtle;
+      if (!nativeDigest) {
+        const config = await api('config');
+        if (!config.allow_insecure_http) throw new Error(t("请使用 HTTPS 或 localhost 打开管理页"));
+      }
       const input = new TextEncoder().encode($('password').value);
       $('password').value = '';
       let digest;
-      try { digest = await globalThis.crypto.subtle.digest('SHA-256', input); }
+      try { digest = await ChanifyPassword.digest(input); }
       finally { input.fill(0); }
       const passwordDigest = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
       const session = await api('login', { password_digest: passwordDigest });

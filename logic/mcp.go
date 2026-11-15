@@ -13,7 +13,7 @@ import (
 	"github.com/chanify/chanify/model"
 )
 
-// MCPChannelData converts a readable MCP channel code to the existing wire format.
+// MCPChannelData converts a readable MCP channel code to internal protobuf channel data.
 func MCPChannelData(code string) ([]byte, error) { return mcpnotify.ChannelData(code) }
 func (l *Logic) CreateMCPToken(uid, name string, expires int64) (*model.MCPTokenRecord, string, error) {
 	store, ok := l.db.(model.MCPTokenStore)

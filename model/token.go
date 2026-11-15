@@ -6,10 +6,8 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
-	"fmt"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/chanify/chanify/crypto"
 	"github.com/chanify/chanify/pb"
@@ -120,36 +118,14 @@ func (tk *Token) HashValue() []byte {
 func (tk *Token) IsServerToken() bool { return tk.data.Scope == pb.TokenScope_ServerSend }
 
 // ForChannel creates a per-request destination without changing signed token data.
-// Channel is the unpadded base64url-encoded protobuf Channel used by Apple clients.
+// Channel is a readable code such as dev, sys.none or sys.timesets.
 func (tk *Token) ForChannel(value string) (*Token, error) {
 	if !tk.IsServerToken() {
 		return tk, nil
 	}
-	if value == "" {
-		return nil, fmt.Errorf("channel is required")
-	}
-	if len(value) > 1024 {
-		return nil, fmt.Errorf("invalid channel")
-	}
-	data, err := crypto.Base64Encode.DecodeString(value)
-	if err != nil || len(data) == 0 {
-		return nil, fmt.Errorf("invalid channel")
-	}
-	var channel pb.Channel
-	if proto.Unmarshal(data, &channel) != nil || len(channel.ProtoReflect().GetUnknown()) != 0 {
-		return nil, fmt.Errorf("invalid channel")
-	}
-	switch channel.Type {
-	case pb.ChanType_Sys:
-		if (channel.Code != pb.ChanCode_Uncategorized && channel.Code != pb.ChanCode_TimeSets) || channel.Name != "" || channel.Icon != "" {
-			return nil, fmt.Errorf("invalid channel")
-		}
-	case pb.ChanType_User:
-		if channel.Code != pb.ChanCode_Uncategorized || strings.TrimSpace(channel.Name) == "" || !utf8.ValidString(channel.Name) || len(channel.Name) > 256 || len(channel.Icon) > 256 {
-			return nil, fmt.Errorf("invalid channel")
-		}
-	default:
-		return nil, fmt.Errorf("invalid channel")
+	data, err := ChannelData(value)
+	if err != nil {
+		return nil, err
 	}
 	// Copy only immutable fields: never copy the protobuf message's internal lock.
 	return &Token{raw: tk.raw, rawData: tk.rawData, signSys: tk.signSys, signNode: tk.signNode, channel: data, data: pb.Token{UserId: tk.data.UserId, NodeId: tk.data.NodeId, Scope: tk.data.Scope, Expires: tk.data.Expires, TokenId: tk.data.TokenId}}, nil
@@ -162,7 +138,7 @@ func (tk *Token) ExpiresAt() uint64     { return tk.data.Expires }
 // ForOptionalChannel defaults only an omitted destination, never an explicit empty value.
 func (tk *Token) ForOptionalChannel(value string, provided bool) (*Token, error) {
 	if !provided {
-		value = crypto.Base64Encode.EncodeToString(defaultChannel)
+		value = "sys.none"
 	}
 	return tk.ForChannel(value)
 }

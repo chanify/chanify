@@ -51,16 +51,17 @@ type adminClient struct {
 	ConnectedSince int64  `json:"connected_since,omitempty"`
 }
 type adminState struct {
-	mu           sync.Mutex
-	passwordHash []byte
-	sessions     map[string]adminSession
-	attempts     map[string]adminAttempt
-	clients      map[string]*adminClient
-	loginSlots   chan struct{}
-	cookiePath   string
-	secure       bool
-	random       func() (string, error)
-	assets       fs.FS
+	mu                sync.Mutex
+	passwordHash      []byte
+	sessions          map[string]adminSession
+	attempts          map[string]adminAttempt
+	clients           map[string]*adminClient
+	loginSlots        chan struct{}
+	cookiePath        string
+	secure            bool
+	allowInsecureHTTP bool
+	random            func() (string, error)
+	assets            fs.FS
 }
 
 // Derive the login verifier once at startup; never retain the plain password here.
@@ -83,7 +84,7 @@ func newAdmin(hash, endpoint string) *adminState {
 		path = strings.TrimRight(u.Path, "/") + "/admin"
 		secure = u.Scheme == "https"
 	}
-	return &adminState{passwordHash: []byte(hash), sessions: map[string]adminSession{}, attempts: map[string]adminAttempt{}, clients: map[string]*adminClient{}, loginSlots: make(chan struct{}, 2), cookiePath: path, secure: secure, random: adminRandom, assets: adminAssets}
+	return &adminState{passwordHash: []byte(hash), sessions: map[string]adminSession{}, attempts: map[string]adminAttempt{}, clients: map[string]*adminClient{}, loginSlots: make(chan struct{}, 2), cookiePath: path, secure: secure, allowInsecureHTTP: true, random: adminRandom, assets: adminAssets}
 }
 func adminRandom() (string, error) { return adminRandomFrom(rand.Reader) }
 
@@ -134,7 +135,7 @@ func adminDecode(w http.ResponseWriter, r *http.Request, value interface{}) erro
 }
 func (c *Core) adminHandler() http.Handler {
 	mux := http.NewServeMux()
-	for _, asset := range []struct{ path, name, mime string }{{"/admin", "index.html", "text/html"}, {"/admin/app.js", "app.js", "text/javascript"}, {"/admin/style.css", "style.css", "text/css"}, {"/admin/preferences.js", "preferences.js", "text/javascript"}, {"/admin/media.js", "media.js", "text/javascript"}, {"/admin/logo.png", "logo.png", "image/png"}} {
+	for _, asset := range []struct{ path, name, mime string }{{"/admin", "index.html", "text/html"}, {"/admin/app.js", "app.js", "text/javascript"}, {"/admin/password.js", "password.js", "text/javascript"}, {"/admin/style.css", "style.css", "text/css"}, {"/admin/preferences.js", "preferences.js", "text/javascript"}, {"/admin/media.js", "media.js", "text/javascript"}, {"/admin/logo.png", "logo.png", "image/png"}} {
 		mux.HandleFunc("GET "+asset.path, func(w http.ResponseWriter, r *http.Request) {
 			data, err := fs.ReadFile(c.admin.assets, "adminassets/"+asset.name)
 			if err != nil {
@@ -149,6 +150,10 @@ func (c *Core) adminHandler() http.Handler {
 		// Preserve the browser's external prefix when a proxy strips it upstream.
 		w.Header().Set("Location", "../admin")
 		w.WriteHeader(http.StatusTemporaryRedirect)
+	})
+	mux.HandleFunc("GET /admin/api/config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		adminJSON(w, 200, map[string]bool{"allow_insecure_http": c.admin.allowInsecureHTTP})
 	})
 	mux.HandleFunc("POST /admin/api/login", c.adminLogin)
 	mux.HandleFunc("GET /admin/api/session", func(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +195,7 @@ func (c *Core) adminHandler() http.Handler {
 	})
 }
 func (c *Core) adminCookie(w http.ResponseWriter, r *http.Request, value string, maxAge int) {
-	http.SetCookie(w, &http.Cookie{Name: adminCookie, Value: value, Path: c.admin.cookiePath, HttpOnly: true, Secure: c.admin.secure || r.TLS != nil, SameSite: http.SameSiteStrictMode, MaxAge: maxAge})
+	http.SetCookie(w, &http.Cookie{Name: adminCookie, Value: value, Path: c.admin.cookiePath, HttpOnly: true, Secure: (c.admin.secure && !c.admin.allowInsecureHTTP) || r.TLS != nil, SameSite: http.SameSiteStrictMode, MaxAge: maxAge})
 }
 func (c *Core) adminLogin(w http.ResponseWriter, r *http.Request) {
 	var body struct {

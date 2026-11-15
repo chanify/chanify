@@ -188,8 +188,7 @@ func encodeNotification(writer *multipart.Writer, name string, args *Arguments, 
 		return err
 	}
 	if selectableChannel {
-		channel, _ := ChannelData(args.Channel)
-		if err := field("channel", crypto.Base64Encode.EncodeToString(channel)); err != nil {
+		if err := field("channel", args.Channel); err != nil {
 			return "", rejected("internal_error", "cannot encode channel")
 		}
 	}

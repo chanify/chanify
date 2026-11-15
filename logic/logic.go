@@ -42,20 +42,21 @@ var (
 
 // Options for init logic
 type Options struct {
-	Name          string
-	Version       string
-	Endpoint      string
-	DataPath      string
-	FilePath      string
-	PluginPath    string
-	DBUrl         string
-	Secret        string
-	Registerable  bool
-	RegUsers      []string
-	WebHooks      []map[string]interface{}
-	MCPEnabled    bool
-	MCPListen     bool
-	AdminPassword string
+	Name                     string
+	Version                  string
+	Endpoint                 string
+	DataPath                 string
+	FilePath                 string
+	PluginPath               string
+	DBUrl                    string
+	Secret                   string
+	Registerable             bool
+	RegUsers                 []string
+	WebHooks                 []map[string]interface{}
+	MCPEnabled               bool
+	MCPListen                bool
+	AdminPassword            string
+	AdminDisableInsecureHTTP bool
 }
 
 // Logic instance

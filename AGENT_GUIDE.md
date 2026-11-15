@@ -1,6 +1,6 @@
 # Chanify for coding agents
 
-This is a standalone operating guide for Chanify 1.5.0. Give this file to your coding agent to set up notifications through CLI or MCP. Examples contain placeholders, never usable credentials. Verify the installed binary exposes the commands below; older published binaries may not include them.
+This is a standalone operating guide for Chanify 1.5.1. Give this file to your coding agent to set up notifications through CLI or MCP. Examples contain placeholders, never usable credentials. Verify the installed binary exposes the commands below; older published binaries may not include them.
 
 ## Instructions to the agent
 
@@ -154,7 +154,7 @@ For attachments, provide standard Base64 of the actual bytes. MCP does not read 
 
 Long text is attached in full as UTF-8 `message.txt` when supported; only the preview may be shortened. Never silently truncate a report or split it into unsolicited notifications. The default service supports short text through CLI/local stdio, not these self-hosted attachment workflows.
 
-Ordinary channel tokens bind a fixed destination: **omit `channel` entirely**; even specifying the same channel is rejected. Server-wide sending tokens and remote MCP accept readable channel codes, defaulting to `sys.none` (Uncategorized). User codes are 1–64 ASCII letters/digits/underscore/dot/hyphen, starting with a letter or digit. `sys.timesets` means Timeline; device-specific channels are unavailable. Do not supply an encoded protobuf ID, empty string or null. There is no `list_channels` tool or iOS channel-directory synchronization; ask the user for a code when necessary.
+With MCP and `agent send`, ordinary channel tokens bind a fixed destination: **omit `channel` entirely**; even specifying the same channel is rejected. The original HTTP/Webhook/`send` paths retain the signed destination and ignore external channel overrides. Server-wide sending tokens and remote MCP accept readable channel codes, defaulting to `sys.none` (Uncategorized). User codes are 1–64 ASCII letters/digits/underscore/dot/hyphen, starting with a letter or digit. `sys.timesets` means Timeline; the `sys.` prefix is reserved and all other system codes are rejected. Device-specific channels are unavailable. HTTP/Webhook and `chanify send --channel` use these same readable codes; local MCP and agent CLI send codes directly without Base64/protobuf encoding. Do not supply an encoded protobuf ID, empty string or null. There is no `list_channels` tool or iOS channel-directory synchronization; ask the user for a code when necessary.
 
 Inspect MCP tool results, including `isError` and structured/text content, even if HTTP or JSON-RPC succeeded. Success includes `status: submitted`, `format`, and `request_id`. A transport success is not proof of notification success. A `send_failed`, `outcome_unknown`, disconnect or timeout must not trigger an automatic repeat: delivery may already have occurred for some devices.
 

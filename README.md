@@ -115,7 +115,7 @@ $ make install
 
 ### Coding agents: CLI and MCP
 
-Give your coding agent [AGENT_GUIDE.md](AGENT_GUIDE.md), a standalone setup and operating guide with a copyable handoff prompt, credential selection, CLI examples, local/remote MCP setup, result handling, and delivery troubleshooting. It describes the 1.5.0 source interface; check your installed binary's help before use.
+Give your coding agent [AGENT_GUIDE.md](AGENT_GUIDE.md), a standalone setup and operating guide with a copyable handoff prompt, credential selection, CLI examples, local/remote MCP setup, result handling, and delivery troubleshooting. It describes the 1.5.1 source interface; check your installed binary's help before use.
 
 ### As Sender Client
 
@@ -680,16 +680,16 @@ Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information
 
 Stateful self-hosted nodes advertise `auth.server-token`. Supporting Apple clients can generate a `cst1:` token for one user and node. This is a sending credential, not an MCP credential.
 
-Omitting channel selects Uncategorized (sys.none); explicit empty or invalid values are errors. The current format is an unpadded base64url-encoded protobuf `Channel`, matching Apple channel IDs. `CAE` explicitly selects Uncategorized; `CAIaA2Rldg` selects a user channel whose code is `dev`. Display-name lookup and a server-side channel directory are not implemented. Device-specific channels continue to use existing channel tokens.
+`channel` accepts readable channel codes: 1–64 ASCII letters/digits/underscore/dot/hyphen, starting with a letter or digit (for example, `dev`). Omitting it selects Uncategorized (`sys.none`); `sys.timesets` selects Timeline. The `sys.` prefix is reserved; unknown system codes and explicit empty/null/invalid values are errors. Encoded protobuf channel IDs are no longer decoded: an old encoded value that meets the code syntax is treated as a literal user channel code. Display names are not resolved and channel existence is not checked. Device-specific channels continue to use existing channel tokens.
 
 ```sh
 curl -X POST 'https://your-node.example/v1/sender' \
   -H 'Token: <server-wide-token>' \
   -H 'Content-Type: application/json' \
-  --data '{"channel":"CAIaA2Rldg","text":"Tests passed"}'
+  --data '{"channel":"dev","text":"Tests passed"}'
 
 chanify send --endpoint=https://your-node.example \
-  --token='<server-wide-token>' --channel=CAIaA2Rldg --text='Tests passed'
+  --token='<server-wide-token>' --channel=dev --text='Tests passed'
 ```
 
 JSON, query strings, forms, multipart fields and Lua webhook send options support `channel`. Raw image/audio requests use the query string. Existing channel tokens retain their signed destination; external parameters cannot override it.
@@ -736,7 +736,7 @@ Tools are discovered according to effective node capabilities:
 | `send_image` | Available with image storage. Required `data_base64`, optional `channel`; PNG/JPEG only, at most 4 MiB decoded and 32 million pixels; optional title/summary |
 | `send_file` | Available with file storage. Required `filename`/`data_base64`, optional `channel`; at most 4 MiB decoded, filename up to 128 characters without directory components; optional title/summary |
 
-Use readable iOS channel codes: 1–64 ASCII letters/digits/underscore/dot/hyphen, starting with a letter or digit. `sys.none` explicitly selects Uncategorized, `sys.timesets` selects Timeline; device-specific channels are unavailable. Omitting channel selects sys.none; explicit empty/null/invalid codes are errors. No channel allowlist or iOS existence check applies. list_channels has been removed; directory synchronization is not implemented. The server converts internal protobuf IDs. Attachments carry standard Base64 bytes, not local paths or fetched URLs. Requests are limited to 6 MiB.
+Use readable iOS channel codes: 1–64 ASCII letters/digits/underscore/dot/hyphen, starting with a letter or digit. `sys.none` explicitly selects Uncategorized, `sys.timesets` selects Timeline; the `sys.` prefix is reserved and unknown system codes are rejected. Device-specific channels are unavailable. Omitting channel selects sys.none; explicit empty/null/invalid codes are errors. No channel allowlist or iOS existence check applies. list_channels has been removed; directory synchronization is not implemented. The server converts readable codes to internal protobuf IDs. Attachments carry standard Base64 bytes, not local paths or fetched URLs. Requests are limited to 6 MiB.
 
 Results include `status: submitted`, actual `format`, and `request_id`, not read receipts. Retrying an ambiguous network failure may duplicate a notification; idempotency is not guaranteed.
 
@@ -753,9 +753,9 @@ server:
     password: '<management-password>'
 ```
 
-The browser uses Web Crypto to hash the UTF-8 password with SHA-256 and submits only its hexadecimal digest. At startup the server derives a bcrypt verifier from the same digest of the configured password. Neither the original password nor the digest is logged. Open the page over HTTPS or localhost for Web Crypto support; the digest is itself a login credential, so hashing does not replace HTTPS. Restrict read access to the configuration file, which contains the plain password.
+The browser uses Web Crypto to hash the UTF-8 password with SHA-256 and submits only its hexadecimal digest. At startup the server derives a bcrypt verifier from the same digest of the configured password. Neither the original password nor the digest is logged. HTTP administration is enabled by default for IPv4/IPv6 addresses and hostnames without an address allowlist. When Web Crypto is unavailable, the browser uses a local SHA-256 implementation and still submits only the digest. Set `server.web_admin.allow_insecure_http: false` and restart to disable this fallback; use HTTPS or localhost in that mode. The digest and session cookie are credentials exposed in transit over HTTP; use HTTP only on a trusted network. Restrict read access to the configuration file, which contains the plain password.
 
-Open the node's `/admin` and sign in with the original password. Missing or empty configuration registers neither the page nor its APIs. There is no default password; invalid passwords fail startup. Configuration is read only at startup. Sessions expire after eight hours and are invalidated by logout or restart. Use HTTPS remotely; behind a proxy, configure `server.endpoint` with the external HTTPS address so cookies are marked Secure. Administration uses independent sessions, login rate limits, Origin checks, and CSRF validation. Sending and MCP credentials cannot authenticate as administrators.
+Open the node's `/admin` and sign in with the original password. Missing or empty configuration registers neither the page nor its APIs. There is no default password; invalid passwords fail startup. Configuration is read only at startup. Sessions expire after eight hours and are invalidated by logout or restart. Prefer HTTPS remotely. Direct TLS requests always receive Secure cookies. With HTTP access enabled, plain upstream HTTP requests receive cookies without Secure, even if `server.endpoint` is HTTPS; for an HTTPS-only reverse proxy deployment, set `allow_insecure_http: false` and configure the external HTTPS endpoint to retain Secure cookies. Administration uses independent sessions, login rate limits, Origin checks, and CSRF validation. Sending and MCP credentials cannot authenticate as administrators.
 
 The page lists both credential types with names, IDs, users, creation/expiry dates, and revocation status. Filter by user, rename credentials, or revoke after confirmation. Sending tokens are still generated manually in iOS. Create MCP credentials for bound users; the full value appears once. Lists exclude raw credentials, digests, and encrypted copies.
 
@@ -796,7 +796,7 @@ Example stdio agent configuration (the exact format depends on the client; use a
 
 Self-hosted nodes are discovered through `/rest/v1/info`. Their declared capabilities determine tools and limits, using the same definitions and validation as remote MCP. With file support, text accepts up to 100,000 characters and long reports upload their complete UTF-8 contents as `message.txt`. Image/file tools accept actual Base64 bytes with the remote MCP limits above. A 404 from legacy node discovery permits conservative text-only operation with an ordinary channel token; other discovery failures stop startup. Attachment capabilities are rechecked before uploads; missing storage produces an error rather than a preview-only notification. Attachment title/caption rendering on older nodes follows their existing implementation.
 
-Ordinary tokens have a fixed destination described by the tools; `channel` is omitted from their schema and overrides are rejected. Server-wide sending tokens require the matching node and `auth.server-token`; tools accept readable channel codes, defaulting to `sys.none`. The CLI performs wire-format conversion. This local command uses a sending token, not a remote MCP token or an administrator password. Credentials are kept out of tool arguments, URLs, and logs; the destination node validates signatures, registration, expiry, and revocation.
+Ordinary tokens have a fixed destination described by the tools; `channel` is omitted from their schema and overrides are rejected. Server-wide sending tokens require the matching node and `auth.server-token`; tools accept readable channel codes, defaulting to `sys.none`. The CLI sends readable codes directly. This local command uses a sending token, not a remote MCP token or an administrator password. Credentials are kept out of tool arguments, URLs, and logs; the destination node validates signatures, registration, expiry, and revocation.
 
 Stdout contains only MCP messages; diagnostics use stderr. Stdin is reserved for the protocol. Closing stdin or terminating the process stops it. HTTP requests support cancellation and have a 30-second timeout; sends are not automatically retried. Results report submission, not delivery or reading. Ambiguous failures may have submitted a notification, so retries can duplicate it.
 
@@ -816,7 +816,7 @@ Choose exactly one content input. Text is literal: `@` and `-` do not implicitly
 
 The default service accepts only short text, up to 400 characters. Capable self-hosted nodes accept up to 100,000 characters and automatically attach complete long reports. Titles accept 80 characters, summaries 200. Images must be complete, decodable PNG/JPEG files of at most 32 million pixels. Images and files are limited to 4 MiB. Summary does not replace the body of a short text notification.
 
-Server-wide sending tokens accept readable `--channel` codes, defaulting to `sys.none`; ordinary channel tokens reject that option and keep their fixed destination. This differs from the encoded channel argument of the original send command. `--endpoint` overrides the configured URL. `--timeout 45s` sets the operation budget (30s by default; discovery retains a 10-second phase cap). Invalid explicitly selected configuration stops the operation.
+Server-wide sending tokens accept readable `--channel` codes, defaulting to `sys.none`; ordinary channel tokens reject that option and keep their fixed destination. The original `send --channel` command uses the same readable codes. `--endpoint` overrides the configured URL. `--timeout 45s` sets the operation budget (30s by default; discovery retains a 10-second phase cap). Invalid explicitly selected configuration stops the operation.
 
 Normal stdout is exactly one JSON object; diagnostics use stderr. `--help` prints ordinary help instead. Example success:
 

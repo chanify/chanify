@@ -33,7 +33,7 @@ func TestChannelCodes(t *testing.T) {
 			t.Fatal(&ch, err)
 		}
 	}
-	for _, code := range []string{"", "sys.device", "a/b", strings.Repeat("x", 65)} {
+	for _, code := range []string{"", "sys.device", "sys.unknown", "a/b", strings.Repeat("x", 65)} {
 		if _, err := ChannelData(code); err == nil {
 			t.Fatalf("accepted %q", code)
 		}

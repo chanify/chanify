@@ -40,7 +40,7 @@ func TestLegacySendRequest(t *testing.T) {
 			return
 		}
 		defer func() { _ = r.MultipartForm.RemoveAll() }()
-		for key, want := range map[string]string{"text": "literal report", "title": "Title", "token": "synthetic", "sound": "bell", "priority": "10", "interruption-level": "active", "channel": "encoded-channel", "copy": "copy me", "autocopy": "1"} {
+		for key, want := range map[string]string{"text": "literal report", "title": "Title", "token": "synthetic", "sound": "bell", "priority": "10", "interruption-level": "active", "channel": "dev", "copy": "copy me", "autocopy": "1"} {
 			if got := r.FormValue(key); got != want {
 				t.Errorf("%s=%q want %q", key, got, want)
 			}
@@ -66,7 +66,7 @@ func TestLegacySendRequest(t *testing.T) {
 	for key, value := range map[string]interface{}{"client.token": "synthetic", "client.endpoint": srv.URL, "client.sound": "bell", "client.priority": 10, "client.interruption-level": "active", "client.autocopy": "1"} {
 		viper.Set(key, value)
 	}
-	for flag, value := range map[string]string{"text": "@" + textPath, "title": "Title", "copy": "copy me", "channel": "encoded-channel", "image": attachment, "audio": attachment, "file": attachment} {
+	for flag, value := range map[string]string{"text": "@" + textPath, "title": "Title", "copy": "copy me", "channel": "dev", "image": attachment, "audio": attachment, "file": attachment} {
 		setFlag(t, c, flag, value)
 	}
 	setFlag(t, c, "action", "one")

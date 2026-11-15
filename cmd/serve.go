@@ -71,7 +71,8 @@ func runServe(ctx context.Context, cmd *cobra.Command) error {
 		PluginPath: getExpandPath("server.pluginpath"), DBUrl: viper.GetString("server.dburl"),
 		Secret: viper.GetString("server.secret"), WebHooks: getWebhooks(),
 		MCPEnabled: viper.GetBool("server.mcp.enabled"), MCPListen: viper.GetBool("server.mcp.listen"),
-		AdminPassword: viper.GetString("server.web_admin.password"),
+		AdminPassword:            viper.GetString("server.web_admin.password"),
+		AdminDisableInsecureHTTP: viper.IsSet("server.web_admin.allow_insecure_http") && !viper.GetBool("server.web_admin.allow_insecure_http"),
 	}
 	opts.Registerable, opts.RegUsers = getUserWhitlist(cmd)
 	if err := c.Init(opts); err != nil {

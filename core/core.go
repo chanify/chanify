@@ -55,6 +55,7 @@ func (c *Core) Init(opts *logic.Options) error {
 			return errors.New("web administration requires a persistent node")
 		}
 		c.admin = newAdmin(hash, c.logic.Endpoint)
+		c.admin.allowInsecureHTTP = !opts.AdminDisableInsecureHTTP
 	}
 	return err
 }

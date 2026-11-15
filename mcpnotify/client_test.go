@@ -97,6 +97,7 @@ func TestCustomNodeCapabilitiesAndUploads(t *testing.T) {
 		data                              []byte
 	}{
 		{name: "send_text", format: "text", channel: "sys.none", text: "hello"},
+		{name: "send_text", format: "text", channel: "sys.timesets", text: "timeline"},
 		{name: "send_text", format: "text_attachment", channel: "dev", file: "file", text: "preview", data: []byte(text)},
 		{name: "send_image", format: "image", channel: "dev", file: "image", text: "image summary", data: picture.Bytes()},
 		{name: "send_file", format: "file", channel: "dev", file: "file", text: "file summary", data: []byte("file bytes")},
@@ -120,8 +121,7 @@ func TestCustomNodeCapabilitiesAndUploads(t *testing.T) {
 		if err := r.ParseMultipartForm(8 << 20); err != nil {
 			t.Fatal(err)
 		}
-		channel, _ := ChannelData(entry.channel)
-		if r.FormValue("channel") != crypto.Base64Encode.EncodeToString(channel) || r.FormValue("text") != entry.text || r.FormValue("title") != "title" {
+		if r.FormValue("channel") != entry.channel || r.FormValue("text") != entry.text || r.FormValue("title") != "title" {
 			t.Error("incorrect fields")
 		}
 		if entry.file != "" {

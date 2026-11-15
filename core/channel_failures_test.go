@@ -3,6 +3,7 @@ package core
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/json"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -72,4 +73,41 @@ func TestSendingRejectsInvalidChannelAcrossInputs(t *testing.T) {
 			}
 		})
 	}
+	// Valid codes must reach sending instead of failing channel decoding.
+	for _, tc := range []struct {
+		name, options string
+		status        int
+	}{
+		{"user", `channel="dev"`, 404},
+		{"uncategorized", `channel="sys.none"`, 404},
+		{"timeline", `channel="sys.timesets"`, 404},
+		{"omitted", ``, 404},
+		{"empty", `channel=""`, 400},
+		{"unknown system", `channel="sys.unknown"`, 400},
+	} {
+		t.Run("lua/"+tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			ctx, _ := gin.CreateTestContext(w)
+			ctx.Request = httptest.NewRequest("POST", "/v1/sender", nil)
+			ctx.Request.Header.Set("token", raw)
+			ctx.Set(coreKey, c)
+			l := lua.NewState()
+			defer l.Close()
+			initHttpLua(l, ctx)
+			if err := l.DoString(`return ctx:send({text="hello",` + tc.options + `})`); err != nil {
+				t.Fatal(err)
+			}
+			var result struct {
+				Res     int    `json:"res"`
+				Message string `json:"msg"`
+			}
+			if err := json.Unmarshal([]byte(l.Get(-1).String()), &result); err != nil {
+				t.Fatal(err)
+			}
+			if result.Res != tc.status || (tc.status == 404 && result.Message != "no devices found") {
+				t.Fatal(l.Get(-1))
+			}
+		})
+	}
+
 }

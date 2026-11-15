@@ -32,7 +32,7 @@ func TestServerToken(t *testing.T) {
 	if !tk.VerifySign(make([]byte, 32)) || tk.VerifySign([]byte("short")) || tk.RawToken() != raw {
 		t.Fatal("signature or raw token changed")
 	}
-	for _, channel := range []string{"", "invalid!", crypto.Base64Encode.EncodeToString([]byte("garbage")), "CAEQAw", "CAEQASoBYQ"} {
+	for _, channel := range []string{"", "invalid!", "sys.device", "sys.unknown", "white space"} {
 		if _, err := tk.ForChannel(channel); err == nil {
 			t.Fatalf("accepted invalid channel %q", channel)
 		}
@@ -46,7 +46,7 @@ func TestServerToken(t *testing.T) {
 		t.Fatal("explicit empty channel defaulted")
 	}
 	channel, _ := proto.Marshal(&pb.Channel{Type: pb.ChanType_User, Name: "development"})
-	resolved, err := tk.ForChannel(crypto.Base64Encode.EncodeToString(channel))
+	resolved, err := tk.ForChannel("development")
 	if err != nil {
 		t.Fatal(err)
 	}

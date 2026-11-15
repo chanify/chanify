@@ -42,8 +42,7 @@ func TestServerTokenSender(t *testing.T) {
 		return "cst1:" + crypto.Base64Encode.EncodeToString(data) + ".." + crypto.Base64Encode.EncodeToString(mac.Sum(nil))
 	}
 	token := makeToken(c.logic.NodeID, uint64(time.Now().Add(time.Hour).Unix()))
-	channelData, _ := proto.Marshal(&pb.Channel{Type: pb.ChanType_User, Name: "development"})
-	channel := crypto.Base64Encode.EncodeToString(channelData)
+	channel := "development"
 	if _, err := c.logic.ManageServerTokens(uid, "create", "", "Test sender", token); err != nil {
 		t.Fatal(err)
 	}
@@ -58,6 +57,9 @@ func TestServerTokenSender(t *testing.T) {
 		{"null", "POST", "/v1/sender", "application/json", `{"text":"hello","channel":null}`, token, 400},
 		{"form missing", "POST", "/v1/sender", "application/x-www-form-urlencoded", url.Values{"text": {"hello"}, "token": {token}}.Encode(), "", 404},
 		{"empty", "POST", "/v1/sender", "application/json", `{"text":"hello","channel":""}`, token, 400},
+		{"unknown system", "POST", "/v1/sender", "application/json", `{"text":"hello","channel":"sys.unknown"}`, token, 400},
+		{"uncategorized", "POST", "/v1/sender", "application/json", `{"text":"hello","channel":"sys.none"}`, token, 404},
+		{"timeline", "POST", "/v1/sender", "application/json", `{"text":"hello","channel":"sys.timesets"}`, token, 404},
 		{"invalid", "POST", "/v1/sender", "application/json", `{"text":"hello","channel":"bad!"}`, token, 400},
 		{"json", "POST", "/v1/sender", "application/json", `{"text":"hello","channel":"` + channel + `"}`, token, 404},
 		{"form", "POST", "/v1/sender", "application/x-www-form-urlencoded", url.Values{"text": {"hello"}, "channel": {channel}, "token": {token}}.Encode(), "", 404},

@@ -53,7 +53,7 @@ func Tools(caps Capabilities) []*mcp.Tool {
 		}
 		return fields
 	}
-	channel := map[string]interface{}{"type": "string", "minLength": 1, "maxLength": 64, "default": "sys.none", "description": "Optional channel code; omitted sends to Uncategorized (sys.none). An explicit empty or invalid code is an error. User codes contain letters/digits/underscore/dot/hyphen, beginning with a letter or digit."}
+	channel := map[string]interface{}{"type": "string", "minLength": 1, "maxLength": 64, "default": "sys.none", "description": "Optional channel code; omitted sends to Uncategorized (sys.none). An explicit empty or invalid code is an error. User codes contain letters/digits/underscore/dot/hyphen, beginning with a letter or digit. The sys. prefix is reserved: only sys.none and sys.timesets are supported."}
 	shortString := func(max int) map[string]interface{} {
 		return map[string]interface{}{"type": "string", "maxLength": max}
 	}

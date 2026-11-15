@@ -31,7 +31,7 @@ func init() {
 	rootCmd.AddCommand(sendCmd)
 	sendCmd.Flags().String("endpoint", "https://api.chanify.net", "Node server endpoint.")
 	sendCmd.Flags().String("token", "", "Send token.")
-	sendCmd.Flags().String("channel", "", "Base64url-encoded channel ID; omitted server-wide destination defaults to Uncategorized.")
+	sendCmd.Flags().String("channel", "", "Readable channel code (e.g. dev, sys.none, sys.timesets); omitted server-wide destination defaults to sys.none.")
 	sendCmd.Flags().String("sound", "", "Message sound code.")
 	sendCmd.Flags().String("text", "", "Text message content.")
 	sendCmd.Flags().String("link", "", "Link message content.")
