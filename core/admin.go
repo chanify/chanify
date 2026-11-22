@@ -72,6 +72,8 @@ func adminPasswordHash(password string) (string, error) {
 	if len(password) < 12 || len(password) > 72 || !utf8.ValidString(password) {
 		return "", errors.New("server.web_admin.password must contain 12 through 72 UTF-8 bytes")
 	}
+	// Existing clients submit the hex SHA-256 digest as the login credential.
+	// Store only its salted bcrypt verifier.
 	data, err := bcrypt.GenerateFromPassword([]byte(adminDigest(password)), 12)
 	return string(data), err
 }

@@ -115,7 +115,7 @@ $ make install
 
 ### Coding agents: CLI and MCP
 
-Give your coding agent [AGENT_GUIDE.md](AGENT_GUIDE.md), a standalone setup and operating guide with a copyable handoff prompt, credential selection, CLI examples, local/remote MCP setup, result handling, and delivery troubleshooting. It describes the 1.5.1 source interface; check your installed binary's help before use.
+Give your coding agent [AGENT_GUIDE.md](AGENT_GUIDE.md), a standalone setup and operating guide with a copyable handoff prompt, credential selection, CLI examples, local/remote MCP setup, result handling, and delivery troubleshooting. It describes the 1.5.2 source interface; check your installed binary's help before use.
 
 ### As Sender Client
 

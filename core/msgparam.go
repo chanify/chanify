@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"io"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -345,28 +346,38 @@ func parseTimeContentStringItems(items map[string]string) []*model.MsgTimeItem {
 }
 
 func parseTimestamp(t interface{}) *time.Time {
+	var millis int64
 	switch val := t.(type) {
 	case int:
-		v := time.Unix(int64(val)/1000, int64(val)%1000*1e6)
-		return &v
+		millis = int64(val)
 	case uint:
-		v := time.Unix(int64(val)/1000, int64(val)%1000*1e6)
-		return &v
+		return unsignedTimestamp(uint64(val))
 	case int64:
-		v := time.Unix(val/1000, val%1000*1e6)
-		return &v
+		millis = val
 	case uint64:
-		v := time.Unix(int64(val)/1000, int64(val)%1000*1e6)
-		return &v
+		return unsignedTimestamp(val)
 	case string:
 		if v, err := time.Parse(time.RFC3339Nano, val); err == nil {
 			return &v
-		} else if v, err := strconv.ParseUint(val, 10, 64); err == nil {
-			vv := time.Unix(int64(v)/1000, int64(v)%1000*1e6)
-			return &vv
 		}
+		v, err := strconv.ParseUint(val, 10, 64)
+		if err != nil {
+			return nil
+		}
+		return unsignedTimestamp(v)
+	default:
+		return nil
 	}
-	return nil
+	v := time.UnixMilli(millis)
+	return &v
+}
+
+func unsignedTimestamp(millis uint64) *time.Time {
+	if millis > math.MaxInt64 {
+		return nil
+	}
+	v := time.UnixMilli(int64(millis))
+	return &v
 }
 
 func readFileFromForm(form *multipart.Form, name string) ([]byte, string, error) {

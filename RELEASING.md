@@ -42,7 +42,7 @@ docker buildx build --build-arg GO_VERSION=1.27.3 \
   --platform linux/amd64,linux/386,linux/arm64,linux/arm/v7 .
 ```
 
-The source version in `cmd/version.go` is 1.5.0. `go run . version` and
+The source version in `cmd/version.go` is 1.5.2. `go run . version` and
 `make build` use this version; `make build VERSION=...` can override it.
 GoReleaser uses the release tag, which must match the source version.
 

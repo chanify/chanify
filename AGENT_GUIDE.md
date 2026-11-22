@@ -1,6 +1,6 @@
 # Chanify for coding agents
 
-This is a standalone operating guide for Chanify 1.5.1. Give this file to your coding agent to set up notifications through CLI or MCP. Examples contain placeholders, never usable credentials. Verify the installed binary exposes the commands below; older published binaries may not include them.
+This is a standalone operating guide for Chanify 1.5.2. Give this file to your coding agent to set up notifications through CLI or MCP. Examples contain placeholders, never usable credentials. Verify the installed binary exposes the commands below; older published binaries may not include them.
 
 ## Instructions to the agent
 

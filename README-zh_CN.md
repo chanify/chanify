@@ -93,7 +93,7 @@ Chanify 包括这些功能：
 
 ## Coding agent 使用指南
 
-把 [AGENT_GUIDE.md](AGENT_GUIDE.md) 直接交给 coding agent，即可按文档配置 CLI、本地 stdio MCP 或远程 MCP。文档包含可复制的任务指令、凭据区别、发送示例、结果与重试规则及投递排查；不要把真实凭据粘贴到对话。文档描述 1.5.1 源码接口，使用前先检查已安装版本的命令帮助。
+把 [AGENT_GUIDE.md](AGENT_GUIDE.md) 直接交给 coding agent，即可按文档配置 CLI、本地 stdio MCP 或远程 MCP。文档包含可复制的任务指令、凭据区别、发送示例、结果与重试规则及投递排查；不要把真实凭据粘贴到对话。文档描述 1.5.2 源码接口，使用前先检查已安装版本的命令帮助。
 
 ## 安装
 

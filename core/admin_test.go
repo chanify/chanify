@@ -368,6 +368,9 @@ func TestAdminPlainPasswordConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Close()
+	if cost, err := bcrypt.Cost(c.admin.passwordHash); err != nil || cost < 12 {
+		t.Fatalf("expected bcrypt verifier at cost 12 or higher, got cost %d, err %v", cost, err)
+	}
 	if bytes.Contains(c.admin.passwordHash, []byte(password)) {
 		t.Fatal("plain password retained in login verifier")
 	}

@@ -1,7 +1,9 @@
 package core
 
 import (
+	"math"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -76,5 +78,26 @@ func TestParseTimestamp(t *testing.T) {
 	}
 	if !tm.Equal(*parseTimestamp(uint64(1620000000123))) {
 		t.Error("Parse uint64 failed")
+	}
+}
+
+func TestParseTimestampBounds(t *testing.T) {
+	for _, input := range []interface{}{uint64(math.MaxInt64), "9223372036854775807"} {
+		if got := parseTimestamp(input); got == nil || got.UnixMilli() != math.MaxInt64 {
+			t.Errorf("parseTimestamp(%v) = %v", input, got)
+		}
+	}
+	overflow := uint64(math.MaxInt64) + 1
+	invalid := []interface{}{overflow, "9223372036854775808", uint64(math.MaxUint64), "-1"}
+	if strconv.IntSize == 64 {
+		invalid = append(invalid, uint(overflow))
+	}
+	for _, input := range invalid {
+		if got := parseTimestamp(input); got != nil {
+			t.Errorf("parseTimestamp(%v) = %v, want nil", input, got)
+		}
+	}
+	if got := parseTimestamp(int64(-1)); got == nil || got.UnixMilli() != -1 {
+		t.Errorf("parseTimestamp(int64(-1)) = %v", got)
 	}
 }
